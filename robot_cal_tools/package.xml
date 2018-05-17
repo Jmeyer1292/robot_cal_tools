@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>robot_cal_tools</name>
+  <version>0.0.0</version>
+  <description>The robot_cal_tools package</description>
+
+  <maintainer email="jmeyer1292@gmail.com">Jon Meyer</maintainer>
+
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <export>
+    <metapackage/>
+  </export>
+
+</package>
