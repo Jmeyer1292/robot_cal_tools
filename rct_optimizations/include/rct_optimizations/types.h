@@ -9,6 +9,7 @@ namespace rct_optimizations
 struct Observation2d
 {
   std::array<double, 2> values;
+  Observation2d() = default;
 
   double& x() { return values[0]; }
   double& y() { return values[1]; }

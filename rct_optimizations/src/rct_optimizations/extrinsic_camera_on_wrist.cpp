@@ -147,19 +147,6 @@ public:
     residual[0] = xy_image[0] - obs_.x();
     residual[1] = xy_image[1] - obs_.y();
 
-//    Pose6<T> target_pose (pose_base_to_target);
-//    Point3<T> world_point = target_pose * point_in_target.cast<T>();
-
-//    Point3<T> link_point = wrist_pose_.cast<T>() * world_point;
-
-//    Pose6<T> camera_pose (pose_wrist_to_camera);
-//    Point3<T> camera_point = camera_pose * link_point;
-
-//    Point2<T> image_space = intr_.project(camera_point);
-
-//    residual[0] = image_space.x - obs_.x();
-//    residual[1] = image_space.y - obs_.y();
-
     return true;
   }
 
@@ -206,3 +193,18 @@ rct_optimizations::ExtrinsicCameraOnWristResult rct_optimizations::optimize(cons
 
   return {};
 }
+
+//    Pose6<T> target_pose (pose_base_to_target);
+//    Point3<T> world_point = target_pose * point_in_target.cast<T>();
+
+//    Point3<T> link_point = wrist_pose_.cast<T>() * world_point;
+
+//    Pose6<T> camera_pose (pose_wrist_to_camera);
+//    Point3<T> camera_point = camera_pose * link_point;
+
+//    Point2<T> image_space = intr_.project(camera_point);
+
+//    residual[0] = image_space.x - obs_.x();
+//    residual[1] = image_space.y - obs_.y();
+
+
