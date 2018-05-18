@@ -3,11 +3,12 @@ project(rct_image_tools)
 
 add_compile_options(-std=c++11 -Wall -Wextra)
 
+find_package(OpenCV REQUIRED)
+
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   rct_optimizations
 )
-
 
 catkin_package(
   INCLUDE_DIRS
@@ -38,6 +39,18 @@ add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EX
 
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+)
+
+add_executable(${PROJECT_NAME}_test
+  src/observation_finder_tests.cpp
+)
+
+add_dependencies(${PROJECT_NAME}_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(${PROJECT_NAME}_test
+  ${catkin_LIBRARIES}
+  ${PROJECT_NAME}
 )
 
 #############
