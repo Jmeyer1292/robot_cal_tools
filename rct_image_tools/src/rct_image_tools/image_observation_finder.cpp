@@ -265,7 +265,8 @@ static bool extractKeyPoints(const ObservationPoints &centers, ObservationPoints
 }
 
 template<typename PARAMS, typename DETECTOR_PTR, typename DETECTOR>
-static bool extractModifiedCircleGrid(const cv::Mat &image, ObservationPoints &observation_points, cv::Mat &output_image)
+static bool extractModifiedCircleGrid(const cv::Mat &image, const rct_image_tools::TargetDefinition& target,
+                                      ObservationPoints &observation_points, cv::Mat &output_image)
 {
   PARAMS detector_params;
   detector_params.maxArea = image.cols*image.rows;
@@ -274,12 +275,8 @@ static bool extractModifiedCircleGrid(const cv::Mat &image, ObservationPoints &o
 
   bool flipped = false;
 
-  // TODO
-  std::size_t target_cols_ = 10;
-  std::size_t target_rows_ = 10;
-
-  std::size_t cols = target_cols_;
-  std::size_t rows = target_rows_;
+  std::size_t cols = target.cols;
+  std::size_t rows = target.rows;
 
   cv::Size pattern_size(cols, rows);
   cv::Size pattern_size_flipped(rows, cols);
@@ -332,14 +329,21 @@ static bool extractModifiedCircleGrid(const cv::Mat &image, ObservationPoints &o
 
 rct_image_tools::ImageObservationFinder::ImageObservationFinder(const TargetDefinition& definition)
   : target_(definition)
-{}
+{
+  assert(definition.cols != 0);
+  assert(definition.rows != 0);
+}
 
 boost::optional<std::vector<rct_optimizations::Observation2d>>
 rct_image_tools::ImageObservationFinder::findObservations(const cv::Mat& image, cv::Mat& out) const
 {
+  // Call modified circle finder
   ObservationPoints points;
-  if (!extractModifiedCircleGrid<CircleDetector::Params, CircleDetector, CircleDetector>(image, points, out))
+  if (!extractModifiedCircleGrid<CircleDetector::Params, CircleDetector, CircleDetector>(image, target_, points, out))
+  {
+    // If we fail to detect the grid, then return an empty optional
     return {};
+  }
 
   // Otherwise, package the observation results
   std::vector<rct_optimizations::Observation2d> observations (points.size());

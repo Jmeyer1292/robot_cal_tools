@@ -15,6 +15,9 @@ int main(int argc, char** argv)
   cv::Mat m = cv::imread(path);
 
   rct_image_tools::TargetDefinition target;
+  target.rows = 9;
+  target.cols = 12;
+
   rct_image_tools::ImageObservationFinder obs_finder (target);
 
   cv::Mat out;

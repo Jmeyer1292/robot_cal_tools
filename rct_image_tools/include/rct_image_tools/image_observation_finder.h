@@ -10,7 +10,8 @@ namespace rct_image_tools
 
 struct TargetDefinition
 {
-
+  int rows;
+  int cols;
 };
 
 class ImageObservationFinder
