@@ -11,9 +11,11 @@ int main(int argc, char** argv)
   rct_image_tools::ImageObservationFinder obs_finder (target);
 
   cv::Mat out;
+  m.copyTo(out);
   obs_finder.findObservations(m, out);
 
   cv::imshow("out", out);
+  cv::moveWindow("out", 400, 400);
   cv::waitKey();
   return 0;
 }
