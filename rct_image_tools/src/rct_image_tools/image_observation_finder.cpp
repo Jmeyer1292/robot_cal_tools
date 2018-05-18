@@ -342,7 +342,13 @@ rct_image_tools::ImageObservationFinder::findObservations(const cv::Mat& image, 
     return {};
 
   // Otherwise, package the observation results
-  // TODO
-  std::vector<rct_optimizations::Observation2d> observations;
+  std::vector<rct_optimizations::Observation2d> observations (points.size());
+  std::transform(points.begin(), points.end(), observations.begin(), [] (const cv::Point2d& p) {
+    rct_optimizations::Observation2d o;
+    o.x() = p.x;
+    o.y() = p.y;
+    return o;
+  });
+
   return boost::optional<std::vector<rct_optimizations::Observation2d>>(observations);
 }
