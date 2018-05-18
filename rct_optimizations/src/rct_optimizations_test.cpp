@@ -2,5 +2,7 @@
 
 int main()
 {
+  rct_optimizations::ExtrinsicCameraOnWristParameters p;
+  rct_optimizations::optimize(p);
   return 0;
 }

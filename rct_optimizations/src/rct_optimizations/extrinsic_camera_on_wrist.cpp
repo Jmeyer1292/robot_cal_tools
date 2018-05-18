@@ -2,6 +2,7 @@
 #include "rct_optimizations/types.h"
 
 #include <ceres/rotation.h>
+#include <iostream>
 
 using namespace rct_optimizations;
 
@@ -114,18 +115,16 @@ public:
    * @param wrist_pose
    * @param point_in_target
    */
-  ReprojectionCost(const Observation2d& obs, const CameraIntrinsics& intr, const Pose6d& wrist_pose,
+  ReprojectionCost(const Observation2d& obs, const CameraIntrinsics& intr, const Pose6d& wrist_to_base,
                    const Point3d& point_in_target)
-    : obs_(obs), intr_(intr), wrist_pose_(wrist_pose), target_pt_(point_in_target)
-  {
-
-  }
+    : obs_(obs), intr_(intr), wrist_pose_(wrist_to_base), target_pt_(point_in_target)
+  {}
 
   template <typename T>
-  bool operator() (const T* pose_wrist_to_camera, const T* pose_base_to_target, T* residual) const
+  bool operator() (const T* pose_camera_to_wrist, const T* pose_base_to_target, T* residual) const
   {
-    const T* camera_angle_axis = pose_wrist_to_camera + 0;
-    const T* camera_position = pose_wrist_to_camera + 3;
+    const T* camera_angle_axis = pose_camera_to_wrist+ 0;
+    const T* camera_position = pose_camera_to_wrist+ 3;
 
     const T* target_angle_axis = pose_base_to_target + 0;
     const T* target_position = pose_base_to_target + 3;
@@ -135,8 +134,11 @@ public:
     T camera_point[3]; // Point in camera coordinates
 
     // Transform points into camera coordinates
-    transformPoint(target_angle_axis, target_position, target_pt_, world_point);
+    T target_pt[3] = {target_pt_.values[0], target_pt_.values[1], target_pt_.values[2]};
+    transformPoint(target_angle_axis, target_position, target_pt, world_point);
+
     poseTransformPoint(wrist_pose_, world_point, link_point);
+
     transformPoint(camera_angle_axis, camera_position, link_point, camera_point);
 
     T xy_image [2];
@@ -172,5 +174,35 @@ private:
 
 rct_optimizations::ExtrinsicCameraOnWristResult rct_optimizations::optimize(const ExtrinsicCameraOnWristParameters &params)
 {
-  ReprojectionCost cost;
+  Observation2d obs;
+  obs.x() = 400;
+  obs.y() = 400;
+
+  CameraIntrinsics intr;
+  intr.cx() = 640 / 2;
+  intr.cy() = 480 / 2;
+  intr.fx() = 550;
+  intr.fy() = 550;
+
+  Pose6d wrist_pose;
+  wrist_pose.z() = 0;
+  wrist_pose.x() = 10.0;
+  wrist_pose.y() = 0.0;
+
+  wrist_pose.rx() = 0;
+  wrist_pose.ry() = -M_PI/2.;
+  wrist_pose.rz() = 0;
+
+  Point3d in_target;
+  in_target.values[0] = in_target.values[1] = in_target.values[2] = 0.0;
+
+  ReprojectionCost cost(obs, intr, wrist_pose, in_target);
+
+  Pose6d target_guess ({0, 0, 0, 1, 0, 0});
+  Pose6d camera_guess ({0, -M_PI_2, 0, 0, 0, 0});
+
+  double out[2] = {};
+  cost(camera_guess.values.data(), target_guess.values.data(), out);
+
+  return {};
 }

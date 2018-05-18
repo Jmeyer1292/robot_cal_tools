@@ -33,6 +33,9 @@ struct CameraIntrinsics
 
 struct Pose6d
 {
+  Pose6d() = default;
+  Pose6d(std::array<double, 6> l) : values(l) {}
+
   std::array<double, 6> values;
 
   double& rx() { return values[0]; }
@@ -51,7 +54,7 @@ struct Pose6d
 
 struct Point3d
 {
-
+  std::array<double, 3> values;
 };
 
 }
