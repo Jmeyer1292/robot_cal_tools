@@ -6,6 +6,7 @@ add_compile_options(-std=c++11 -Wall -Wextra)
 find_package(catkin REQUIRED COMPONENTS
   rct_image_tools
   rct_optimizations
+  roscpp
 )
 
 # This package only provides examples. It does not export any tools.
@@ -28,6 +29,7 @@ add_dependencies(${PROJECT_NAME}_extrinsic_example ${${PROJECT_NAME}_EXPORTED_TA
 
 target_link_libraries(${PROJECT_NAME}_extrinsic_example
  ${catkin_LIBRARIES}
+ yaml-cpp
 )
 
 #############

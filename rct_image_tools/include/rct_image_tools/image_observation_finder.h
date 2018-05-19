@@ -12,6 +12,24 @@ struct TargetDefinition
 {
   int rows;
   int cols;
+
+  rct_optimizations::Point3d point(int row, int col) const
+  {
+    // TODO
+    rct_optimizations::Point3d p;
+    p.values[0] = (rows - row  - 1)* 0.02;
+    p.values[1] = (cols - col - 1) * 0.02;
+    p.values[2] = 0.0;
+    return p;
+  }
+
+  rct_optimizations::Point3d point(std::size_t i) const
+  {
+    int row = i / cols;
+    int col = i % cols;
+
+    return point(row, col);
+  }
 };
 
 class ImageObservationFinder
