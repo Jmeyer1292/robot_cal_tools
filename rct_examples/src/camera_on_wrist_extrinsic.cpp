@@ -114,31 +114,48 @@ int main(int argc, char** argv)
     calibration_images.push_back(image);
   }
 
+  auto print_pt = [] (const rct_optimizations::Point3d& p) -> std::string {
+    return std::to_string(p.values[0]) + ", " + std::to_string(p.values[1]) + ", " + std::to_string(p.values[2]);
+  };
+
+  auto print_pose6d = [] (const rct_optimizations::Pose6d& p)
+  {
+    ROS_INFO("%f %f %f - %f %f %f", p.x(), p.y(), p.z(), p.rx(), p.ry(), p.rz());
+  };
+
   // Load Wrist Poses
   std::vector<rct_optimizations::Pose6d> link_data;
   link_data.resize(num_images);
   for (std::size_t i = 0; i < num_images; i++)
   {
     loadLinkData(data_path + "mcircles_10x10/extrinsic/tf/" + std::to_string(i) + ".yaml", link_data[i], "base_link_to_tool0");
+    print_pose6d(link_data[i]);
   }
 
   // Process each image into observations
   // Load Target Definition
   rct_image_tools::TargetDefinition target;
   target.cols = target.rows = 10;
+  target.makePoints(10, 10, 0.0254, target.points);
+
 
   rct_image_tools::ImageObservationFinder obs_finder (target);
 
   // Construct problem
   rct_optimizations::CameraIntrinsics intr;
-  intr.fx() = intr.fy() = 510.0;
-  intr.cx() = 520.2;
+  intr.fx() = 510.0;
+  intr.fy() = 510.0;
+  intr.cx() = 320.2;
   intr.cy() = 208.9;
+
+//  link_6_to_camera_.setOrigin(0.0197, 0.0908, 0.112141);
+//  link_6_to_camera_.setAngleAxis(0.0, 0.0, -3.14/2.0);
 
   rct_optimizations::ExtrinsicCameraOnWristParameters problem_def;
   problem_def.intr = intr;
-  problem_def.wrist_to_camera_guess = {};
-  problem_def.base_to_target_guess = {};
+  problem_def.wrist_to_camera_guess = rct_optimizations::Pose6d({0, 0, -M_PI_2, 0.019, 0, 0.15});
+
+  problem_def.base_to_target_guess = rct_optimizations::Pose6d({0, 0, -M_PI_2, 0.75, 0, 0});
 
   for (std::size_t i = 0; i < calibration_images.size(); ++i)
   {
@@ -157,11 +174,12 @@ int main(int argc, char** argv)
     problem_def.wrist_poses.push_back(wrist_pose);
     rct_optimizations::ObservationSet obs_set;
 
+    assert(maybe_obs->size() == target.points.size());
     for (std::size_t j = 0; j < maybe_obs->size(); ++j)
     {
       rct_optimizations::ObservationPair pair;
       pair.in_image = maybe_obs->at(j);
-      pair.in_target = target.point(j);
+      pair.in_target = target.points[j];
 
       obs_set.push_back(pair);
     }
@@ -173,16 +191,13 @@ int main(int argc, char** argv)
   auto opt_result = rct_optimizations::optimize(problem_def);
 
   // Report results
-  std::cout << "Opt_result: " << opt_result.converged << "\n";
-  std::cout << "Opt_result: " << opt_result.cost_per_obs << "\n";
+  std::cout << "Did converge?: " << opt_result.converged << "\n";
+  std::cout << "Initial cost?: " << opt_result.initial_cost_per_obs << "\n";
+  std::cout << "Final cost?: " << opt_result.final_cost_per_obs << "\n";
 
   auto c = opt_result.wrist_to_camera;
   auto t = opt_result.base_to_target;
 
-  auto print_pose6d = [] (const rct_optimizations::Pose6d& p)
-  {
-    ROS_INFO("%f %f %f - %f %f %f", p.x(), p.y(), p.z(), p.rx(), p.ry(), p.rz());
-  };
 
   print_pose6d(c);
   print_pose6d(t);

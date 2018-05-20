@@ -134,6 +134,7 @@ public:
     T link_point[3]; // Point in link coordinates
     T camera_point[3]; // Point in camera coordinates
 
+
     // Transform points into camera coordinates
     T target_pt[3];
     target_pt[0] = T(target_pt_.values[0]);
@@ -144,9 +145,13 @@ public:
     poseTransformPoint(wrist_pose_, world_point, link_point);
 
     transformPoint(camera_angle_axis, camera_position, link_point, camera_point);
+//    std::cout << "world_point" << world_point[0] << " " << world_point[1] << " " << world_point[2] << "\n";
+//    std::cout << "in_camera " << camera_point[0] << " " << camera_point[1] << " " << camera_point[2] << "\n";
 
     T xy_image [2];
     projectPoint(intr_, camera_point, xy_image);
+
+//    std::cout << "xy " << xy_image[0] << " " << xy_image[1] << "\n";
 
     residual[0] = xy_image[0] - obs_.x();
     residual[1] = xy_image[1] - obs_.y();
@@ -215,6 +220,8 @@ Pose6d inverse(const Pose6d& in) { return getInverse(in); }
 
 rct_optimizations::ExtrinsicCameraOnWristResult rct_optimizations::optimize(const ExtrinsicCameraOnWristParameters& params)
 {
+  assert(params.image_observations.size() == params.wrist_poses.size());
+
   Pose6d internal_base_to_target = params.base_to_target_guess;
   Pose6d internal_camera_to_wrist = inverse(params.wrist_to_camera_guess);
 
@@ -250,7 +257,8 @@ rct_optimizations::ExtrinsicCameraOnWristResult rct_optimizations::optimize(cons
   result.converged = summary.termination_type == ceres::CONVERGENCE;
   result.base_to_target = internal_base_to_target;
   result.wrist_to_camera = inverse(internal_camera_to_wrist);
-  result.cost_per_obs = summary.final_cost / summary.num_parameter_blocks;
+  result.initial_cost_per_obs = summary.initial_cost / summary.num_residuals;
+  result.final_cost_per_obs = summary.final_cost / summary.num_residuals;
 
   return result;
 }

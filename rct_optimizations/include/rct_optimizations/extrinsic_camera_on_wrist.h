@@ -28,7 +28,8 @@ struct ExtrinsicCameraOnWristParameters
 struct ExtrinsicCameraOnWristResult
 {
   bool converged;
-  double cost_per_obs;
+  double initial_cost_per_obs;
+  double final_cost_per_obs;
 
   Pose6d base_to_target;
   Pose6d wrist_to_camera;
