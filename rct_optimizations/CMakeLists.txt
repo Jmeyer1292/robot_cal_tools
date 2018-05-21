@@ -36,17 +36,6 @@ target_link_libraries(${PROJECT_NAME}
   ${CERES_LIBRARIES}
 )
 
-add_executable(${PROJECT_NAME}_test src/rct_optimizations_test.cpp)
-
-set_target_properties(${PROJECT_NAME}_test PROPERTIES OUTPUT_NAME test PREFIX "")
-
-add_dependencies(${PROJECT_NAME}_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-target_link_libraries(${PROJECT_NAME}_test
-  ${catkin_LIBRARIES}
-  ${PROJECT_NAME}
-)
-
 #############
 ## Install ##
 #############
