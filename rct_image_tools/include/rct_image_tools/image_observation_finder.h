@@ -4,6 +4,7 @@
 #include <opencv2/core.hpp>
 #include <rct_optimizations/types.h>
 #include <boost/optional.hpp>
+#include <Eigen/Dense>
 
 namespace rct_image_tools
 {
@@ -12,9 +13,9 @@ struct TargetDefinition
 {
   int rows;
   int cols;
-  std::vector<rct_optimizations::Point3d> points;
+  std::vector<Eigen::Vector3d> points;
 
-  bool makePoints(std::size_t rows, std::size_t cols, double spacing, std::vector<rct_optimizations::Point3d> &points)
+  bool makePoints(std::size_t rows, std::size_t cols, double spacing, std::vector<Eigen::Vector3d> &points)
   {
     points.reserve(rows*cols);
 
@@ -24,10 +25,7 @@ struct TargetDefinition
       for (std::size_t j = 0; j < cols; j++)
       {
         double x = j*spacing;
-        rct_optimizations::Point3d point;
-        point.values[0] = x;
-        point.values[1] = y;
-        point.values[2] = 0.0;
+        Eigen::Vector3d point(x, y, 0.0);
         points.push_back(point);
       }
     }
@@ -43,7 +41,7 @@ class ImageObservationFinder
 public:
   ImageObservationFinder(const TargetDefinition& definition);
 
-  boost::optional<std::vector<rct_optimizations::Observation2d>> findObservations(const cv::Mat& image, cv::Mat& out) const;
+  boost::optional<std::vector<Eigen::Vector2d>> findObservations(const cv::Mat& image, cv::Mat& out) const;
 
 private:
   TargetDefinition target_;

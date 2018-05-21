@@ -116,9 +116,9 @@ public:
    * @param wrist_pose
    * @param point_in_target
    */
-  ReprojectionCost(const Observation2d& obs, const CameraIntrinsics& intr, const Pose6d& wrist_to_base,
-                   const Point3d& point_in_target)
-    : obs_(obs), intr_(intr), wrist_pose_(wrist_to_base), target_pt_(point_in_target)
+  ReprojectionCost(const Eigen::Vector2d& obs, const CameraIntrinsics& intr, const Eigen::Affine3d& wrist_to_base,
+                   const Eigen::Vector3d& point_in_target)
+    : obs_(obs), intr_(intr), wrist_pose_(poseEigenToCal(wrist_to_base)), target_pt_(point_in_target)
   {}
 
   template <typename T>
@@ -137,9 +137,9 @@ public:
 
     // Transform points into camera coordinates
     T target_pt[3];
-    target_pt[0] = T(target_pt_.values[0]);
-    target_pt[1] = T(target_pt_.values[1]);
-    target_pt[2] = T(target_pt_.values[2]);
+    target_pt[0] = T(target_pt_(0));
+    target_pt[1] = T(target_pt_(1));
+    target_pt[2] = T(target_pt_(2));
     transformPoint(target_angle_axis, target_position, target_pt, world_point);
 
     poseTransformPoint(wrist_pose_, world_point, link_point);
@@ -160,10 +160,10 @@ public:
   }
 
 private:
-  Observation2d obs_;
+  Eigen::Vector2d obs_;
   CameraIntrinsics intr_;
   Pose6d wrist_pose_;
-  Point3d target_pt_;
+  Eigen::Vector3d target_pt_;
 };
 
 }
@@ -222,8 +222,8 @@ rct_optimizations::ExtrinsicCameraOnWristResult rct_optimizations::optimize(cons
 {
   assert(params.image_observations.size() == params.wrist_poses.size());
 
-  Pose6d internal_base_to_target = params.base_to_target_guess;
-  Pose6d internal_camera_to_wrist = inverse(params.wrist_to_camera_guess);
+  Pose6d internal_base_to_target = poseEigenToCal(params.base_to_target_guess);
+  Pose6d internal_camera_to_wrist = poseEigenToCal(params.wrist_to_camera_guess.inverse());
 
   ceres::Problem problem;
 
@@ -234,7 +234,7 @@ rct_optimizations::ExtrinsicCameraOnWristResult rct_optimizations::optimize(cons
       // Define
       const auto& img_obs = params.image_observations[i][j].in_image;
       const auto& point_in_target = params.image_observations[i][j].in_target;
-      const auto wrist_to_base = inverse(params.wrist_poses[i]);
+      const auto wrist_to_base = params.wrist_poses[i].inverse();
 
       // Allocate Ceres data structures
       auto* cost_fn = new ReprojectionCost(img_obs, params.intr, wrist_to_base, point_in_target);
@@ -255,8 +255,8 @@ rct_optimizations::ExtrinsicCameraOnWristResult rct_optimizations::optimize(cons
 
   ExtrinsicCameraOnWristResult result;
   result.converged = summary.termination_type == ceres::CONVERGENCE;
-  result.base_to_target = internal_base_to_target;
-  result.wrist_to_camera = inverse(internal_camera_to_wrist);
+  result.base_to_target = poseCalToEigen(internal_base_to_target);
+  result.wrist_to_camera = poseCalToEigen(internal_camera_to_wrist).inverse();
   result.initial_cost_per_obs = summary.initial_cost / summary.num_residuals;
   result.final_cost_per_obs = summary.final_cost / summary.num_residuals;
 

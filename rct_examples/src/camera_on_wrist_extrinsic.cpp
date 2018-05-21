@@ -148,14 +148,30 @@ int main(int argc, char** argv)
   intr.cx() = 320.2;
   intr.cy() = 208.9;
 
+
+  rct_optimizations::Pose6d p ({0, 0, -M_PI_2, 0.019, 0, 0.15});
+  print_pose6d(p);
+
+  Eigen::Affine3d d = rct_optimizations::poseCalToEigen(p);
+
+  std::cout << d.matrix() << "\n\n";
+
+  print_pose6d(rct_optimizations::poseEigenToCal(d));
+
+//  return 2;
 //  link_6_to_camera_.setOrigin(0.0197, 0.0908, 0.112141);
 //  link_6_to_camera_.setAngleAxis(0.0, 0.0, -3.14/2.0);
 
+  // Define camera pose guess
+//  Eigen::Affine3d tool0_to_camera_guess = Eigen::Affine3d::Identity();
+//  tool0_to_camera_guess.translate(Eigen::Vector3d(0, 0, 0.1));
+//  tool0_to_camera_guess.rotate(Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()));
+
   rct_optimizations::ExtrinsicCameraOnWristProblem problem_def;
   problem_def.intr = intr;
-  problem_def.wrist_to_camera_guess = rct_optimizations::Pose6d({0, 0, -M_PI_2, 0.019, 0, 0.15});
+  problem_def.wrist_to_camera_guess = rct_optimizations::poseCalToEigen(rct_optimizations::Pose6d({0, 0, -M_PI_2, 0.019, 0, 0.15}));
 
-  problem_def.base_to_target_guess = rct_optimizations::Pose6d({0, 0, -M_PI_2, 0.75, 0, 0});
+  problem_def.base_to_target_guess =  rct_optimizations::poseCalToEigen(rct_optimizations::Pose6d({0, 0, -M_PI_2, 0.75, 0, 0}));
 
   for (std::size_t i = 0; i < calibration_images.size(); ++i)
   {
@@ -169,9 +185,9 @@ int main(int argc, char** argv)
     }
 
     // We got observations, let's process
-    rct_optimizations::Pose6d wrist_pose = link_data[i];
+    const rct_optimizations::Pose6d& wrist_pose = link_data[i];
+    problem_def.wrist_poses.push_back(rct_optimizations::poseCalToEigen(wrist_pose));
 
-    problem_def.wrist_poses.push_back(wrist_pose);
     rct_optimizations::ObservationSet obs_set;
 
     assert(maybe_obs->size() == target.points.size());
@@ -199,8 +215,10 @@ int main(int argc, char** argv)
   auto t = opt_result.base_to_target;
 
 
-  print_pose6d(c);
-  print_pose6d(t);
+  std::cout << c.matrix() << "\n";
+  std::cout << t.matrix() << "\n";
+  print_pose6d(rct_optimizations::poseEigenToCal(c));
+  print_pose6d(rct_optimizations::poseEigenToCal(t));
 
   return 0;
 }

@@ -334,8 +334,7 @@ rct_image_tools::ImageObservationFinder::ImageObservationFinder(const TargetDefi
   assert(definition.rows != 0);
 }
 
-boost::optional<std::vector<rct_optimizations::Observation2d>>
-rct_image_tools::ImageObservationFinder::findObservations(const cv::Mat& image, cv::Mat& out) const
+boost::optional<std::vector<Eigen::Vector2d>> rct_image_tools::ImageObservationFinder::findObservations(const cv::Mat& image, cv::Mat& out) const
 {
   // Call modified circle finder
   ObservationPoints points;
@@ -346,13 +345,10 @@ rct_image_tools::ImageObservationFinder::findObservations(const cv::Mat& image, 
   }
 
   // Otherwise, package the observation results
-  std::vector<rct_optimizations::Observation2d> observations (points.size());
+  std::vector<Eigen::Vector2d> observations (points.size());
   std::transform(points.begin(), points.end(), observations.begin(), [] (const cv::Point2d& p) {
-    rct_optimizations::Observation2d o;
-    o.x() = p.x;
-    o.y() = p.y;
-    return o;
+    return Eigen::Vector2d(p.x, p.y);
   });
 
-  return boost::optional<std::vector<rct_optimizations::Observation2d>>(observations);
+  return boost::optional<std::vector<Eigen::Vector2d>>(observations);
 }

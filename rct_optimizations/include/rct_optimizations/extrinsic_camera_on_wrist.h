@@ -10,8 +10,8 @@ namespace rct_optimizations
 
 struct ObservationPair
 {
-  Point3d in_target;
-  Observation2d in_image;
+  Eigen::Vector3d in_target;
+  Eigen::Vector2d in_image;
 };
 
 using ObservationSet = std::vector<ObservationPair>;
@@ -19,11 +19,11 @@ using ObservationSet = std::vector<ObservationPair>;
 struct ExtrinsicCameraOnWristProblem
 {
   CameraIntrinsics intr;
-  std::vector<Pose6d> wrist_poses;
+  std::vector<Eigen::Affine3d> wrist_poses;
   std::vector<ObservationSet> image_observations;
 
-  Pose6d base_to_target_guess;
-  Pose6d wrist_to_camera_guess;
+  Eigen::Affine3d base_to_target_guess;
+  Eigen::Affine3d wrist_to_camera_guess;
 };
 
 struct ExtrinsicCameraOnWristResult
@@ -32,12 +32,43 @@ struct ExtrinsicCameraOnWristResult
   double initial_cost_per_obs;
   double final_cost_per_obs;
 
-  Pose6d base_to_target;
-  Pose6d wrist_to_camera;
+  Eigen::Affine3d base_to_target;
+  Eigen::Affine3d wrist_to_camera;
 };
 
 ExtrinsicCameraOnWristResult optimize(const ExtrinsicCameraOnWristProblem& params);
 
+inline Pose6d poseEigenToCal(const Eigen::Affine3d& pose)
+{
+  Pose6d p;
+  p.x() = pose.translation().x();
+  p.y() = pose.translation().y();
+  p.z() = pose.translation().z();
+
+  Eigen::AngleAxisd aa (pose.linear());
+  Eigen::Vector3d a = aa.axis() * aa.angle();
+
+  p.rx() = a.x();
+  p.ry() = a.y();
+  p.rz() = a.z();
+  return p;
+}
+
+inline Eigen::Affine3d poseCalToEigen(const Pose6d& pose)
+{
+  Eigen::Affine3d p = Eigen::Affine3d::Identity();
+  p.translation().x() = pose.x();
+  p.translation().y() = pose.y();
+  p.translation().z() = pose.z();
+
+  Eigen::Vector3d rr (pose.rx(), pose.ry(), pose.rz());
+  double angle = rr.norm();
+
+  Eigen::AngleAxisd aa(angle, rr.normalized());
+  p.linear() = aa.toRotationMatrix();
+
+  return p;
+}
 }
 
 #endif
