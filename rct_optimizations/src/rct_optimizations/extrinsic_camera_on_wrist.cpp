@@ -10,16 +10,10 @@ using namespace rct_optimizations;
 namespace
 {
 
-template<typename T> inline void transformPoint3D(const T angle_axis[3],
-  const T tx[3], const std::vector<double> &point, T t_point[3])
+template<typename T>
+inline void transformPoint(const T angle_axis[3], const T tx[3], const T point[3], T t_point[3])
 {
-  T point_[3];
-
-  point_[0] = T(point[0]);
-  point_[1] = T(point[1]);
-  point_[2] = T(point[2]);
-
-  ceres::AngleAxisRotatePoint(angle_axis, point_, t_point);
+  ceres::AngleAxisRotatePoint(angle_axis, point, t_point);
 
   t_point[0] = t_point[0] + tx[0];
   t_point[1] = t_point[1] + tx[1];
@@ -35,47 +29,12 @@ inline void poseTransformPoint(const Pose6d &pose, const T point[3], T t_point[3
   angle_axis[1]  = T(pose.ry());
   angle_axis[2]  = T(pose.rz());
 
-  ceres::AngleAxisRotatePoint(angle_axis, point, t_point);
+  T translation[3];
+  translation[0] = T(pose.x());
+  translation[1] = T(pose.y());
+  translation[2] = T(pose.z());
 
-  t_point[0] = t_point[0] + T(pose.x());
-  t_point[1] = t_point[1] + T(pose.y());
-  t_point[2] = t_point[2] + T(pose.z());
-}
-
-template<typename T>
-inline void transformPoint(const T angle_axis[3], const T tx[3], const T point[3], T t_point[3])
-{
-  ceres::AngleAxisRotatePoint(angle_axis, point, t_point);
-
-  t_point[0] = t_point[0] + tx[0];
-  t_point[1] = t_point[1] + tx[1];
-  t_point[2] = t_point[2] + tx[2];
-}
-
-template<typename T>
-inline void cameraPointResidual(T point[3], T &fx, T &fy, T &cx, T &cy, T &ox, T &oy, T residual[2])
-{
-  T xp1 = point[0];
-  T yp1 = point[1];
-  T zp1 = point[2];
-
-  // Scale into the image plane by distance away from camera
-  T xp, yp;
-
-  if (zp1 == T(0)) // Avoid divide by zero
-  {
-    xp = xp1;
-    yp = yp1;
-  }
-  else
-  {
-    xp = xp1 / zp1;
-    yp = yp1 / zp1;
-  }
-
-  // Perform projection using focal length and camera optical center into image plane
-  residual[0] = fx * xp + cx - ox;
-  residual[1] = fy * yp + cy - oy;
+  transformPoint(angle_axis, translation, point, t_point);
 }
 
 template <typename T>
@@ -141,17 +100,11 @@ public:
     target_pt[1] = T(target_pt_(1));
     target_pt[2] = T(target_pt_(2));
     transformPoint(target_angle_axis, target_position, target_pt, world_point);
-
     poseTransformPoint(wrist_pose_, world_point, link_point);
-
     transformPoint(camera_angle_axis, camera_position, link_point, camera_point);
-//    std::cout << "world_point" << world_point[0] << " " << world_point[1] << " " << world_point[2] << "\n";
-//    std::cout << "in_camera " << camera_point[0] << " " << camera_point[1] << " " << camera_point[2] << "\n";
 
     T xy_image [2];
     projectPoint(intr_, camera_point, xy_image);
-
-//    std::cout << "xy " << xy_image[0] << " " << xy_image[1] << "\n";
 
     residual[0] = xy_image[0] - obs_.x();
     residual[1] = xy_image[1] - obs_.y();
@@ -167,56 +120,6 @@ private:
 };
 
 }
-
-Eigen::Matrix3d getBasis(const Pose6d& p)
-{
-  Eigen::Matrix3d R;
-  double angle = sqrt(p.rx() * p.rx() + p.ry()*p.ry() + p.rz()*p.rz());
-
-  if (angle < .0001)
-  {
-    R(0,0) = 1.0;  R(0,1) = 0.0;  R(0,2) = 0.0;
-    R(1,0) = 0.0;  R(1,1) = 1.0;  R(1,2) = 0.0;
-    R(2,0) = 0.0;  R(2,1) = 0.0;  R(2,2) = 1.0;
-
-    return R;
-  }
-
-  double cos_theta = cos(angle);
-  double sin_theta = sin(angle);
-
-  double wx = p.rx()/angle;
-  double wy = p.ry()/angle;
-  double wz = p.rz()/angle;
-  double omct = 1.0 - cos_theta;
-
-  R(0,0) = cos_theta + wx*wx*omct;
-  R(0,1) = wx*wy*omct - wz*sin_theta;
-  R(0,2) = wx*wz*omct + wy*sin_theta;
-  R(1,0) = wy*wx*omct + wz*sin_theta;
-  R(1,1) = cos_theta + wy*wy*omct;
-  R(1,2) = wy*wz*omct - wx*sin_theta;
-  R(2,0) = wz*wx*omct - wy*sin_theta;
-  R(2,1) = wz*wy*omct + wx*sin_theta;
-  R(2,2) = cos_theta + wz*wz*omct;
-
-  return R;
-}
-
-Pose6d getInverse(const Pose6d& in)
-{
-  double newx,newy,newz;
-  Eigen::Matrix3d R = getBasis(in);
-  newx = -(R(0,0) * in.x() + R(1,0) * in.y() + R(2,0) * in.z());
-  newy = -(R(0,1) * in.x() + R(1,1) * in.y() + R(2,1) * in.z());
-  newz = -(R(0,2) * in.x() + R(1,2) * in.y() + R(2,2) * in.z());
-
-  Pose6d new_pose ({-in.rx(), -in.ry(), -in.rz(), newx, newy, newz});
-
-  return new_pose;
-}
-
-Pose6d inverse(const Pose6d& in) { return getInverse(in); }
 
 rct_optimizations::ExtrinsicCameraOnWristResult rct_optimizations::optimize(const ExtrinsicCameraOnWristProblem &params)
 {
@@ -262,18 +165,3 @@ rct_optimizations::ExtrinsicCameraOnWristResult rct_optimizations::optimize(cons
 
   return result;
 }
-
-//    Pose6<T> target_pose (pose_base_to_target);
-//    Point3<T> world_point = target_pose * point_in_target.cast<T>();
-
-//    Point3<T> link_point = wrist_pose_.cast<T>() * world_point;
-
-//    Pose6<T> camera_pose (pose_wrist_to_camera);
-//    Point3<T> camera_point = camera_pose * link_point;
-
-//    Point2<T> image_space = intr_.project(camera_point);
-
-//    residual[0] = image_space.x - obs_.x();
-//    residual[1] = image_space.y - obs_.y();
-
-
