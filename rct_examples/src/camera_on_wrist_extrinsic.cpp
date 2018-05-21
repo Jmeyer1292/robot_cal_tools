@@ -153,6 +153,10 @@ int main(int argc, char** argv)
       continue;
     }
 
+    // Show drawing
+    cv::imshow("points", obs_finder.drawObservations(calibration_images[i], *maybe_obs));
+    cv::waitKey();
+
     // We got observations, let's process
     const rct_optimizations::Pose6d& wrist_pose = link_data[i];
     problem_def.wrist_poses.push_back(rct_optimizations::poseCalToEigen(wrist_pose));

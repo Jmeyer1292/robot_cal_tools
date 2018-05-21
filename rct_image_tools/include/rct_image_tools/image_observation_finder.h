@@ -16,6 +16,8 @@ public:
 
   boost::optional<std::vector<Eigen::Vector2d>> findObservations(const cv::Mat& image) const;
 
+  cv::Mat drawObservations(const cv::Mat& image, const std::vector<Eigen::Vector2d>& observations) const;
+
 private:
   ModifiedCircleGridTarget target_;
 };

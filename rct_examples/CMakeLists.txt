@@ -9,6 +9,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
 )
 
+find_package(OpenCV REQUIRED)
+
 # This package only provides examples. It does not export any tools.
 catkin_package(
 )
@@ -30,6 +32,7 @@ add_dependencies(${PROJECT_NAME}_extrinsic_example ${${PROJECT_NAME}_EXPORTED_TA
 target_link_libraries(${PROJECT_NAME}_extrinsic_example
  ${catkin_LIBRARIES}
  yaml-cpp
+ ${OpenCV_LIBRARIES}
 )
 
 #############

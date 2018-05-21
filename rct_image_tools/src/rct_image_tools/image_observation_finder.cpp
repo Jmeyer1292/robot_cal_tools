@@ -26,8 +26,8 @@ static void drawPointLabel(const std::string &label, const cv::Point2d &position
   cv::circle(image, position, RADIUS, color, -1);
 }
 
-static cv::Mat drawObservations(const cv::Mat& input, const ObservationPoints& observation_points,
-                                const rct_image_tools::ModifiedCircleGridTarget& target)
+static cv::Mat renderObservations(const cv::Mat& input, const ObservationPoints& observation_points,
+                                 const rct_image_tools::ModifiedCircleGridTarget& target)
 {
   cv::Mat output_image;
   input.copyTo(output_image);
@@ -362,4 +362,13 @@ boost::optional<std::vector<Eigen::Vector2d>> rct_image_tools::ImageObservationF
   });
 
   return boost::optional<std::vector<Eigen::Vector2d>>(observations);
+}
+
+cv::Mat rct_image_tools::ImageObservationFinder::drawObservations(const cv::Mat& image, const std::vector<Eigen::Vector2d>& observations) const
+{
+  ObservationPoints cv_obs (observations.size());
+  std::transform(observations.begin(), observations.end(), cv_obs.begin(), [] (const Eigen::Vector2d& o) {
+    return cv::Point2d(o.x(), o.y());
+  });
+  return renderObservations(image, cv_obs, target_);
 }
