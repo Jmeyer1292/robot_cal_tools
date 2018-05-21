@@ -146,10 +146,8 @@ int main(int argc, char** argv)
 
   for (std::size_t i = 0; i < calibration_images.size(); ++i)
   {
-    // For each image
-    cv::Mat out = calibration_images[i];
     // Extract observations
-    auto maybe_obs = obs_finder.findObservations(calibration_images[i], out);
+    auto maybe_obs = obs_finder.findObservations(calibration_images[i]);
     if (!maybe_obs)
     {
       continue;

@@ -334,10 +334,14 @@ rct_image_tools::ImageObservationFinder::ImageObservationFinder(const ModifiedCi
   assert(target.rows != 0);
 }
 
-boost::optional<std::vector<Eigen::Vector2d>> rct_image_tools::ImageObservationFinder::findObservations(const cv::Mat& image, cv::Mat& out) const
+boost::optional<std::vector<Eigen::Vector2d>> rct_image_tools::ImageObservationFinder::findObservations(const cv::Mat& image) const
 {
   // Call modified circle finder
   ObservationPoints points;
+
+  cv::Mat out; // TODO Suppress
+  image.copyTo(out);
+
   if (!extractModifiedCircleGrid<CircleDetector::Params, CircleDetector, CircleDetector>(image, target_, points, out))
   {
     // If we fail to detect the grid, then return an empty optional

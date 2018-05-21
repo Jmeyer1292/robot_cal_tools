@@ -14,7 +14,7 @@ class ImageObservationFinder
 public:
   ImageObservationFinder(const ModifiedCircleGridTarget& target);
 
-  boost::optional<std::vector<Eigen::Vector2d>> findObservations(const cv::Mat& image, cv::Mat& out) const;
+  boost::optional<std::vector<Eigen::Vector2d>> findObservations(const cv::Mat& image) const;
 
 private:
   ModifiedCircleGridTarget target_;
