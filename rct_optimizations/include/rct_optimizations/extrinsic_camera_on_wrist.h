@@ -2,8 +2,8 @@
 #define EXTRINSIC_CAMERA_ON_WRIST_H
 
 #include "rct_optimizations/types.h"
-#include <vector>
 #include <Eigen/Dense>
+#include <vector>
 
 namespace rct_optimizations
 {
@@ -45,7 +45,7 @@ inline Pose6d poseEigenToCal(const Eigen::Affine3d& pose)
   p.y() = pose.translation().y();
   p.z() = pose.translation().z();
 
-  Eigen::AngleAxisd aa (pose.linear());
+  Eigen::AngleAxisd aa(pose.linear());
   Eigen::Vector3d a = aa.axis() * aa.angle();
 
   p.rx() = a.x();
@@ -61,7 +61,7 @@ inline Eigen::Affine3d poseCalToEigen(const Pose6d& pose)
   p.translation().y() = pose.y();
   p.translation().z() = pose.z();
 
-  Eigen::Vector3d rr (pose.rx(), pose.ry(), pose.rz());
+  Eigen::Vector3d rr(pose.rx(), pose.ry(), pose.rz());
   double angle = rr.norm();
 
   Eigen::AngleAxisd aa(angle, rr.normalized());

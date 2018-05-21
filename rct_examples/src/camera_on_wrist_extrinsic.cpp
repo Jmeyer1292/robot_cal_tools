@@ -1,6 +1,6 @@
-#include <ros/ros.h>
 #include <rct_image_tools/image_observation_finder.h>
 #include <rct_optimizations/extrinsic_camera_on_wrist.h>
+#include <ros/ros.h>
 
 #include <yaml-cpp/yaml.h>
 
@@ -22,9 +22,7 @@ struct LinkData
   RotationDeg rotation_deg;
 };
 
-
-bool parseYAML(const YAML::Node &node, const std::string &var_name,
-  std::vector<double> &var_value)
+bool parseYAML(const YAML::Node& node, const std::string& var_name, std::vector<double>& var_value)
 {
 
   var_value.clear();
@@ -37,13 +35,15 @@ bool parseYAML(const YAML::Node &node, const std::string &var_name,
       double value = n[i].as<double>();
       var_value.push_back(value);
     }
-    if (var_value.size() == n.size()) {return true;}
+    if (var_value.size() == n.size())
+    {
+      return true;
+    }
   }
   return false;
 }
 
-bool loadLinkData(const std::string &file_path, LinkData *link_data,
-  const std::string &node)
+bool loadLinkData(const std::string& file_path, LinkData* link_data, const std::string& node)
 {
   bool success = true;
 
@@ -52,17 +52,22 @@ bool loadLinkData(const std::string &file_path, LinkData *link_data,
   {
     data_yaml = YAML::LoadFile(file_path);
     // if (!data_yaml["base_link_to_tool0"]) {return false;}
-    if (!data_yaml[node]) {return false;}
+    if (!data_yaml[node])
+    {
+      return false;
+    }
   }
-  catch (YAML::BadFile &bf) {return false;}
+  catch (YAML::BadFile& bf)
+  {
+    return false;
+  }
 
   success &= parseYAML(data_yaml[node], "Translation", link_data->translation);
   success &= parseYAML(data_yaml[node], "Quaternion", link_data->rotation_quat);
   return success;
 }
 
-bool loadLinkData(const std::string &file_path,
-  rct_optimizations::Pose6d &pose, const std::string &node)
+bool loadLinkData(const std::string& file_path, rct_optimizations::Pose6d& pose, const std::string& node)
 {
   LinkData link_data;
   bool success = loadLinkData(file_path, &link_data, node);
@@ -77,9 +82,9 @@ bool loadLinkData(const std::string &file_path,
   qw = link_data.rotation_quat[3];
 
   double angle = 2.0 * acos(qw);
-  double ax = qx / sqrt(1-qw*qw)*angle;
-  double ay = qy / sqrt(1-qw*qw)*angle;
-  double az = qz / sqrt(1-qw*qw)*angle;
+  double ax = qx / sqrt(1 - qw * qw) * angle;
+  double ay = qy / sqrt(1 - qw * qw) * angle;
+  double az = qz / sqrt(1 - qw * qw) * angle;
 
   pose = rct_optimizations::Pose6d({ax, ay, az, tx, ty, tz});
 
@@ -89,8 +94,7 @@ bool loadLinkData(const std::string &file_path,
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "camera_on_wrist_extrinsic");
-  ros::NodeHandle pnh ("~");
-
+  ros::NodeHandle pnh("~");
 
   // Load Image Set
   std::string data_path;
@@ -112,8 +116,7 @@ int main(int argc, char** argv)
     calibration_images.push_back(image);
   }
 
-  auto print_pose6d = [] (const rct_optimizations::Pose6d& p)
-  {
+  auto print_pose6d = [](const rct_optimizations::Pose6d& p) {
     ROS_INFO("%f %f %f - %f %f %f", p.x(), p.y(), p.z(), p.rx(), p.ry(), p.rz());
   };
 
@@ -122,14 +125,15 @@ int main(int argc, char** argv)
   link_data.resize(num_images);
   for (std::size_t i = 0; i < num_images; i++)
   {
-    loadLinkData(data_path + "mcircles_10x10/extrinsic/tf/" + std::to_string(i) + ".yaml", link_data[i], "base_link_to_tool0");
+    loadLinkData(data_path + "mcircles_10x10/extrinsic/tf/" + std::to_string(i) + ".yaml", link_data[i],
+                 "base_link_to_tool0");
   }
 
   // Process each image into observations
   // Load Target Definition
-  rct_image_tools::ModifiedCircleGridTarget target (10, 10, 0.0254);
+  rct_image_tools::ModifiedCircleGridTarget target(10, 10, 0.0254);
 
-  rct_image_tools::ImageObservationFinder obs_finder (target);
+  rct_image_tools::ImageObservationFinder obs_finder(target);
 
   // Construct problem
   rct_optimizations::CameraIntrinsics intr;
@@ -140,9 +144,11 @@ int main(int argc, char** argv)
 
   rct_optimizations::ExtrinsicCameraOnWristProblem problem_def;
   problem_def.intr = intr;
-  problem_def.wrist_to_camera_guess = rct_optimizations::poseCalToEigen(rct_optimizations::Pose6d({0, 0, -M_PI_2, 0.019, 0, 0.15}));
+  problem_def.wrist_to_camera_guess =
+      rct_optimizations::poseCalToEigen(rct_optimizations::Pose6d({0, 0, -M_PI_2, 0.019, 0, 0.15}));
 
-  problem_def.base_to_target_guess =  rct_optimizations::poseCalToEigen(rct_optimizations::Pose6d({0, 0, -M_PI_2, 0.75, 0, 0}));
+  problem_def.base_to_target_guess =
+      rct_optimizations::poseCalToEigen(rct_optimizations::Pose6d({0, 0, -M_PI_2, 0.75, 0, 0}));
 
   for (std::size_t i = 0; i < calibration_images.size(); ++i)
   {

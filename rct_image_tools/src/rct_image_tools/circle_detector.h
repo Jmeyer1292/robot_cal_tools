@@ -38,8 +38,7 @@ public:
     float minConvexity, maxConvexity;
   };
 
-  static cv::Ptr<CircleDetector> create(const CircleDetector::Params &parameters = CircleDetector::Params());
+  static cv::Ptr<CircleDetector> create(const CircleDetector::Params& parameters = CircleDetector::Params());
 };
-
 }
 #endif // RCT_IMAGE_TOOLS_CIRCLE_DETECTOR_H

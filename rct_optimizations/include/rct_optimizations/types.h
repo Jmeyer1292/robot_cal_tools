@@ -36,12 +36,11 @@ struct Pose6d
   double& z() { return values[5]; }
   const double& rx() const { return values[0]; }
   const double& ry() const { return values[1]; }
-  const double& rz()const  { return values[2]; }
+  const double& rz() const { return values[2]; }
   const double& x() const { return values[3]; }
   const double& y() const { return values[4]; }
   const double& z() const { return values[5]; }
 };
-
 }
 
 #endif

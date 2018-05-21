@@ -1,10 +1,10 @@
 #ifndef IMAGE_OBSERVATION_FINDER_H
 #define IMAGE_OBSERVATION_FINDER_H
 
+#include "rct_image_tools/modified_circle_grid_target.h"
+#include <boost/optional.hpp>
 #include <opencv2/core.hpp>
 #include <rct_optimizations/types.h>
-#include <boost/optional.hpp>
-#include "rct_image_tools/modified_circle_grid_target.h"
 
 namespace rct_image_tools
 {
@@ -21,7 +21,6 @@ public:
 private:
   ModifiedCircleGridTarget target_;
 };
-
 }
 
 #endif // IMAGE_OBSERVATION_FINDER_H

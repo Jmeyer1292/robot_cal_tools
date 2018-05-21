@@ -6,11 +6,12 @@ int main(int argc, char** argv)
 {
   if (argc != 2)
   {
-    std::cout << "Usage: rosrun rct_image_tools rct_image_tools_test <PATH_TO_IMAGE_FILE>\n";
+    std::cout << "Usage: rosrun rct_image_tools rct_image_tools_test "
+                 "<PATH_TO_IMAGE_FILE>\n";
     return 1;
   }
 
-  std::string path (argv[1]);
+  std::string path(argv[1]);
 
   cv::Mat m = cv::imread(path);
 
@@ -18,7 +19,7 @@ int main(int argc, char** argv)
   target.rows = 9;
   target.cols = 12;
 
-  rct_image_tools::ImageObservationFinder obs_finder (target);
+  rct_image_tools::ImageObservationFinder obs_finder(target);
 
   auto maybe_obs = obs_finder.findObservations(m);
 
@@ -32,8 +33,8 @@ int main(int argc, char** argv)
   }
 
   // TODO Replace the drawing API
-//  cv::imshow("out", out);
-//  cv::moveWindow("out", 400, 400);
-//  cv::waitKey();
+  //  cv::imshow("out", out);
+  //  cv::moveWindow("out", 400, 400);
+  //  cv::waitKey();
   return 0;
 }

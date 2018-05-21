@@ -18,9 +18,8 @@ struct ModifiedCircleGridTarget
   std::vector<Eigen::Vector3d> points;
 
 private:
-  bool makePoints(std::size_t rows, std::size_t cols, double spacing, std::vector<Eigen::Vector3d> &points);
+  bool makePoints(std::size_t rows, std::size_t cols, double spacing, std::vector<Eigen::Vector3d>& points);
 };
-
 }
 
 #endif // RCT_MODIFIED_CIRCLE_GRID_TARGET_H
