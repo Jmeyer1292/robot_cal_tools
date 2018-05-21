@@ -83,8 +83,8 @@ public:
   template <typename T>
   bool operator() (const T* pose_camera_to_wrist, const T* pose_base_to_target, T* residual) const
   {
-    const T* camera_angle_axis = pose_camera_to_wrist+ 0;
-    const T* camera_position = pose_camera_to_wrist+ 3;
+    const T* camera_angle_axis = pose_camera_to_wrist + 0;
+    const T* camera_position = pose_camera_to_wrist + 3;
 
     const T* target_angle_axis = pose_base_to_target + 0;
     const T* target_position = pose_base_to_target + 3;
@@ -92,7 +92,6 @@ public:
     T world_point[3]; // Point in world coordinates
     T link_point[3]; // Point in link coordinates
     T camera_point[3]; // Point in camera coordinates
-
 
     // Transform points into camera coordinates
     T target_pt[3];
@@ -139,7 +138,7 @@ rct_optimizations::ExtrinsicCameraOnWristResult rct_optimizations::optimize(cons
       const auto& point_in_target = params.image_observations[i][j].in_target;
       const auto wrist_to_base = params.wrist_poses[i].inverse();
 
-      // Allocate Ceres data structures
+      // Allocate Ceres data structures - ownership is taken by the ceres Problem data structure
       auto* cost_fn = new ReprojectionCost(img_obs, params.intr, wrist_to_base, point_in_target);
 
       auto* cost_block = new ceres::AutoDiffCostFunction<ReprojectionCost, 2, 6, 6>(cost_fn);
@@ -153,8 +152,6 @@ rct_optimizations::ExtrinsicCameraOnWristResult rct_optimizations::optimize(cons
   ceres::Solver::Summary summary;
 
   ceres::Solve(options, &problem, &summary);
-
-  std::cout << summary.BriefReport() << "\n";
 
   ExtrinsicCameraOnWristResult result;
   result.converged = summary.termination_type == ceres::CONVERGENCE;

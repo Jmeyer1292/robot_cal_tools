@@ -114,10 +114,6 @@ int main(int argc, char** argv)
     calibration_images.push_back(image);
   }
 
-  auto print_pt = [] (const rct_optimizations::Point3d& p) -> std::string {
-    return std::to_string(p.values[0]) + ", " + std::to_string(p.values[1]) + ", " + std::to_string(p.values[2]);
-  };
-
   auto print_pose6d = [] (const rct_optimizations::Pose6d& p)
   {
     ROS_INFO("%f %f %f - %f %f %f", p.x(), p.y(), p.z(), p.rx(), p.ry(), p.rz());
@@ -129,7 +125,6 @@ int main(int argc, char** argv)
   for (std::size_t i = 0; i < num_images; i++)
   {
     loadLinkData(data_path + "mcircles_10x10/extrinsic/tf/" + std::to_string(i) + ".yaml", link_data[i], "base_link_to_tool0");
-    print_pose6d(link_data[i]);
   }
 
   // Process each image into observations
@@ -147,25 +142,6 @@ int main(int argc, char** argv)
   intr.fy() = 510.0;
   intr.cx() = 320.2;
   intr.cy() = 208.9;
-
-
-  rct_optimizations::Pose6d p ({0, 0, -M_PI_2, 0.019, 0, 0.15});
-  print_pose6d(p);
-
-  Eigen::Affine3d d = rct_optimizations::poseCalToEigen(p);
-
-  std::cout << d.matrix() << "\n\n";
-
-  print_pose6d(rct_optimizations::poseEigenToCal(d));
-
-//  return 2;
-//  link_6_to_camera_.setOrigin(0.0197, 0.0908, 0.112141);
-//  link_6_to_camera_.setAngleAxis(0.0, 0.0, -3.14/2.0);
-
-  // Define camera pose guess
-//  Eigen::Affine3d tool0_to_camera_guess = Eigen::Affine3d::Identity();
-//  tool0_to_camera_guess.translate(Eigen::Vector3d(0, 0, 0.1));
-//  tool0_to_camera_guess.rotate(Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()));
 
   rct_optimizations::ExtrinsicCameraOnWristProblem problem_def;
   problem_def.intr = intr;
