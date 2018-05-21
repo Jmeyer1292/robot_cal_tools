@@ -26,6 +26,18 @@ inline void drawPointLabel(const std::string &label, const cv::Point2d &position
   cv::circle(image, position, RADIUS, color, -1);
 }
 
+//    cv::Mat center_image = cv::Mat(observation_points);
+//    cv::Mat center_converted;
+//    center_image.convertTo(center_converted, CV_32F);
+//    cv::drawChessboardCorners(output_image, pattern_size, center_converted, true);
+
+//    // Draw point labels // TODO
+//    drawPointLabel("First Point", observation_points[0], CvScalar(0, 255, 0),
+//      output_image);
+//    drawPointLabel("Origin", observation_points[rows*cols-cols], CvScalar(255, 0, 0),
+//      output_image);
+//    drawPointLabel("Last Point", observation_points[observation_points.size() -1],
+//      CvScalar(0, 0, 255), output_image);
 
 template<typename DETECTOR_PTR>
 static bool extractKeyPoints(const ObservationPoints &centers, ObservationPoints &observation_points,
@@ -303,27 +315,14 @@ static bool extractModifiedCircleGrid(const cv::Mat &image, const rct_image_tool
     }
   }
 
-  if (centers.size() == 0) {return false;}
+  if (centers.size() == 0)
+  {
+    return false;
+  }
+
   observation_points.reserve(centers.size());
 
-  if (extractKeyPoints(centers, observation_points, detector_ptr, rows, cols, flipped, image))
-  {
-    cv::Mat center_image = cv::Mat(observation_points);
-    cv::Mat center_converted;
-    center_image.convertTo(center_converted, CV_32F);
-    cv::drawChessboardCorners(output_image, pattern_size, center_converted, true);
-
-    // Draw point labels // TODO
-    drawPointLabel("First Point", observation_points[0], CvScalar(0, 255, 0),
-      output_image);
-    drawPointLabel("Origin", observation_points[rows*cols-cols], CvScalar(255, 0, 0),
-      output_image);
-    drawPointLabel("Last Point", observation_points[observation_points.size() -1],
-      CvScalar(0, 0, 255), output_image);
-
-    return true;
-  }
-  else {return false;}
+  return extractKeyPoints(centers, observation_points, detector_ptr, rows, cols, flipped, image);
 }
 
 
