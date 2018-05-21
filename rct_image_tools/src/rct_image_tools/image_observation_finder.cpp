@@ -5,7 +5,7 @@
 using ObservationPoints = std::vector<cv::Point2d>;
 
 
-inline void drawPointLabel(const std::string &label, const cv::Point2d &position, const CvScalar &color, cv::Mat &image)
+static void drawPointLabel(const std::string &label, const cv::Point2d &position, const CvScalar &color, cv::Mat &image)
 {
   CvFont font;
   cvInitFont(&font, CV_FONT_HERSHEY_SIMPLEX, 0.5, 0.5);
@@ -26,18 +26,29 @@ inline void drawPointLabel(const std::string &label, const cv::Point2d &position
   cv::circle(image, position, RADIUS, color, -1);
 }
 
-//    cv::Mat center_image = cv::Mat(observation_points);
-//    cv::Mat center_converted;
-//    center_image.convertTo(center_converted, CV_32F);
-//    cv::drawChessboardCorners(output_image, pattern_size, center_converted, true);
+static cv::Mat drawObservations(const cv::Mat& input, const ObservationPoints& observation_points,
+                                const rct_image_tools::ModifiedCircleGridTarget& target)
+{
+  cv::Mat output_image;
+  input.copyTo(output_image);
 
-//    // Draw point labels // TODO
-//    drawPointLabel("First Point", observation_points[0], CvScalar(0, 255, 0),
-//      output_image);
-//    drawPointLabel("Origin", observation_points[rows*cols-cols], CvScalar(255, 0, 0),
-//      output_image);
-//    drawPointLabel("Last Point", observation_points[observation_points.size() -1],
-//      CvScalar(0, 0, 255), output_image);
+  cv::Size pattern_size(target.cols, target.rows);
+
+  cv::Mat center_image = cv::Mat(observation_points);
+  cv::Mat center_converted;
+  center_image.convertTo(center_converted, CV_32F);
+  cv::drawChessboardCorners(output_image, pattern_size, center_converted, true);
+
+  // Draw point labels // TODO
+  drawPointLabel("First Point", observation_points[0], CvScalar(0, 255, 0),
+    output_image);
+  drawPointLabel("Origin", observation_points[target.rows*target.cols-target.cols], CvScalar(255, 0, 0),
+    output_image);
+  drawPointLabel("Last Point", observation_points[observation_points.size() -1],
+    CvScalar(0, 0, 255), output_image);
+
+  return output_image;
+}
 
 template<typename DETECTOR_PTR>
 static bool extractKeyPoints(const ObservationPoints &centers, ObservationPoints &observation_points,
@@ -278,7 +289,7 @@ static bool extractKeyPoints(const ObservationPoints &centers, ObservationPoints
 
 template<typename PARAMS, typename DETECTOR_PTR, typename DETECTOR>
 static bool extractModifiedCircleGrid(const cv::Mat &image, const rct_image_tools::ModifiedCircleGridTarget& target,
-                                      ObservationPoints &observation_points, cv::Mat &output_image)
+                                      ObservationPoints &observation_points)
 {
   PARAMS detector_params;
   detector_params.maxArea = image.cols*image.rows;
@@ -338,10 +349,7 @@ boost::optional<std::vector<Eigen::Vector2d>> rct_image_tools::ImageObservationF
   // Call modified circle finder
   ObservationPoints points;
 
-  cv::Mat out; // TODO Suppress
-  image.copyTo(out);
-
-  if (!extractModifiedCircleGrid<CircleDetector::Params, CircleDetector, CircleDetector>(image, target_, points, out))
+  if (!extractModifiedCircleGrid<CircleDetector::Params, CircleDetector, CircleDetector>(image, target_, points))
   {
     // If we fail to detect the grid, then return an empty optional
     return {};
