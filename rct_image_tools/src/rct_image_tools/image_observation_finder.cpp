@@ -1,5 +1,5 @@
 #include "rct_image_tools/image_observation_finder.h"
-#include "rct_image_tools/circle_detector.h"
+#include "circle_detector.h"
 #include <opencv2/calib3d.hpp>
 
 using ObservationPoints = std::vector<cv::Point2d>;

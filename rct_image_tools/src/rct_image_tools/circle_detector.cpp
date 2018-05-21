@@ -44,7 +44,7 @@ the use of this software, even if advised of the possibility of such damage.
 // Slight Modification of OpenCV function to use ellipse fitting rather than
 // center of mass of contour to provide the location of the circle.
 
-#include <rct_image_tools/circle_detector.h>
+#include "circle_detector.h"
 
 #include <algorithm>
 #include <iterator>
