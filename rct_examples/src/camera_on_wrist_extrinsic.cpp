@@ -151,7 +151,7 @@ int main(int argc, char** argv)
 //  link_6_to_camera_.setOrigin(0.0197, 0.0908, 0.112141);
 //  link_6_to_camera_.setAngleAxis(0.0, 0.0, -3.14/2.0);
 
-  rct_optimizations::ExtrinsicCameraOnWristParameters problem_def;
+  rct_optimizations::ExtrinsicCameraOnWristProblem problem_def;
   problem_def.intr = intr;
   problem_def.wrist_to_camera_guess = rct_optimizations::Pose6d({0, 0, -M_PI_2, 0.019, 0, 0.15});
 

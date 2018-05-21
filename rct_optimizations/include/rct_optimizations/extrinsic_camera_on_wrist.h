@@ -3,6 +3,7 @@
 
 #include "rct_optimizations/types.h"
 #include <vector>
+#include <Eigen/Dense>
 
 namespace rct_optimizations
 {
@@ -15,7 +16,7 @@ struct ObservationPair
 
 using ObservationSet = std::vector<ObservationPair>;
 
-struct ExtrinsicCameraOnWristParameters
+struct ExtrinsicCameraOnWristProblem
 {
   CameraIntrinsics intr;
   std::vector<Pose6d> wrist_poses;
@@ -35,7 +36,7 @@ struct ExtrinsicCameraOnWristResult
   Pose6d wrist_to_camera;
 };
 
-ExtrinsicCameraOnWristResult optimize(const ExtrinsicCameraOnWristParameters& params);
+ExtrinsicCameraOnWristResult optimize(const ExtrinsicCameraOnWristProblem& params);
 
 }
 

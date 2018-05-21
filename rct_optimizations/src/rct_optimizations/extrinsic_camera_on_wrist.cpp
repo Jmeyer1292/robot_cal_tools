@@ -218,7 +218,7 @@ Pose6d getInverse(const Pose6d& in)
 
 Pose6d inverse(const Pose6d& in) { return getInverse(in); }
 
-rct_optimizations::ExtrinsicCameraOnWristResult rct_optimizations::optimize(const ExtrinsicCameraOnWristParameters& params)
+rct_optimizations::ExtrinsicCameraOnWristResult rct_optimizations::optimize(const ExtrinsicCameraOnWristProblem &params)
 {
   assert(params.image_observations.size() == params.wrist_poses.size());
 
