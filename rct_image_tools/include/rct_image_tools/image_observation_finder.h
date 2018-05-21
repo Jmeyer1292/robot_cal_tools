@@ -9,12 +9,23 @@
 namespace rct_image_tools
 {
 
-struct TargetDefinition
+struct ModifiedCircleGridTarget
 {
   int rows;
   int cols;
+  double x_spacing;
+  double y_spacing;
   std::vector<Eigen::Vector3d> points;
 
+  ModifiedCircleGridTarget() = default;
+
+  ModifiedCircleGridTarget(int rows, int cols, double spacing)
+    : rows(rows), cols(cols), x_spacing(spacing), y_spacing(spacing)
+  {
+    makePoints(rows, cols, spacing, points);
+  }
+
+private:
   bool makePoints(std::size_t rows, std::size_t cols, double spacing, std::vector<Eigen::Vector3d> &points)
   {
     points.reserve(rows*cols);
@@ -39,12 +50,12 @@ struct TargetDefinition
 class ImageObservationFinder
 {
 public:
-  ImageObservationFinder(const TargetDefinition& definition);
+  ImageObservationFinder(const ModifiedCircleGridTarget& target);
 
   boost::optional<std::vector<Eigen::Vector2d>> findObservations(const cv::Mat& image, cv::Mat& out) const;
 
 private:
-  TargetDefinition target_;
+  ModifiedCircleGridTarget target_;
 };
 
 }

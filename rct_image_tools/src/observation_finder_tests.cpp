@@ -14,7 +14,7 @@ int main(int argc, char** argv)
 
   cv::Mat m = cv::imread(path);
 
-  rct_image_tools::TargetDefinition target;
+  rct_image_tools::ModifiedCircleGridTarget target;
   target.rows = 9;
   target.cols = 12;
 

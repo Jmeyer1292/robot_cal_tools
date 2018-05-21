@@ -86,8 +86,6 @@ bool loadLinkData(const std::string &file_path,
   return success;
 }
 
-
-
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "camera_on_wrist_extrinsic");
@@ -129,10 +127,7 @@ int main(int argc, char** argv)
 
   // Process each image into observations
   // Load Target Definition
-  rct_image_tools::TargetDefinition target;
-  target.cols = target.rows = 10;
-  target.makePoints(10, 10, 0.0254, target.points);
-
+  rct_image_tools::ModifiedCircleGridTarget target (10, 10, 0.0254);
 
   rct_image_tools::ImageObservationFinder obs_finder (target);
 
@@ -189,7 +184,6 @@ int main(int argc, char** argv)
 
   auto c = opt_result.wrist_to_camera;
   auto t = opt_result.base_to_target;
-
 
   std::cout << c.matrix() << "\n";
   std::cout << t.matrix() << "\n";

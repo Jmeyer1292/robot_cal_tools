@@ -265,7 +265,7 @@ static bool extractKeyPoints(const ObservationPoints &centers, ObservationPoints
 }
 
 template<typename PARAMS, typename DETECTOR_PTR, typename DETECTOR>
-static bool extractModifiedCircleGrid(const cv::Mat &image, const rct_image_tools::TargetDefinition& target,
+static bool extractModifiedCircleGrid(const cv::Mat &image, const rct_image_tools::ModifiedCircleGridTarget& target,
                                       ObservationPoints &observation_points, cv::Mat &output_image)
 {
   PARAMS detector_params;
@@ -327,11 +327,11 @@ static bool extractModifiedCircleGrid(const cv::Mat &image, const rct_image_tool
 }
 
 
-rct_image_tools::ImageObservationFinder::ImageObservationFinder(const TargetDefinition& definition)
-  : target_(definition)
+rct_image_tools::ImageObservationFinder::ImageObservationFinder(const ModifiedCircleGridTarget& target)
+  : target_(target)
 {
-  assert(definition.cols != 0);
-  assert(definition.rows != 0);
+  assert(target.cols != 0);
+  assert(target.rows != 0);
 }
 
 boost::optional<std::vector<Eigen::Vector2d>> rct_image_tools::ImageObservationFinder::findObservations(const cv::Mat& image, cv::Mat& out) const

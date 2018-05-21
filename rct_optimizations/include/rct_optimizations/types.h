@@ -6,17 +6,6 @@
 namespace rct_optimizations
 {
 
-struct Observation2d
-{
-  std::array<double, 2> values;
-  Observation2d() = default;
-
-  double& x() { return values[0]; }
-  double& y() { return values[1]; }
-  const double& x() const { return values[0]; }
-  const double& y() const { return values[1]; }
-};
-
 struct CameraIntrinsics
 {
   std::array<double, 4> values;
@@ -51,11 +40,6 @@ struct Pose6d
   const double& x() const { return values[3]; }
   const double& y() const { return values[4]; }
   const double& z() const { return values[5]; }
-};
-
-struct Point3d
-{
-  std::array<double, 3> values;
 };
 
 }
