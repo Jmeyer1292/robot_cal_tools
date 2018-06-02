@@ -1,4 +1,5 @@
 #include <rct_image_tools/image_observation_finder.h>
+#include <rct_optimizations/eigen_conversions.h>
 #include <rct_optimizations/extrinsic_camera_on_wrist.h>
 #include <ros/ros.h>
 

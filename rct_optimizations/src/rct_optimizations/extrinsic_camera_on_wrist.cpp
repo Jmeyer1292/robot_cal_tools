@@ -1,5 +1,6 @@
 #include "rct_optimizations/extrinsic_camera_on_wrist.h"
 #include "rct_optimizations/ceres_math_utilities.h"
+#include "rct_optimizations/eigen_conversions.h"
 #include "rct_optimizations/types.h"
 
 #include <ceres/ceres.h>
