@@ -1,98 +1,10 @@
 #include <rct_image_tools/image_observation_finder.h>
 #include <rct_optimizations/eigen_conversions.h>
 #include <rct_optimizations/extrinsic_camera_on_wrist.h>
-#include <ros/ros.h>
-
-#include <yaml-cpp/yaml.h>
-
-#include <opencv2/highgui.hpp> // for imread
-
 #include "rct_examples/data_set.h"
 
-// YAML HELPERS FOR LOADING STUFF
-typedef std::vector<double> JointStates;
-typedef std::vector<double> Translation;
-typedef std::vector<double> Quaternion;
-typedef std::vector<double> RotationRad;
-typedef std::vector<double> RotationDeg;
-
-struct LinkData
-{
-  Translation translation;
-  Quaternion rotation_quat;
-  JointStates joint_states;
-  RotationRad rotation_rad;
-  RotationDeg rotation_deg;
-};
-
-bool parseYAML(const YAML::Node& node, const std::string& var_name, std::vector<double>& var_value)
-{
-
-  var_value.clear();
-  if (node[var_name])
-  {
-    const YAML::Node n = node[var_name];
-    var_value.reserve(n.size());
-    for (std::size_t i = 0; i < n.size(); i++)
-    {
-      double value = n[i].as<double>();
-      var_value.push_back(value);
-    }
-    if (var_value.size() == n.size())
-    {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool loadLinkData(const std::string& file_path, LinkData* link_data, const std::string& node)
-{
-  bool success = true;
-
-  YAML::Node data_yaml;
-  try
-  {
-    data_yaml = YAML::LoadFile(file_path);
-    // if (!data_yaml["base_link_to_tool0"]) {return false;}
-    if (!data_yaml[node])
-    {
-      return false;
-    }
-  }
-  catch (YAML::BadFile& bf)
-  {
-    return false;
-  }
-
-  success &= parseYAML(data_yaml[node], "Translation", link_data->translation);
-  success &= parseYAML(data_yaml[node], "Quaternion", link_data->rotation_quat);
-  return success;
-}
-
-bool loadLinkData(const std::string& file_path, rct_optimizations::Pose6d& pose, const std::string& node)
-{
-  LinkData link_data;
-  bool success = loadLinkData(file_path, &link_data, node);
-
-  double tx, ty, tz, qx, qy, qz, qw;
-  tx = link_data.translation[0];
-  ty = link_data.translation[1];
-  tz = link_data.translation[2];
-  qx = link_data.rotation_quat[0];
-  qy = link_data.rotation_quat[1];
-  qz = link_data.rotation_quat[2];
-  qw = link_data.rotation_quat[3];
-
-  double angle = 2.0 * acos(qw);
-  double ax = qx / sqrt(1 - qw * qw) * angle;
-  double ay = qy / sqrt(1 - qw * qw) * angle;
-  double az = qz / sqrt(1 - qw * qw) * angle;
-
-  pose = rct_optimizations::Pose6d({ax, ay, az, tx, ty, tz});
-
-  return success;
-}
+#include <opencv2/highgui.hpp>
+#include <ros/ros.h>
 
 int main(int argc, char** argv)
 {
@@ -108,39 +20,12 @@ int main(int argc, char** argv)
   }
 
   boost::optional<rct_examples::ExtrinsicDataSet> maybe_data_set = rct_examples::parseFromFile(data_path);
-
   if (!maybe_data_set)
   {
     ROS_ERROR_STREAM("Failed to parse data set from path = " << data_path);
     return 2;
   }
-
   auto& data_set = *maybe_data_set;
-
-  const std::size_t num_images = 15;
-  std::vector<cv::Mat> calibration_images;
-  calibration_images.reserve(num_images);
-  std::string cal_image_path = data_path + "mcircles_10x10/extrinsic/images/";
-
-  for (std::size_t i = 0; i < num_images; i++)
-  {
-    std::string image_path = cal_image_path + std::to_string(i) + ".png";
-    cv::Mat image = cv::imread(image_path, CV_LOAD_IMAGE_COLOR);
-    calibration_images.push_back(image);
-  }
-
-  auto print_pose6d = [](const rct_optimizations::Pose6d& p) {
-    ROS_INFO("%f %f %f - %f %f %f", p.x(), p.y(), p.z(), p.rx(), p.ry(), p.rz());
-  };
-
-  // Load Wrist Poses
-  std::vector<rct_optimizations::Pose6d> link_data;
-  link_data.resize(num_images);
-  for (std::size_t i = 0; i < num_images; i++)
-  {
-    loadLinkData(data_path + "mcircles_10x10/extrinsic/tf/" + std::to_string(i) + ".yaml", link_data[i],
-                 "base_link_to_tool0");
-  }
 
   // Process each image into observations
   // Load Target Definition
@@ -177,7 +62,6 @@ int main(int argc, char** argv)
     cv::waitKey();
 
     // We got observations, let's process
-    const rct_optimizations::Pose6d& wrist_pose = link_data[i];
     problem_def.wrist_poses.push_back(data_set.tool_poses[i]); //rct_optimizations::poseCalToEigen(wrist_pose));
 
     rct_optimizations::ObservationSet obs_set;
@@ -208,8 +92,6 @@ int main(int argc, char** argv)
 
   std::cout << c.matrix() << "\n";
   std::cout << t.matrix() << "\n";
-  print_pose6d(rct_optimizations::poseEigenToCal(c));
-  print_pose6d(rct_optimizations::poseEigenToCal(t));
 
   return 0;
 }
