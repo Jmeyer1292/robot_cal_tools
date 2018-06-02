@@ -20,10 +20,13 @@ catkin_package(
 ###########
 
 include_directories(
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(${PROJECT_NAME}_extrinsic_example src/camera_on_wrist_extrinsic.cpp)
+add_executable(${PROJECT_NAME}_extrinsic_example
+  src/camera_on_wrist_extrinsic.cpp
+  src/${PROJECT_NAME}/data_set.cpp)
 
 set_target_properties(${PROJECT_NAME}_extrinsic_example PROPERTIES OUTPUT_NAME cam_on_wrist_extrinsic_example PREFIX "")
 

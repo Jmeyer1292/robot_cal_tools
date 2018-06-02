@@ -7,6 +7,8 @@
 
 #include <opencv2/highgui.hpp> // for imread
 
+#include "rct_examples/data_set.h"
+
 // YAML HELPERS FOR LOADING STUFF
 typedef std::vector<double> JointStates;
 typedef std::vector<double> Translation;
@@ -105,6 +107,16 @@ int main(int argc, char** argv)
     return 1;
   }
 
+  boost::optional<rct_examples::ExtrinsicDataSet> maybe_data_set = rct_examples::parseFromFile(data_path);
+
+  if (!maybe_data_set)
+  {
+    ROS_ERROR_STREAM("Failed to parse data set from path = " << data_path);
+    return 2;
+  }
+
+  auto& data_set = *maybe_data_set;
+
   const std::size_t num_images = 15;
   std::vector<cv::Mat> calibration_images;
   calibration_images.reserve(num_images);
@@ -151,22 +163,22 @@ int main(int argc, char** argv)
   problem_def.base_to_target_guess =
       rct_optimizations::poseCalToEigen(rct_optimizations::Pose6d({0, 0, -M_PI_2, 0.75, 0, 0}));
 
-  for (std::size_t i = 0; i < calibration_images.size(); ++i)
+  for (std::size_t i = 0; i < data_set.images.size(); ++i)
   {
     // Extract observations
-    auto maybe_obs = obs_finder.findObservations(calibration_images[i]);
+    auto maybe_obs = obs_finder.findObservations(data_set.images[i]);
     if (!maybe_obs)
     {
       continue;
     }
 
     // Show drawing
-    cv::imshow("points", obs_finder.drawObservations(calibration_images[i], *maybe_obs));
+    cv::imshow("points", obs_finder.drawObservations(data_set.images[i], *maybe_obs));
     cv::waitKey();
 
     // We got observations, let's process
     const rct_optimizations::Pose6d& wrist_pose = link_data[i];
-    problem_def.wrist_poses.push_back(rct_optimizations::poseCalToEigen(wrist_pose));
+    problem_def.wrist_poses.push_back(data_set.tool_poses[i]); //rct_optimizations::poseCalToEigen(wrist_pose));
 
     rct_optimizations::ObservationSet obs_set;
 
