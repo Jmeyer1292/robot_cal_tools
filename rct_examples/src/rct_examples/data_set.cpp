@@ -44,8 +44,6 @@ static Eigen::Affine3d readPoseFromYaml(const std::string& path)
 
 static rct_examples::ExtrinsicDataSet parse(const YAML::Node& root, const std::string& root_path)
 {
-  ROS_INFO_STREAM("is seq: " << root.IsSequence());
-
   rct_examples::ExtrinsicDataSet data;
 
   for (std::size_t i = 0; i < root.size(); ++i)
@@ -53,19 +51,11 @@ static rct_examples::ExtrinsicDataSet parse(const YAML::Node& root, const std::s
     // Each entry should have a pose and image path. This path is relative to the root_path directory!
     const auto img_path = root[i]["image"].as<std::string>();
     const auto pose_path = root[i]["pose"].as<std::string>();
-
-    ROS_INFO_STREAM(i << ": " << img_path << " " << pose_path);
-
     cv::Mat image = readImageOpenCV(combine(root_path, img_path));
     Eigen::Affine3d p = readPoseFromYaml(combine(root_path, pose_path));
 
     data.images.push_back(image);
     data.tool_poses.push_back(p);
-
-    cv::imshow("wee", image);
-    cv::waitKey(0);
-
-    ROS_INFO_STREAM("Pose:\n" << p.matrix() << "\n");
   }
 
   return data;
