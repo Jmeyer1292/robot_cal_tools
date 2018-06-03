@@ -62,7 +62,7 @@ int main(int argc, char** argv)
     cv::waitKey();
 
     // We got observations, let's process
-    problem_def.wrist_poses.push_back(data_set.tool_poses[i]); //rct_optimizations::poseCalToEigen(wrist_pose));
+    problem_def.wrist_poses.push_back(data_set.tool_poses[i]);
 
     rct_optimizations::ObservationSet obs_set;
 
@@ -90,7 +90,9 @@ int main(int argc, char** argv)
   auto c = opt_result.wrist_to_camera;
   auto t = opt_result.base_to_target;
 
+  std::cout << "Wrist To Camera:\n";
   std::cout << c.matrix() << "\n";
+  std::cout << "Base to Target:\n";
   std::cout << t.matrix() << "\n";
 
   return 0;
