@@ -56,6 +56,9 @@
   <exec_depend>rct_image_tools</exec_depend>
   <exec_depend>rct_optimizations</exec_depend>
 
+  <depend>cv_bridge</depend>
+  <depend>tf2_ros</depend>
+
   <depend>roscpp</depend>
 
 

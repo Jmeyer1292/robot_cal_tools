@@ -7,6 +7,10 @@ find_package(catkin REQUIRED COMPONENTS
   rct_image_tools
   rct_optimizations
   roscpp
+
+  # TODO: Export these to a different package dedicated to 'ros tools'
+  tf2_ros
+  cv_bridge
 )
 
 find_package(OpenCV REQUIRED)

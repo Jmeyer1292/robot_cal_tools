@@ -4,6 +4,9 @@
 
 #include <opencv2/highgui.hpp>
 
+#include <fstream>
+#include <sys/stat.h>
+
 static std::string rootPath(const std::string& filename)
 {
   const auto last_idx = filename.find_last_of('/');
@@ -75,4 +78,61 @@ boost::optional<rct_examples::ExtrinsicDataSet> rct_examples::parseFromFile(cons
     ROS_ERROR_STREAM("Error while parsing YAML file: " << ex.what());
     return {};
   }
+}
+
+void writePose(const std::string& path, const Eigen::Affine3d& pose)
+{
+  YAML::Node root;
+  root["x"] = pose.translation().x();
+  root["y"] = pose.translation().y();
+  root["z"] = pose.translation().z();
+
+  Eigen::Quaterniond q (pose.linear());
+  root["qx"] = q.x();
+  root["qy"] = q.y();
+  root["qz"] = q.z();
+  root["qw"] = q.w();
+
+  std::ofstream ofh (path);
+  ofh << root;
+}
+
+void writeDirectory(const std::string& path, const rct_examples::ExtrinsicDataSet& data)
+{
+  YAML::Node root;
+
+  for (std::size_t i = 0; i < data.images.size(); ++i)
+  {
+    YAML::Node n;
+    n["pose"] = "poses/" + std::to_string(i) + ".yaml";
+    n["image"] = "images/" + std::to_string(i) + ".png";
+
+    root.push_back(n);
+  }
+
+  std::ofstream ofh (path);
+  ofh << root;
+}
+
+bool rct_examples::saveToDirectory(const std::string& path, const rct_examples::ExtrinsicDataSet& data)
+{
+  mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  mkdir((path + "/images").c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  mkdir((path + "/poses").c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+
+  for (std::size_t i = 0; i < data.images.size(); ++i)
+  {
+    auto name = path + "/images/" + std::to_string(i) + ".png";
+    cv::imwrite(name, data.images[i]);
+  }
+
+  for (std::size_t i = 0; i < data.tool_poses.size(); ++i)
+  {
+    auto name = path + "/poses/" + std::to_string(i) + ".yaml";
+    writePose(name, data.tool_poses[i]);
+  }
+
+  writeDirectory(path + "/data.yaml", data);
+
+  return true;
 }
