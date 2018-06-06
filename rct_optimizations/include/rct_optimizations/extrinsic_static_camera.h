@@ -24,11 +24,11 @@ struct ExtrinsicStaticCameraMovingTargetResult
   double initial_cost_per_obs;
   double final_cost_per_obs;
 
-  Eigen::Affine3d base_to_target;
-  Eigen::Affine3d wrist_to_camera;
+  Eigen::Affine3d wrist_to_target;
+  Eigen::Affine3d base_to_camera;
 };
 
-ExtrinsicStaticCameraMovingTargetProblem optimize(const ExtrinsicStaticCameraMovingTargetResult& params);
+ExtrinsicStaticCameraMovingTargetResult optimize(const ExtrinsicStaticCameraMovingTargetProblem& params);
 
 }
 

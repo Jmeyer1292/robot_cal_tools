@@ -6,76 +6,108 @@
 #include <ceres/ceres.h>
 #include <iostream>
 
+using namespace rct_optimizations;
+
 namespace
 {
 
-//using rct_optimizations;
+class ReprojectionCost
+{
+public:
+  ReprojectionCost(const Eigen::Vector2d& obs, const CameraIntrinsics& intr, const Eigen::Affine3d& wrist_to_base,
+                   const Eigen::Vector3d& point_in_target)
+    : obs_(obs), intr_(intr), wrist_pose_(poseEigenToCal(wrist_to_base)), target_pt_(point_in_target)
+  {}
 
-//struct ReprojectionCost
-//{
-//  ReprojectionCost(const Eigen::Vector2d& obs, const CameraIntrinsics& intr, const Eigen::Affine3d& wrist_to_base,
-//                   const Eigen::Vector3d& point_in_target)
-//      : obs_(obs), intr_(intr), wrist_pose_(poseEigenToCal(wrist_to_base)), target_pt_(point_in_target)
-//  {
-//  }
+  template <typename T>
+  bool operator() (const T* const pose_base_to_camera, const T* pose_target_to_wrist, T* residual) const
+  {
+    const T* camera_angle_axis = pose_base_to_camera + 0;
+    const T* camera_position = pose_base_to_camera + 3;
 
-//  Eigen::Vector2d obs_;
-//  CameraIntrinsics intr_;
-//  Pose6d wrist_pose_;
-//  Eigen::Vector3d target_pt_;
+    const T* target_angle_axis = pose_target_to_wrist + 0;
+    const T* target_position = pose_target_to_wrist + 3;
 
-////  (const double observed_x,
-////    const double observed_y, const double focal_length_x,
-////    const double focal_length_y, const double optical_center_x,
-////    const double optical_center_y, Pose6D link_pose,
-////    Point3D point) : observed_x_(observed_x), observed_y_(observed_y),
-////    focal_length_x_(focal_length_x), focal_length_y_(focal_length_y),
-////    optical_center_x_(optical_center_x), optical_center_y_(optical_center_y),
-////    link_pose_(link_pose), point_(point) { }
+    T link_point[3]; // Point in wrist coordinates
+    T world_point[3]; // Point in world coordinates (base of robot)
+    T camera_point[3]; // Point in camera coordinates
 
-//  template<typename T> bool operator() (const T* const base_to_camera,
-//    const T* target_to_link, T* residual) const
-//  {
-//    const T* camera_angle_axis(&base_to_camera[0]);
-//    const T* camera_position(&base_to_camera[3]);
+    // Transform point into camera coordinates
+    // If target is attached to the robot tool, each point is first put into the frame of
+    // the tool using the estimated value from (target_to_link)
+    // Then the known transform between base-tool is used to put each point in the frame of
+    // the robot base (world)
+    // Then the point is put into the frame of the camera using the estimated transform from (base_to_camera).
 
-//    const T* target_angle_axis(&target_to_link[0]);
-//    const T* target_position(&target_to_link[3]);
+    // Transform points into camera coordinates
+    T target_pt[3];
+    target_pt[0] = T(target_pt_(0));
+    target_pt[1] = T(target_pt_(1));
+    target_pt[2] = T(target_pt_(2));
 
-//    T link_point[3]; // Point in link coordinates
-//    T world_point[3]; // Point in world coordinates (base of robot)
-//    T camera_point[3]; // Point in camera coordinates
+    transformPoint(target_angle_axis, target_position, target_pt, link_point);
+    poseTransformPoint(wrist_pose_, link_point, world_point);
+    transformPoint(camera_angle_axis, camera_position, world_point, camera_point);
 
-//    // Transform point into camera coordinates
-//    // If target is attached to the robot tool, each point is first put into the frame of
-//    // the tool using the estimated value from (target_to_link)
-//    // Then the known transform between base-tool is used to put each point in the frame of
-//    // the robot base (world)
-//    // Then the point is put into the frame of the camera using the estimated transform from (base_to_camera).
-//    transformPoint3D(target_angle_axis, target_position, point_.asVector(), link_point);
-//    poseTransformPoint(link_pose_, link_point, world_point);
-//    transformPoint(camera_angle_axis, camera_position, world_point, camera_point);
+    // Compute projected point into image plane and compute residual
+    T xy_image[2];
+    projectPoint(intr_, camera_point, xy_image);
 
-//    // Compute projected point into image plane and compute residual
-//    T focal_length_x = T(focal_length_x_);
-//    T focal_length_y = T(focal_length_y_);
-//    T optical_center_x = T(optical_center_x_);
-//    T optical_center_y = T(optical_center_y_);
-//    T observed_x = T(observed_x_);
-//    T observed_y = T(observed_y_);
+    residual[0] = xy_image[0] - obs_.x();
+    residual[1] = xy_image[1] - obs_.y();
 
-//    cameraPointResidual(camera_point, focal_length_x, focal_length_y, optical_center_x,
-//      optical_center_y, observed_x, observed_y, residual);
+    return true;
+  }
 
-//    return true;
-//  }
-
-//};
+private:
+  Eigen::Vector2d obs_;
+  CameraIntrinsics intr_;
+  Pose6d wrist_pose_;
+  Eigen::Vector3d target_pt_;
+};
 
 }
 
-rct_optimizations::ExtrinsicStaticCameraMovingTargetProblem
-rct_optimizations::optimize(const rct_optimizations::ExtrinsicStaticCameraMovingTargetResult& params)
+rct_optimizations::ExtrinsicStaticCameraMovingTargetResult
+rct_optimizations::optimize(const rct_optimizations::ExtrinsicStaticCameraMovingTargetProblem& params)
 {
+  assert(params.image_observations.size() == params.wrist_poses.size());
 
+  Pose6d internal_base_to_camera = poseEigenToCal(params.base_to_camera_guess);
+  Pose6d internal_target_to_wrist = poseEigenToCal(params.wrist_to_target_guess.inverse());
+
+  ceres::Problem problem;
+
+  for (std::size_t i = 0; i < params.wrist_poses.size(); ++i) // For each wrist pose / image set
+  {
+    for (std::size_t j = 0; j < params.image_observations[i].size(); ++j) // For each 3D point seen in the 2D image
+    {
+      // Define
+      const auto& img_obs = params.image_observations[i][j].in_image;
+      const auto& point_in_target = params.image_observations[i][j].in_target;
+      const auto wrist_to_base = params.wrist_poses[i].inverse();
+
+      // Allocate Ceres data structures - ownership is taken by the ceres
+      // Problem data structure
+      auto* cost_fn = new ReprojectionCost(img_obs, params.intr, wrist_to_base, point_in_target);
+
+      auto* cost_block = new ceres::AutoDiffCostFunction<ReprojectionCost, 2, 6, 6>(cost_fn);
+
+      problem.AddResidualBlock(cost_block, NULL, internal_base_to_camera.values.data(),
+                               internal_target_to_wrist.values.data());
+    }
+  }
+
+  ceres::Solver::Options options;
+  ceres::Solver::Summary summary;
+
+  ceres::Solve(options, &problem, &summary);
+
+  ExtrinsicStaticCameraMovingTargetResult result;
+  result.converged = summary.termination_type == ceres::CONVERGENCE;
+  result.base_to_camera = poseCalToEigen(internal_base_to_camera);
+  result.wrist_to_target = poseCalToEigen(internal_target_to_wrist).inverse();
+  result.initial_cost_per_obs = summary.initial_cost / summary.num_residuals;
+  result.final_cost_per_obs = summary.final_cost / summary.num_residuals;
+  return result;
 }
