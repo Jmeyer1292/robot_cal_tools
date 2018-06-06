@@ -14,30 +14,23 @@ namespace
 class ReprojectionCost
 {
 public:
-  ReprojectionCost(const Eigen::Vector2d& obs, const CameraIntrinsics& intr, const Eigen::Affine3d& wrist_to_base,
+  ReprojectionCost(const Eigen::Vector2d& obs, const CameraIntrinsics& intr, const Eigen::Affine3d& base_to_wrist,
                    const Eigen::Vector3d& point_in_target)
-    : obs_(obs), intr_(intr), wrist_pose_(poseEigenToCal(wrist_to_base)), target_pt_(point_in_target)
+    : obs_(obs), intr_(intr), wrist_pose_(poseEigenToCal(base_to_wrist)), target_pt_(point_in_target)
   {}
 
   template <typename T>
-  bool operator() (const T* const pose_base_to_camera, const T* pose_target_to_wrist, T* residual) const
+  bool operator() (const T* const pose_camera_to_base, const T* pose_wrist_to_target, T* residual) const
   {
-    const T* camera_angle_axis = pose_base_to_camera + 0;
-    const T* camera_position = pose_base_to_camera + 3;
+    const T* camera_angle_axis = pose_camera_to_base + 0;
+    const T* camera_position = pose_camera_to_base + 3;
 
-    const T* target_angle_axis = pose_target_to_wrist + 0;
-    const T* target_position = pose_target_to_wrist + 3;
+    const T* target_angle_axis = pose_wrist_to_target + 0;
+    const T* target_position = pose_wrist_to_target + 3;
 
     T link_point[3]; // Point in wrist coordinates
     T world_point[3]; // Point in world coordinates (base of robot)
     T camera_point[3]; // Point in camera coordinates
-
-    // Transform point into camera coordinates
-    // If target is attached to the robot tool, each point is first put into the frame of
-    // the tool using the estimated value from (target_to_link)
-    // Then the known transform between base-tool is used to put each point in the frame of
-    // the robot base (world)
-    // Then the point is put into the frame of the camera using the estimated transform from (base_to_camera).
 
     // Transform points into camera coordinates
     T target_pt[3];
@@ -73,8 +66,8 @@ rct_optimizations::optimize(const rct_optimizations::ExtrinsicStaticCameraMoving
 {
   assert(params.image_observations.size() == params.wrist_poses.size());
 
-  Pose6d internal_base_to_camera = poseEigenToCal(params.base_to_camera_guess);
-  Pose6d internal_target_to_wrist = poseEigenToCal(params.wrist_to_target_guess.inverse());
+  Pose6d internal_camera_to_base = poseEigenToCal(params.base_to_camera_guess.inverse());
+  Pose6d internal_wrist_to_target = poseEigenToCal(params.wrist_to_target_guess);
 
   ceres::Problem problem;
 
@@ -93,8 +86,8 @@ rct_optimizations::optimize(const rct_optimizations::ExtrinsicStaticCameraMoving
 
       auto* cost_block = new ceres::AutoDiffCostFunction<ReprojectionCost, 2, 6, 6>(cost_fn);
 
-      problem.AddResidualBlock(cost_block, NULL, internal_base_to_camera.values.data(),
-                               internal_target_to_wrist.values.data());
+      problem.AddResidualBlock(cost_block, NULL, internal_camera_to_base.values.data(),
+                               internal_wrist_to_target.values.data());
     }
   }
 
@@ -105,8 +98,8 @@ rct_optimizations::optimize(const rct_optimizations::ExtrinsicStaticCameraMoving
 
   ExtrinsicStaticCameraMovingTargetResult result;
   result.converged = summary.termination_type == ceres::CONVERGENCE;
-  result.base_to_camera = poseCalToEigen(internal_base_to_camera);
-  result.wrist_to_target = poseCalToEigen(internal_target_to_wrist).inverse();
+  result.base_to_camera = poseCalToEigen(internal_camera_to_base).inverse();
+  result.wrist_to_target = poseCalToEigen(internal_wrist_to_target);
   result.initial_cost_per_obs = summary.initial_cost / summary.num_residuals;
   result.final_cost_per_obs = summary.final_cost / summary.num_residuals;
   return result;
