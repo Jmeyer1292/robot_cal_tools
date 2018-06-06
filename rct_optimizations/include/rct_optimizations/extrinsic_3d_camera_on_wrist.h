@@ -8,14 +8,6 @@
 namespace rct_optimizations
 {
 
-struct Observation3DPair
-{
-  Eigen::Vector3d in_target;
-  Eigen::Vector3d in_image;
-};
-
-using Observation3DSet = std::vector<Observation3DPair>;
-
 struct Extrinsic3DCameraOnWristProblem
 {
   std::vector<Eigen::Affine3d> wrist_poses;

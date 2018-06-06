@@ -2,6 +2,7 @@
 #define RCT_TYPES_H
 
 #include <array>
+#include <Eigen/Dense>
 
 namespace rct_optimizations
 {
@@ -41,6 +42,24 @@ struct Pose6d
   const double& y() const { return values[4]; }
   const double& z() const { return values[5]; }
 };
+
+// Useful typedefs shared by calibrations
+struct ObservationPair
+{
+  Eigen::Vector3d in_target;
+  Eigen::Vector2d in_image;
+};
+
+using ObservationSet = std::vector<ObservationPair>;
+
+struct Observation3DPair
+{
+  Eigen::Vector3d in_target;
+  Eigen::Vector3d in_image;
+};
+
+using Observation3DSet = std::vector<Observation3DPair>;
+
 }
 
 #endif
