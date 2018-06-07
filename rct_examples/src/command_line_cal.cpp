@@ -36,7 +36,7 @@ struct DataCollection
   DataCollection(ros::NodeHandle& nh)
     : listener(buffer)
     , it(nh)
-    , finder (rct_image_tools::ModifiedCircleGridTarget(7, 7, 0.0135))
+    , finder (rct_image_tools::ModifiedCircleGridTarget(5, 5, 0.015))
   {
     ros::NodeHandle pnh ("~");
     pnh.getParam("base", base_frame);
