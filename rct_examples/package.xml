@@ -58,6 +58,8 @@
 
   <depend>cv_bridge</depend>
   <depend>tf2_ros</depend>
+  <depend>image_transport</depend>
+  <depend>eigen_conversions</depend>
 
   <depend>roscpp</depend>
 

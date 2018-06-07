@@ -36,14 +36,14 @@ struct DataCollection
   DataCollection(ros::NodeHandle& nh)
     : listener(buffer)
     , it(nh)
-    , finder (rct_image_tools::ModifiedCircleGridTarget(10, 12, 0.0254))
+    , finder (rct_image_tools::ModifiedCircleGridTarget(7, 7, 0.0135))
   {
     ros::NodeHandle pnh ("~");
     pnh.getParam("base", base_frame);
     pnh.getParam("tool", tool_frame);
 
-    im_sub = it.subscribe("/camera", 1, &DataCollection::onNewImage, this);
-    im_pub = it.advertise("/observer", 1);
+    im_sub = it.subscribe("camera", 1, &DataCollection::onNewImage, this);
+    im_pub = it.advertise("observer", 1);
 
     trigger_server = nh.advertiseService("collect", &DataCollection::onTrigger, this);
     save_server = nh.advertiseService("save", &DataCollection::onSave, this);
@@ -51,6 +51,7 @@ struct DataCollection
 
   void onNewImage(const sensor_msgs::ImageConstPtr& msg)
   {
+    ROS_INFO_STREAM("New image");
     cv_bridge::CvImagePtr cv_ptr;
     try
     {
@@ -98,7 +99,7 @@ struct DataCollection
       cv::Mat image = images[i]->image;
       auto msg = poses[i];
       Eigen::Affine3d pose;
-      tf::transformMsgToEigen(msg, pose);
+      tf::transformMsgToEigen(msg.transform, pose);
 
       data.images.push_back(image);
       data.tool_poses.push_back(pose);
@@ -112,5 +113,8 @@ struct DataCollection
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "rct_examples");
+  ros::NodeHandle nh;
+  DataCollection dc (nh);
+  ros::spin();
   return 0;
 }
