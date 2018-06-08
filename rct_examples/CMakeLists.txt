@@ -7,6 +7,12 @@ find_package(catkin REQUIRED COMPONENTS
   rct_image_tools
   rct_optimizations
   roscpp
+
+  # TODO: Export these to a different package dedicated to 'ros tools'
+  tf2_ros
+  cv_bridge
+  image_transport
+  eigen_conversions
 )
 
 find_package(OpenCV REQUIRED)
@@ -38,6 +44,19 @@ target_link_libraries(${PROJECT_NAME}_extrinsic_example
  ${OpenCV_LIBRARIES}
 )
 
+add_executable(${PROJECT_NAME}_cmd
+  src/command_line_cal.cpp
+  src/${PROJECT_NAME}/data_set.cpp)
+
+set_target_properties(${PROJECT_NAME}_cmd PROPERTIES OUTPUT_NAME cmd_cal PREFIX "")
+
+add_dependencies(${PROJECT_NAME}_cmd ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(${PROJECT_NAME}_cmd
+ ${catkin_LIBRARIES}
+ yaml-cpp
+ ${OpenCV_LIBRARIES}
+)
 #############
 ## Install ##
 #############

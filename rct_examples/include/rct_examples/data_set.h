@@ -16,6 +16,8 @@ struct ExtrinsicDataSet
 
 boost::optional<ExtrinsicDataSet> parseFromFile(const std::string& path);
 
+bool saveToDirectory(const std::string& path, const ExtrinsicDataSet& data);
+
 }
 
 #endif
