@@ -78,7 +78,7 @@ rct_optimizations::optimize(const rct_optimizations::ExtrinsicStaticCameraMoving
       // Define
       const auto& img_obs = params.image_observations[i][j].in_image;
       const auto& point_in_target = params.image_observations[i][j].in_target;
-      const auto wrist_to_base = params.wrist_poses[i].inverse();
+      const auto wrist_to_base = params.wrist_poses[i];//.inverse();
 
       // Allocate Ceres data structures - ownership is taken by the ceres
       // Problem data structure
