@@ -44,6 +44,20 @@ target_link_libraries(${PROJECT_NAME}_extrinsic_example
  ${OpenCV_LIBRARIES}
 )
 
+add_executable(${PROJECT_NAME}_static_camera
+  src/static_camera_extrinsic.cpp
+  src/${PROJECT_NAME}/data_set.cpp)
+
+set_target_properties(${PROJECT_NAME}_static_camera PROPERTIES OUTPUT_NAME static_camera_cal_example PREFIX "")
+
+add_dependencies(${PROJECT_NAME}_static_camera ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(${PROJECT_NAME}_static_camera
+ ${catkin_LIBRARIES}
+ yaml-cpp
+ ${OpenCV_LIBRARIES}
+)
+
 add_executable(${PROJECT_NAME}_cmd
   src/command_line_cal.cpp
   src/${PROJECT_NAME}/data_set.cpp)
