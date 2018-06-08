@@ -49,10 +49,10 @@ int main(int argc, char** argv)
 
   // Construct problem
   rct_optimizations::CameraIntrinsics intr;
-  intr.fx() = 1200.0;
-  intr.fy() = 1200.0;
-  intr.cx() = 800.2;
-  intr.cy() = 600.9;
+  intr.fx() = 1411.0;
+  intr.fy() = 1408.0;
+  intr.cx() = 807.2;
+  intr.cy() = 615.0;
 
   rct_optimizations::ExtrinsicStaticCameraMovingTargetProblem problem_def;
   problem_def.intr = intr;
