@@ -8,7 +8,7 @@ Calibrating a camera in your workspace typically happens in two steps:
 
 For the second step, you need to choose the correct calibration function depending on whether your camera is moving in the workcell or watching something that moves.
  - For an RGB pinhole camera that is attached to a robot wrist, see `rct_optimizations/extrinsic_camera_on_wrist.h`.
- - For an RGB pinhole camera that static watching a robot, see `rct_optimizations/extrinsic_static_camera.h`.
+ - For an RGB pinhole camera that is static and watching a robot, see `rct_optimizations/extrinsic_static_camera.h`.
 
 These calibrations compute the transform between the camera and the robot wrist or base respectively. They do so by analzying images of calibration target: a
 patterned set of holes with known dimensions and spacing. This target is fixed in your workcell for camera to wrist calibrations, and attached to the wrist for
@@ -36,6 +36,8 @@ is then compared with what it actually saw, and the guess is adjusted to bring i
 - The big dot is the "origin" or (0,0,0) of the target. The +Z axis comes out of the page, the +X axis runs along the bottom of the page, left to right (the last row if your big dot is in the bottom left). The +Y runs up the page from the big dot.
 
 **TODO IMAGE OF CALIBRATION TARGET WITH THE COORDINATE SYSTEM DRAWN ON IT**
+
+**NOTE**: You can create targets with custom size and spacing using the handy script, `calibration_target.py` found in `rct_image_tools/script`. Thanks to Jeremy Zoss for making this.
 
 ## Some Advice
  - Take lots of samples in lots of different positions. It's not uncommon to require tens of images from all over your workspace to get a good calibration.
