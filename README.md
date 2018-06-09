@@ -18,7 +18,9 @@ If you need to do intrinsic calibration of your sensor, then please use ROS' bui
 Currently supported calibrations
  - Extrinsic calibration of a 2D camera on robot wrist
  - Extrinsic calibration of a 3D camera on robot wrist
- - Extrinsic calibration of a static 2D camera in a robot work cell 
+ - Extrinsic calibration of a static 2D camera in a robot work cell
+ 
+ See the [readme of `rct_examples`](rct_examples/README.md) for more information.
 
 ## Development Plan
  1. Replicate the OpenCV intrinsic calibration
