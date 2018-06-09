@@ -47,27 +47,31 @@ namespace rct_optimizations
 struct ExtrinsicCameraOnWristProblem
 {
   /**
-   * @brief intr
+   * @brief The pinhole camera parameters used to project into the rectified image
    */
   CameraIntrinsics intr;
 
   /**
-   * @brief wrist_poses
+   * @brief The transforms, "base to wrist", at which each observation set was taken. Should be
+   * same size as @e image_observations.
    */
   std::vector<Eigen::Affine3d> wrist_poses;
 
   /**
-   * @brief image_observations
+   * @brief A sequence of observation sets corresponding to the image locations in @e wrist_poses.
+   * Each observation set consists of a set of correspodences: a 3D position (e.g. a dot) in "target
+   * frame" to the image location it was detected at (2D).
    */
   std::vector<ObservationSet> image_observations;
 
   /**
-   * @brief base_to_target_guess
+   * @brief Your best guess at the transform from "base frame" to "target frame". Should be static
+   * as the robot moves.
    */
   Eigen::Affine3d base_to_target_guess;
 
   /**
-   * @brief wrist_to_camera_guess
+   * @brief Your best guess at teh transform from "wrist frame" to the camera optical frame.
    */
   Eigen::Affine3d wrist_to_camera_guess;
 };
@@ -75,32 +79,39 @@ struct ExtrinsicCameraOnWristProblem
 struct ExtrinsicCameraOnWristResult
 {
   /**
-   * @brief converged
+   * @brief Whether the underlying solver converged. If this is false, your calibration did not go well.
+   * If this is true, your calibration MAY have gone well.
    */
   bool converged;
 
   /**
-   * @brief initial_cost_per_obs
+   * @brief The initial reprojection error (in pixels) per residual based on your input guesses.
    */
   double initial_cost_per_obs;
 
   /**
-   * @brief final_cost_per_obs
+   * @brief The final reprojection error (in pixels) per residual after optimization. Note that each circle
+   * has two residuals: a U and V error in the image. So a value of 1.2 means that each circle was described
+   * to within 1.2 pixels in X and 1.2 pixels in Y.
+   *
+   * A low value here is encouraging if you had a diversity of images. If you took few images, you can get
+   * a low score without getting a calibration that describes your workcell.
    */
   double final_cost_per_obs;
 
   /**
-   * @brief base_to_target
+   * @brief The final calibrated result of "base frame" to "target frame".
    */
   Eigen::Affine3d base_to_target;
 
   /**
-   * @brief wrist_to_camera
+   * @brief The final calibrated result of "wrist frame" to camera optical frame.
    */
   Eigen::Affine3d wrist_to_camera;
 };
 
 ExtrinsicCameraOnWristResult optimize(const ExtrinsicCameraOnWristProblem& params);
+
 }
 
 #endif

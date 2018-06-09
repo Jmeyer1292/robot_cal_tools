@@ -2,6 +2,20 @@
 This document discusses the "key concepts" and "terminology" that is commonly thrown around. I'll define some of these here so the documentation you find elsewhere in Robot Cal Tools makes sense.
 
 ## The General Idea
+Calibrating a camera in your workspace typically happens in two steps:
+ 1. Calibrate the "intrinsics", the camera sensor & lens, using something like ROS' [camera calibration](http://wiki.ros.org/camera_calibration) package.
+ 2. Armed with the intrinsics, calibrate the "extrinsics", or the pose of the camera in your workcell.
+
+For the second step, you need to choose the correct calibration function depending on whether your camera is moving in the workcell or watching something that moves.
+ - For an RGB pinhole camera that is attached to a robot wrist, see `rct_optimizations/extrinsic_camera_on_wrist.h`.
+ - For an RGB pinhole camera that static watching a robot, see `rct_optimizations/extrinsic_static_camera.h`.
+
+These calibrations compute the transform between the camera and the robot wrist or base respectively. They do so by analzying images of calibration target: a
+patterned set of holes with known dimensions and spacing. This target is fixed in your workcell for camera to wrist calibrations, and attached to the wrist for
+camera to robot base calibrations.
+
+For each image, the calibration starts with a guess about where your camera is and estimates what it *should have* have seen based on the guess. This estimate
+is then compared with what it actually saw, and the guess is adjusted to bring it closer to reality.
 
 ## Terminology
  - **Extrinsic Parameters**: "the extrinsic parameters define the position of the camera center and the camera's heading in world coordinates" [\[ref\]](https://en.wikipedia.org/wiki/Camera_resectioning#Extrinsic_parameters). An extrinsic calibration thus tries to find WHERE your camera is relative to some frame of reference, usually the base of a robot or the wrist of a robot.
