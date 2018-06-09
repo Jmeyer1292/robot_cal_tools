@@ -16,6 +16,8 @@
  *    in this frame that the 3D entries of ObservationSet are given. For the circle grid
  *    target, this is the big dot, with +X going left to right across the bottom row and +Y
  *    going up the first column.
+ * 4. The "camera frame" or "camera optical frame". This frame is solved for and should be
+ *    fixed with respect to the "wrist frame". Uses the OpenCV model for camera coordinates.
  *
  * Inputs:
  *  - Camera intrisic parameters (fx, fy, cx, cy)
@@ -30,6 +32,8 @@
  *  - The best-fit transform from "base frame" to the "target frame"
  *  - A final cost per observation representing the average reprojection error, in pixels,
  *    along the u or v image axis.
+ *
+ * To use: Fill out ExtrinsicCameraOnWristProblem then call optimize()
  *
  *  author: Jonathan Meyer
  */
