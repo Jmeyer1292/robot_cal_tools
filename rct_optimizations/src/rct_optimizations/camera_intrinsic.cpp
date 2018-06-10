@@ -110,6 +110,79 @@ void projectPoints2(const T* const camera_intr, const T* const pt_in_camera, T* 
   pt_in_image[1] = intr.fy() * ypp + intr.cy();
 }
 
+struct SolvePnPCostFunc
+{
+public:
+  SolvePnPCostFunc(const rct_optimizations::CameraIntrinsics& intr, const Eigen::Vector3d& pt_in_target,
+                   const Eigen::Vector2d& pt_in_image)
+    : intr_(intr), in_target_(pt_in_target), in_image_(pt_in_image)
+  {}
+
+  template<typename T>
+  bool operator()(const T* const target_pose, T* const residual) const
+  {
+    const T* target_angle_axis = target_pose + 0;
+    const T* target_position = target_pose + 3;
+
+
+    // Transform points into camera coordinates
+    T target_pt[3];
+    target_pt[0] = T(in_target_(0));
+    target_pt[1] = T(in_target_(1));
+    target_pt[2] = T(in_target_(2));
+
+    T camera_point[3];  // Point in camera coordinates
+    rct_optimizations::transformPoint(target_angle_axis, target_position, target_pt, camera_point);
+
+    T xy_image[2];
+    rct_optimizations::projectPoint(intr_, camera_point, xy_image);
+
+    residual[0] = xy_image[0] - in_image_.x();
+    residual[1] = xy_image[1] - in_image_.y();
+
+    return true;
+  }
+
+  rct_optimizations::CameraIntrinsics intr_;
+  Eigen::Vector3d in_target_;
+  Eigen::Vector2d in_image_;
+};
+
+static rct_optimizations::Pose6d solvePnP(const rct_optimizations::CameraIntrinsics& intr, const rct_optimizations::ObservationSet& obs,
+                                const rct_optimizations::Pose6d& guess)
+{
+  using namespace rct_optimizations;
+  Pose6d internal_camera_to_target = guess;
+  std::cout << "aaxis: " << internal_camera_to_target.rx() << " " << internal_camera_to_target.ry() << " " << internal_camera_to_target.rz() << "\n";
+
+  ceres::Problem problem;
+
+  for (std::size_t j = 0; j < obs.size(); ++j) // For each 3D point seen in the 2D image
+  {
+    // Define
+    const auto& img_obs = obs[j].in_image;
+    const auto& point_in_target = obs[j].in_target;
+
+    // Allocate Ceres data structures - ownership is taken by the ceres
+    // Problem data structure
+    auto* cost_fn = new SolvePnPCostFunc(intr, point_in_target, img_obs);
+
+    auto* cost_block = new ceres::AutoDiffCostFunction<SolvePnPCostFunc, 2, 6>(cost_fn);
+
+    problem.AddResidualBlock(cost_block, NULL, internal_camera_to_target.values.data());
+  }
+
+  ceres::Solver::Options options;
+  ceres::Solver::Summary summary;
+
+  ceres::Solve(options, &problem, &summary);
+  std::cout << "converted: " << summary.BriefReport() << "\n";
+  std::cout << "init cost: " << summary.initial_cost / summary.num_residuals << "\n";
+  std::cout << "final cost: " << summary.final_cost / summary.num_residuals << "\n";
+
+  return internal_camera_to_target;
+}
+
 
 class IntrinsicCostFunction
 {
@@ -139,6 +212,8 @@ public:
     residual[0] = xy_image[0] - in_image_.x();
     residual[1] = xy_image[1] - in_image_.y();
 
+//    std::cout << "Residual " << residual[0] << ", " << residual[1] << "\n";
+
     return true;
   }
 
@@ -152,7 +227,7 @@ private:
 static rct_optimizations::Pose6d guessInitialPose()
 {
   Eigen::Affine3d guess = Eigen::Affine3d::Identity();
-  guess = guess * Eigen::Translation3d(0,0,0.1) * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX());
+  guess = guess * Eigen::Translation3d(0,0,0.5) * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX());
   return rct_optimizations::poseEigenToCal(guess);
 }
 
@@ -160,7 +235,9 @@ rct_optimizations::IntrinsicEstimationResult
 rct_optimizations::optimize(const rct_optimizations::IntrinsicEstimationProblem& params)
 {
   // Prepare data structure for the camera parameters to optimize
-  std::array<double, CalibCameraIntrinsics<double>::size()> internal_intrinsics_data = {0.0};
+  std::array<double, CalibCameraIntrinsics<double>::size()> internal_intrinsics_data;
+  for (int i = 0; i < 9; ++i) internal_intrinsics_data[i] = 0.0;
+
   MutableCalibCameraIntrinsics<double> internal_intrinsics (internal_intrinsics_data.data());
   internal_intrinsics.fx() = params.intrinsics_guess.fx();
   internal_intrinsics.fy() = params.intrinsics_guess.fy();
@@ -168,12 +245,14 @@ rct_optimizations::optimize(const rct_optimizations::IntrinsicEstimationProblem&
   internal_intrinsics.cy() = params.intrinsics_guess.cy();
 
   // Prepare space for the target poses to estimate (1 for each observation set)
-  std::vector<Pose6d> internal_poses;
-  internal_poses.reserve(params.image_observations.size());
+  std::vector<Pose6d> internal_poses (params.image_observations.size());
 
   // All of the target poses are seeded to be "in front of" and "looking at" the camera
   for (std::size_t i = 0; i < params.image_observations.size(); ++i)
-    internal_poses.push_back(guessInitialPose());
+  {
+    internal_poses[i] = solvePnP(params.intrinsics_guess, params.image_observations[i], guessInitialPose());
+    std::cout << "pose " << i << ":\n" << poseCalToEigen(internal_poses[i]).matrix() << "\n";
+  }
 
   ceres::Problem problem;
 
@@ -197,10 +276,19 @@ rct_optimizations::optimize(const rct_optimizations::IntrinsicEstimationProblem&
     }
   }
 
+
   // Solve
   ceres::Solver::Options options;
+  options.max_num_iterations = 1000;
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);
+
+  std::cout << summary.FullReport() << "\n";
+  std::cout << "AFTER------\n";
+  for (std::size_t i = 0; i < params.image_observations.size(); ++i)
+  {
+    std::cout << "pose " << i << ":\n" << poseCalToEigen(internal_poses[i]).matrix() << "\n";
+  }
 
   // Package results
   IntrinsicEstimationResult result;

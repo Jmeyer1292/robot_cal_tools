@@ -6,6 +6,13 @@
 #include <opencv2/highgui.hpp>
 #include <ros/ros.h>
 
+#include <opencv2/calib3d.hpp>
+
+void opencvCal()
+{
+//  cv::calibrateCamera()
+}
+
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "camera_on_wrist_extrinsic");
@@ -35,10 +42,10 @@ int main(int argc, char** argv)
 
   // Construct problem
   rct_optimizations::CameraIntrinsics intr;
-  intr.fx() = 510.0;
-  intr.fy() = 510.0;
-  intr.cx() = 320.2;
-  intr.cy() = 208.9;
+  intr.fx() = 1400.0;
+  intr.fy() = 1400.0;
+  intr.cx() = 800.;
+  intr.cy() = 600.;
 
   rct_optimizations::IntrinsicEstimationProblem problem_def;
   problem_def.intrinsics_guess = intr;
