@@ -153,7 +153,6 @@ static rct_optimizations::Pose6d solvePnP(const rct_optimizations::CameraIntrins
 {
   using namespace rct_optimizations;
   Pose6d internal_camera_to_target = guess;
-  std::cout << "aaxis: " << internal_camera_to_target.rx() << " " << internal_camera_to_target.ry() << " " << internal_camera_to_target.rz() << "\n";
 
   ceres::Problem problem;
 
@@ -174,11 +173,7 @@ static rct_optimizations::Pose6d solvePnP(const rct_optimizations::CameraIntrins
 
   ceres::Solver::Options options;
   ceres::Solver::Summary summary;
-
   ceres::Solve(options, &problem, &summary);
-  std::cout << "converted: " << summary.BriefReport() << "\n";
-  std::cout << "init cost: " << summary.initial_cost / summary.num_residuals << "\n";
-  std::cout << "final cost: " << summary.final_cost / summary.num_residuals << "\n";
 
   return internal_camera_to_target;
 }
@@ -211,8 +206,6 @@ public:
 
     residual[0] = xy_image[0] - in_image_.x();
     residual[1] = xy_image[1] - in_image_.y();
-
-//    std::cout << "Residual " << residual[0] << ", " << residual[1] << "\n";
 
     return true;
   }
@@ -251,7 +244,6 @@ rct_optimizations::optimize(const rct_optimizations::IntrinsicEstimationProblem&
   for (std::size_t i = 0; i < params.image_observations.size(); ++i)
   {
     internal_poses[i] = solvePnP(params.intrinsics_guess, params.image_observations[i], guessInitialPose());
-    std::cout << "pose " << i << ":\n" << poseCalToEigen(internal_poses[i]).matrix() << "\n";
   }
 
   ceres::Problem problem;
@@ -276,19 +268,11 @@ rct_optimizations::optimize(const rct_optimizations::IntrinsicEstimationProblem&
     }
   }
 
-
   // Solve
   ceres::Solver::Options options;
   options.max_num_iterations = 1000;
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);
-
-  std::cout << summary.FullReport() << "\n";
-  std::cout << "AFTER------\n";
-  for (std::size_t i = 0; i < params.image_observations.size(); ++i)
-  {
-    std::cout << "pose " << i << ":\n" << poseCalToEigen(internal_poses[i]).matrix() << "\n";
-  }
 
   // Package results
   IntrinsicEstimationResult result;

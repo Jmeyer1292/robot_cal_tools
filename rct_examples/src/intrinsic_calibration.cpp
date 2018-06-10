@@ -8,9 +8,42 @@
 
 #include <opencv2/calib3d.hpp>
 
-void opencvCal()
+void opencvCameraCalibration(const std::vector<rct_optimizations::ObservationSet>& obs,
+                             const cv::Size& image_size,
+                             const rct_optimizations::CameraIntrinsics& intr)
 {
-//  cv::calibrateCamera()
+  std::vector<std::vector<cv::Vec3f>> object_points;
+  std::vector<std::vector<cv::Vec2f>> image_points;
+
+  for (const auto& o : obs)
+  {
+    std::vector<cv::Vec3f> op;
+    std::vector<cv::Vec2f> ip;
+
+    for (const auto& pair : o)
+    {
+      op.push_back(cv::Vec3f(pair.in_target(0), pair.in_target(1), pair.in_target(2)));
+      ip.push_back(cv::Vec2f(pair.in_image(0), pair.in_image(1)));
+    }
+
+    object_points.push_back(op);
+    image_points.push_back(ip);
+  }
+
+  cv::Mat camera_matrix (3, 3, cv::DataType<double>::type);
+  cv::setIdentity(camera_matrix);
+  camera_matrix.at<double>(0, 0) = intr.fx();
+  camera_matrix.at<double>(1, 1) = intr.fy();
+  camera_matrix.at<double>(0, 2) = intr.cx();
+  camera_matrix.at<double>(1, 2) = intr.cy();
+  cv::Mat dist_coeffs;
+  std::vector<cv::Mat> rvecs;
+  std::vector<cv::Mat> tvecs;
+  cv::calibrateCamera(object_points, image_points, image_size, camera_matrix, dist_coeffs, rvecs, tvecs);
+
+
+  std::cout << "OpenCV Camera Matrix:\n" << camera_matrix << "\n";
+  std::cout << "OpenCV Camera Distortions:\n" << dist_coeffs << "\n";
 }
 
 int main(int argc, char** argv)
@@ -82,6 +115,7 @@ int main(int argc, char** argv)
   auto opt_result = rct_optimizations::optimize(problem_def);
 
   // Report results
+  std::cout << "---Calibration Complete---\n";
   std::cout << "Did converge?: " << opt_result.converged << "\n";
   std::cout << "Initial cost?: " << opt_result.initial_cost_per_obs << "\n";
   std::cout << "Final cost?: " << opt_result.final_cost_per_obs << "\n";
@@ -90,10 +124,15 @@ int main(int argc, char** argv)
   auto new_dist = opt_result.distortions;
 
   std::cout << "New Intr:\nfx = " << new_intr.fx() << "\tfy = " << new_intr.fy() << "\ncx = " << new_intr.cx()
-            << "\tcy = " << new_intr.cy() << "\n";
+            << "\tcy = " << new_intr.cy() << "\n\n";
 
   std::cout << "Distortions:\n";
-  std::cout << new_dist[0] << " " << new_dist[1] << " " << new_dist[2] << " " << new_dist[3] << " " << new_dist[4] << "\n";
+  std::cout << new_dist[0] << " " << new_dist[1] << " " << new_dist[2] << " " << new_dist[3] << " "
+                           << new_dist[4] << "\n\n";
 
+  // Also try the OpenCV cameraCalibrate function
+  std::cout << "---OpenCV Calibration---\n";
+  opencvCameraCalibration(problem_def.image_observations, data_set.images.front().size(),
+                          problem_def.intrinsics_guess);
   return 0;
 }
