@@ -58,6 +58,22 @@ target_link_libraries(${PROJECT_NAME}_static_camera
  ${OpenCV_LIBRARIES}
 )
 
+#Intrinsic test program
+add_executable(${PROJECT_NAME}_intr
+  src/intrinsic_calibration.cpp
+  src/${PROJECT_NAME}/data_set.cpp)
+
+set_target_properties(${PROJECT_NAME}_intr PROPERTIES OUTPUT_NAME intr_camera_cal_example PREFIX "")
+
+add_dependencies(${PROJECT_NAME}_intr ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(${PROJECT_NAME}_intr
+ ${catkin_LIBRARIES}
+ yaml-cpp
+ ${OpenCV_LIBRARIES}
+)
+
+
 add_executable(${PROJECT_NAME}_cmd
   src/command_line_cal.cpp
   src/${PROJECT_NAME}/data_set.cpp)
