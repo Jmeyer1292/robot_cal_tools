@@ -30,6 +30,8 @@ add_library(${PROJECT_NAME}
   src/${PROJECT_NAME}/extrinsic_3d_camera_on_wrist.cpp
   src/${PROJECT_NAME}/extrinsic_static_camera.cpp
   src/${PROJECT_NAME}/eigen_conversions.cpp
+
+  src/${PROJECT_NAME}/camera_intrinsic.cpp
 )
 
 add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
