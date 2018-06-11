@@ -35,7 +35,7 @@ is then compared with what it actually saw, and the guess is adjusted to bring i
 - The big dot means you know what angle you're looking at the target from. 
 - The big dot is the "origin" or (0,0,0) of the target. The +Z axis comes out of the page, the +X axis runs along the bottom of the page, left to right (the last row if your big dot is in the bottom left). The +Y runs up the page from the big dot.
 
-**TODO IMAGE OF CALIBRATION TARGET WITH THE COORDINATE SYSTEM DRAWN ON IT**
+![Calibration Target](docs/mod_circle_target_annotated.png)
 
 **NOTE**: You can create targets with custom size and spacing using the handy script, `calibration_target.py` found in `rct_image_tools/script`. Thanks to Jeremy Zoss for making this.
 
