@@ -26,11 +26,14 @@ include_directories(
 )
 
 add_library(${PROJECT_NAME}
+  # Utilities
+  src/${PROJECT_NAME}/eigen_conversions.cpp
+  # Optimizations
   src/${PROJECT_NAME}/extrinsic_camera_on_wrist.cpp
   src/${PROJECT_NAME}/extrinsic_3d_camera_on_wrist.cpp
   src/${PROJECT_NAME}/extrinsic_static_camera.cpp
-  src/${PROJECT_NAME}/eigen_conversions.cpp
-
+  # Optimizations (Experimental) - Intrinsic
+  src/${PROJECT_NAME}/pnp.cpp
   src/${PROJECT_NAME}/camera_intrinsic.cpp
 )
 
