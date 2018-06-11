@@ -26,7 +26,7 @@ TODO
 Find the transform from the robot base frame, *base_link*, to the camera optical frame.
  
 #### Workcell Setup
-TODO
+![Static Camera Workcell Setup](docs/static_camera_cell.png)
 
 #### Software Setup
 TODO
