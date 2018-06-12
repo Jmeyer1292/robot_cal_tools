@@ -4,9 +4,7 @@ project(rct_image_tools)
 add_compile_options(-std=c++11 -Wall -Wextra)
 
 find_package(OpenCV REQUIRED)
-find_package(Ceres REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
-  cv_bridge
   rct_optimizations
 )
 
@@ -16,8 +14,9 @@ catkin_package(
   LIBRARIES
     rct_image_tools
   CATKIN_DEPENDS
-    cv_bridge
     rct_optimizations
+  DEPENDS
+    OpenCV
 )
 
 ###########
@@ -54,20 +53,6 @@ target_link_libraries(${PROJECT_NAME}_test
   ${PROJECT_NAME}
 )
 
-# Executable testing the PnP problem solutions
-add_executable(${PROJECT_NAME}_pnp
-  src/solve_pnp.cpp
-)
-
-add_dependencies(${PROJECT_NAME}_pnp ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-target_link_libraries(${PROJECT_NAME}_pnp
-  ${catkin_LIBRARIES}
-  ${PROJECT_NAME}
-  ${CERES_LIBRARIES}
-)
-
-
 #############
 ## Install ##
 #############
@@ -81,5 +66,4 @@ install(TARGETS ${PROJECT_NAME}
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h"
-  PATTERN ".svn" EXCLUDE
 )

@@ -10,6 +10,5 @@
 
   <buildtool_depend>catkin</buildtool_depend>
   <depend>rct_optimizations</depend>
-  <depend>cv_bridge</depend>
 
 </package>

@@ -87,6 +87,19 @@ target_link_libraries(${PROJECT_NAME}_cmd
  yaml-cpp
  ${OpenCV_LIBRARIES}
 )
+
+add_executable(${PROJECT_NAME}_pnp
+  src/solve_pnp.cpp)
+
+set_target_properties(${PROJECT_NAME}_cmd PROPERTIES OUTPUT_NAME pnp_example PREFIX "")
+
+add_dependencies(${PROJECT_NAME}_pnp ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(${PROJECT_NAME}_pnp
+ ${catkin_LIBRARIES}
+ yaml-cpp
+ ${OpenCV_LIBRARIES}
+)
 #############
 ## Install ##
 #############

@@ -206,7 +206,7 @@ void CircleDetectorImpl::findCircles(cv::InputArray _image, cv::InputArray _bina
   }
 }
 
-void CircleDetectorImpl::detect(cv::InputArray _image, std::vector<cv::KeyPoint>& keypoints, cv::InputArray mask)
+void CircleDetectorImpl::detect(cv::InputArray _image, std::vector<cv::KeyPoint>& keypoints, cv::InputArray)
 {
   cv::Mat image = _image.getMat();
   keypoints.clear();
