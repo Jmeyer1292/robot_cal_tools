@@ -18,8 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(OpenCV REQUIRED)
 
 # This package only provides examples. It does not export any tools.
-catkin_package(
-)
+catkin_package()
 
 ###########
 ## Build ##
@@ -30,81 +29,92 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(${PROJECT_NAME}_extrinsic_example
-  src/camera_on_wrist_extrinsic.cpp
-  src/${PROJECT_NAME}/data_set.cpp)
+# Create a library for loading and saving "data sets": directory based
+# archives of poses and images that can be reloaded for testing and
+# development purposes.
+add_library(${PROJECT_NAME}_data_set src/${PROJECT_NAME}/data_set.cpp)
 
-set_target_properties(${PROJECT_NAME}_extrinsic_example PROPERTIES OUTPUT_NAME cam_on_wrist_extrinsic_example PREFIX "")
+add_dependencies(${PROJECT_NAME}_data_set ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_dependencies(${PROJECT_NAME}_extrinsic_example ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-target_link_libraries(${PROJECT_NAME}_extrinsic_example
- ${catkin_LIBRARIES}
+target_link_libraries(${PROJECT_NAME}_data_set
  yaml-cpp
  ${OpenCV_LIBRARIES}
 )
 
-add_executable(${PROJECT_NAME}_static_camera
-  src/static_camera_extrinsic.cpp
-  src/${PROJECT_NAME}/data_set.cpp)
+# Executable for demonstrating extrinsic, camera-on-wrist functionality
+add_executable(${PROJECT_NAME}_moving_camera src/camera_on_wrist_extrinsic.cpp)
 
-set_target_properties(${PROJECT_NAME}_static_camera PROPERTIES OUTPUT_NAME static_camera_cal_example PREFIX "")
+set_target_properties(${PROJECT_NAME}_moving_camera PROPERTIES OUTPUT_NAME moving_cam_extr_cal_ex PREFIX "")
+
+add_dependencies(${PROJECT_NAME}_moving_camera ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(${PROJECT_NAME}_moving_camera
+ ${catkin_LIBRARIES}
+ ${PROJECT_NAME}_data_set
+)
+
+# Executable for demonstrating extrinsic cal of static camera, moving target functionality
+add_executable(${PROJECT_NAME}_static_camera src/static_camera_extrinsic.cpp)
+
+set_target_properties(${PROJECT_NAME}_static_camera PROPERTIES OUTPUT_NAME static_cam_extr_cal_ex PREFIX "")
 
 add_dependencies(${PROJECT_NAME}_static_camera ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(${PROJECT_NAME}_static_camera
  ${catkin_LIBRARIES}
- yaml-cpp
- ${OpenCV_LIBRARIES}
+ ${PROJECT_NAME}_data_set
 )
 
-#Intrinsic test program
+#Executable for demonstrating intrinsic calibration of a camera
 add_executable(${PROJECT_NAME}_intr
-  src/intrinsic_calibration.cpp
-  src/${PROJECT_NAME}/data_set.cpp)
+  src/intrinsic_calibration.cpp)
 
-set_target_properties(${PROJECT_NAME}_intr PROPERTIES OUTPUT_NAME intr_camera_cal_example PREFIX "")
+set_target_properties(${PROJECT_NAME}_intr PROPERTIES OUTPUT_NAME intr_camera_cal_ex PREFIX "")
 
 add_dependencies(${PROJECT_NAME}_intr ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(${PROJECT_NAME}_intr
  ${catkin_LIBRARIES}
- yaml-cpp
- ${OpenCV_LIBRARIES}
+ ${PROJECT_NAME}_data_set
+
 )
 
+# Executable demonstrating solving for the pose of a target given camera properties
+add_executable(${PROJECT_NAME}_pnp src/solve_pnp.cpp)
 
-add_executable(${PROJECT_NAME}_cmd
-  src/command_line_cal.cpp
-  src/${PROJECT_NAME}/data_set.cpp)
-
-set_target_properties(${PROJECT_NAME}_cmd PROPERTIES OUTPUT_NAME cmd_cal PREFIX "")
-
-add_dependencies(${PROJECT_NAME}_cmd ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-target_link_libraries(${PROJECT_NAME}_cmd
- ${catkin_LIBRARIES}
- yaml-cpp
- ${OpenCV_LIBRARIES}
-)
-
-add_executable(${PROJECT_NAME}_pnp
-  src/solve_pnp.cpp)
-
-set_target_properties(${PROJECT_NAME}_cmd PROPERTIES OUTPUT_NAME pnp_example PREFIX "")
+set_target_properties(${PROJECT_NAME}_pnp PROPERTIES OUTPUT_NAME solve_pnp_ex PREFIX "")
 
 add_dependencies(${PROJECT_NAME}_pnp ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(${PROJECT_NAME}_pnp
  ${catkin_LIBRARIES}
- yaml-cpp
- ${OpenCV_LIBRARIES}
+ ${PROJECT_NAME}_data_set
 )
+
+# Executable for collecting data sets via subscribers and triggered with services
+# See readme (TODO: Write a readme)
+add_executable(${PROJECT_NAME}_cmd src/command_line_cal.cpp)
+
+set_target_properties(${PROJECT_NAME}_cmd PROPERTIES OUTPUT_NAME command_line_data_collection PREFIX "")
+
+add_dependencies(${PROJECT_NAME}_cmd ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(${PROJECT_NAME}_cmd
+ ${catkin_LIBRARIES}
+ ${PROJECT_NAME}_data_set
+)
+
+
 #############
 ## Install ##
 #############
 
-install(TARGETS ${PROJECT_NAME}_extrinsic_example
+install(TARGETS
+    ${PROJECT_NAME}_moving_camera
+    ${PROJECT_NAME}_static_camera
+    ${PROJECT_NAME}_intr
+    ${PROJECT_NAME}_pnp
+    ${PROJECT_NAME}_cmd
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
