@@ -11,7 +11,7 @@ This document describes, with pictures, the "experimental setup" for common cali
 Find the transform from the robot wrist, *tool0*, to the camera.
  
 #### Workcell Setup
-TODO
+![Moving Camera, Static Target Workcell Setup](docs/moving_camera_cell.png)
 
 #### Software Setup
 TODO
