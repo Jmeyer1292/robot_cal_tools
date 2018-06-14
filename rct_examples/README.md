@@ -28,7 +28,7 @@ Remember that you can think of the columns of the rotation matrix as the axes of
 
 A guess at **base to target** would thus be:
 ```
-translation = [0.25, 0.25, 0];
+translation = [1.0, 0, 0];
 rotation = 
 	[ 0,  1,  0
 	  -1   0, 0
