@@ -34,6 +34,7 @@ is then compared with what it actually saw, and the guess is adjusted to bring i
 - However I do provide a default target finder in `rct_image_tools`. The type of target compatible with this package is a grid of circles with a single larger dot in the bottom left corner.
 - The big dot means you know what angle you're looking at the target from. 
 - The big dot is the "origin" or (0,0,0) of the target. The +Z axis comes out of the page, the +X axis runs along the bottom of the page, left to right (the last row if your big dot is in the bottom left). The +Y runs up the page from the big dot.
+- When using the observation finder in `rct_image_tools`, the points are ordered top to bottom, left to right as if reading a book with the big dot, or origin, in the bottom left. So the top left point is `0`, the top right point is `cols - 1`, the second row first column is point `cols`, etc. See the image. The target class in `rct_image_tools` has a points field which matches this ordering.
 
 ![Calibration Target](docs/mod_circle_target_annotated.png)
 
