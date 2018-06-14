@@ -31,7 +31,7 @@ struct DataCollection
   std::vector<geometry_msgs::TransformStamped> poses;
   std::vector<cv_bridge::CvImagePtr> images;
 
-  rct_image_tools::ImageObservationFinder finder;
+  rct_image_tools::ModifiedCircleGridObservationFinder finder;
 
   DataCollection(ros::NodeHandle& nh)
     : listener(buffer)

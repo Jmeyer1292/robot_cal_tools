@@ -19,7 +19,7 @@ int main(int argc, char** argv)
   target.rows = 9;
   target.cols = 12;
 
-  rct_image_tools::ImageObservationFinder obs_finder(target);
+  rct_image_tools::ModifiedCircleGridObservationFinder obs_finder(target);
 
   auto maybe_obs = obs_finder.findObservations(m);
 

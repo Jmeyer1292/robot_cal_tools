@@ -87,7 +87,7 @@ int main(int argc, char** argv)
     ROS_WARN_STREAM("Unable to load camera intrinsics from the 'intrinsics' parameter struct");
   }
 
-  rct_image_tools::ImageObservationFinder finder (target);
+  rct_image_tools::ModifiedCircleGridObservationFinder finder (target);
   auto maybe_obs = finder.findObservations(mat);
   if (!maybe_obs)
   {

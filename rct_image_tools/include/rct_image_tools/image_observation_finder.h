@@ -1,5 +1,5 @@
-#ifndef IMAGE_OBSERVATION_FINDER_H
-#define IMAGE_OBSERVATION_FINDER_H
+#ifndef RCT_IMAGE_OBSERVATION_FINDER_H
+#define RCT_IMAGE_OBSERVATION_FINDER_H
 
 #include "rct_image_tools/modified_circle_grid_target.h"
 #include <boost/optional.hpp>
@@ -9,13 +9,22 @@
 namespace rct_image_tools
 {
 
-class ImageObservationFinder
+/**
+ * @brief This class finds 2D observations from images of a known ModifiedCircleGridTarget.
+ * All points must be seen or it will fail. Observations are returned in the same order
+ * as points are defined in the target.
+ */
+class ModifiedCircleGridObservationFinder
 {
 public:
-  ImageObservationFinder(const ModifiedCircleGridTarget& target);
+  ModifiedCircleGridObservationFinder(const ModifiedCircleGridTarget& target);
 
   boost::optional<std::vector<Eigen::Vector2d>> findObservations(const cv::Mat& image) const;
 
+  /**
+   * @brief A debugging utility that will draw an observation set onto a copy of a cv::Mat for
+   * display purposes. Usually you want to call findObservations() above then this with the result.
+   */
   cv::Mat drawObservations(const cv::Mat& image, const std::vector<Eigen::Vector2d>& observations) const;
 
 private:
@@ -23,4 +32,4 @@ private:
 };
 }
 
-#endif // IMAGE_OBSERVATION_FINDER_H
+#endif // RCT_IMAGE_OBSERVATION_FINDER_H

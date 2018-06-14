@@ -342,7 +342,7 @@ static bool extractModifiedCircleGrid(const cv::Mat& image, const rct_image_tool
   return extractKeyPoints(centers, observation_points, detector_ptr, rows, cols, flipped, image);
 }
 
-rct_image_tools::ImageObservationFinder::ImageObservationFinder(const ModifiedCircleGridTarget& target)
+rct_image_tools::ModifiedCircleGridObservationFinder::ModifiedCircleGridObservationFinder(const ModifiedCircleGridTarget& target)
     : target_(target)
 {
   assert(target.cols != 0);
@@ -350,7 +350,7 @@ rct_image_tools::ImageObservationFinder::ImageObservationFinder(const ModifiedCi
 }
 
 boost::optional<std::vector<Eigen::Vector2d>>
-rct_image_tools::ImageObservationFinder::findObservations(const cv::Mat& image) const
+rct_image_tools::ModifiedCircleGridObservationFinder::findObservations(const cv::Mat& image) const
 {
   // Call modified circle finder
   ObservationPoints points;
@@ -370,7 +370,7 @@ rct_image_tools::ImageObservationFinder::findObservations(const cv::Mat& image) 
 }
 
 cv::Mat
-rct_image_tools::ImageObservationFinder::drawObservations(const cv::Mat& image,
+rct_image_tools::ModifiedCircleGridObservationFinder::drawObservations(const cv::Mat& image,
                                                           const std::vector<Eigen::Vector2d>& observations) const
 {
   ObservationPoints cv_obs(observations.size());

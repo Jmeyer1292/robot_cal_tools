@@ -60,7 +60,7 @@ int main(int argc, char** argv)
     ROS_WARN_STREAM("Unable to load camera intrinsics from the 'intrinsics' parameter struct");
   }
 
-  rct_image_tools::ImageObservationFinder obs_finder(target);
+  rct_image_tools::ModifiedCircleGridObservationFinder obs_finder(target);
 
   // Construct problem
   rct_optimizations::ExtrinsicStaticCameraMovingTargetProblem problem_def;

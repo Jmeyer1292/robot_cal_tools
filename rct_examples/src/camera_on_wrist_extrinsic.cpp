@@ -48,7 +48,7 @@ int main(int argc, char** argv)
 
 
 
-  rct_image_tools::ImageObservationFinder obs_finder(target);
+  rct_image_tools::ModifiedCircleGridObservationFinder obs_finder(target);
 
   rct_optimizations::ExtrinsicCameraOnWristProblem problem_def;
   problem_def.intr = intr;

@@ -87,7 +87,7 @@ int main(int argc, char** argv)
   }
 
   // Create obs finder
-  rct_image_tools::ImageObservationFinder obs_finder (target);
+  rct_image_tools::ModifiedCircleGridObservationFinder obs_finder (target);
 
   // Construct problem
   rct_optimizations::IntrinsicEstimationProblem problem_def;
