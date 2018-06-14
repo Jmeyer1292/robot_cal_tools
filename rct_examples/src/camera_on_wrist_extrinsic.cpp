@@ -2,6 +2,7 @@
 #include <rct_optimizations/eigen_conversions.h>
 #include <rct_optimizations/extrinsic_camera_on_wrist.h>
 #include "rct_examples/data_set.h"
+#include "rct_examples/parameter_loaders.h"
 
 #include <opencv2/highgui.hpp>
 #include <ros/ros.h>
@@ -19,6 +20,24 @@ int main(int argc, char** argv)
     return 1;
   }
 
+  // Load target definition from parameter server
+  rct_image_tools::ModifiedCircleGridTarget target(10, 10, 0.0254);
+  if (!rct_examples::loadTarget(pnh, "target_definition", target))
+  {
+    ROS_WARN_STREAM("Unable to load target from the 'target_definition' parameter struct");
+  }
+
+  // Load the camera intrinsics from the parameter server
+  rct_optimizations::CameraIntrinsics intr;
+  intr.fx() = 510.0;
+  intr.fy() = 510.0;
+  intr.cx() = 320.2;
+  intr.cy() = 208.9;
+  if (!rct_examples::loadIntrinsics(pnh, "intrinsics", intr))
+  {
+    ROS_WARN_STREAM("Unable to load camera intrinsics from the 'intrinsics' parameter struct");
+  }
+
   boost::optional<rct_examples::ExtrinsicDataSet> maybe_data_set = rct_examples::parseFromFile(data_path);
   if (!maybe_data_set)
   {
@@ -27,18 +46,9 @@ int main(int argc, char** argv)
   }
   auto& data_set = *maybe_data_set;
 
-  // Process each image into observations
-  // Load Target Definition
-  rct_image_tools::ModifiedCircleGridTarget target(10, 10, 0.0254);
+
 
   rct_image_tools::ImageObservationFinder obs_finder(target);
-
-  // Construct problem
-  rct_optimizations::CameraIntrinsics intr;
-  intr.fx() = 510.0;
-  intr.fy() = 510.0;
-  intr.cx() = 320.2;
-  intr.cy() = 208.9;
 
   rct_optimizations::ExtrinsicCameraOnWristProblem problem_def;
   problem_def.intr = intr;
