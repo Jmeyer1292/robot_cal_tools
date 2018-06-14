@@ -1,0 +1,4 @@
+target_definition:
+  rows: 10
+  cols: 10
+  spacing: 0.0254 # (meters between dot centers)
