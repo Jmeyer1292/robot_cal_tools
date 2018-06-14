@@ -22,8 +22,8 @@
  * Inputs:
  *  - Camera intrisic parameters (fx, fy, cx, cy)
  *  - A sequence of transformations: "base frame" to "wrist frame" for each image position
- *  - A sequence of observation sets for each image position
- *  - Each observation set is a set of correspondences: a position in the "target frame" (3D)
+ *  - A sequence of correspondence sets for each image position
+ *  - Each correspondence set is a set of correspondences: a position in the "target frame" (3D)
  *    and where that point was seen in the image (2D).
  *  - You must also provide a guess for the two transforms being calibrated.
  *
@@ -66,7 +66,7 @@ struct ExtrinsicCameraOnWristProblem
    * Each observation set consists of a set of correspodences: a 3D position (e.g. a dot) in "target
    * frame" to the image location it was detected at (2D).
    */
-  std::vector<ObservationSet> image_observations;
+  std::vector<CorrespondenceSet> image_observations;
 
   /**
    * @brief Your best guess at the transform from "base frame" to "target frame". Should be static

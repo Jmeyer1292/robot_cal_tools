@@ -9,7 +9,7 @@
 
 #include <opencv2/calib3d.hpp>
 
-void opencvCameraCalibration(const std::vector<rct_optimizations::ObservationSet>& obs,
+void opencvCameraCalibration(const std::vector<rct_optimizations::CorrespondenceSet>& obs,
                              const cv::Size& image_size,
                              const rct_optimizations::CameraIntrinsics& intr)
 {
@@ -106,12 +106,12 @@ int main(int argc, char** argv)
     cv::imshow("points", obs_finder.drawObservations(data_set.images[i], *maybe_obs));
     cv::waitKey();
 
-    rct_optimizations::ObservationSet obs_set;
+    rct_optimizations::CorrespondenceSet obs_set;
 
     assert(maybe_obs->size() == target.points.size());
     for (std::size_t j = 0; j < maybe_obs->size(); ++j)
     {
-      rct_optimizations::ObservationPair pair;
+      rct_optimizations::Correspondence2D3D pair;
       pair.in_image = maybe_obs->at(j);
       pair.in_target = target.points[j];
 

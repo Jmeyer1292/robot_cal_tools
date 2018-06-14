@@ -112,7 +112,7 @@ int main(int argc, char** argv)
 
   for (std::size_t i = 0; i < maybe_obs->size(); ++i)
   {
-    rct_optimizations::ObservationPair pair;
+    rct_optimizations::Correspondence2D3D pair;
     pair.in_image = (*maybe_obs)[i];
     pair.in_target = target.points[i];
     params.correspondences.push_back(pair);

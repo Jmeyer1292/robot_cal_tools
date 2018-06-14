@@ -44,21 +44,21 @@ struct Pose6d
 };
 
 // Useful typedefs shared by calibrations
-struct ObservationPair
+struct Correspondence2D3D
 {
   Eigen::Vector3d in_target;
   Eigen::Vector2d in_image;
 };
 
-using ObservationSet = std::vector<ObservationPair>;
+using CorrespondenceSet = std::vector<Correspondence2D3D>;
 
-struct Observation3DPair
+struct Correspondence3D3D
 {
   Eigen::Vector3d in_target;
   Eigen::Vector3d in_image;
 };
 
-using Observation3DSet = std::vector<Observation3DPair>;
+using Correspondence3DSet = std::vector<Correspondence3D3D>;
 
 }
 

@@ -27,7 +27,7 @@ namespace rct_optimizations
 struct Extrinsic3DCameraOnWristProblem
 {
   std::vector<Eigen::Affine3d> wrist_poses;
-  std::vector<Observation3DSet> observations;
+  std::vector<Correspondence3DSet> observations;
 
   Eigen::Affine3d base_to_target_guess;
   Eigen::Affine3d wrist_to_camera_guess;

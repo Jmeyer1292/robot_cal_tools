@@ -87,12 +87,12 @@ int main(int argc, char** argv)
     // We got observations, let's process
     problem_def.wrist_poses.push_back(data_set.tool_poses[i]);
 
-    rct_optimizations::ObservationSet obs_set;
+    rct_optimizations::CorrespondenceSet obs_set;
 
     assert(maybe_obs->size() == target.points.size());
     for (std::size_t j = 0; j < maybe_obs->size(); ++j)
     {
-      rct_optimizations::ObservationPair pair;
+      rct_optimizations::Correspondence2D3D pair;
       pair.in_image = maybe_obs->at(j);
       pair.in_target = target.points[j];
 

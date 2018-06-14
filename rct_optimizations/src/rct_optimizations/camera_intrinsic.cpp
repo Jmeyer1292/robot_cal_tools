@@ -113,7 +113,7 @@ void projectPoints2(const T* const camera_intr, const T* const pt_in_camera, T* 
 }
 
 static rct_optimizations::Pose6d solvePnP(const rct_optimizations::CameraIntrinsics& intr,
-                                          const rct_optimizations::ObservationSet& obs,
+                                          const rct_optimizations::CorrespondenceSet& obs,
                                           const rct_optimizations::Pose6d& guess)
 {
   using namespace rct_optimizations;
