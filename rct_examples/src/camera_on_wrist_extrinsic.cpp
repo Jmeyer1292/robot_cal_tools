@@ -137,7 +137,7 @@ int main(int argc, char** argv)
   std::cout << t.matrix() << "\n";
 
   std::cout << "--- URDF Format Wrist to Camera---\n";
-  Eigen::Vector3d rpy= c.rotation().eulerAngles(0, 1, 2);
+  Eigen::Vector3d rpy = c.rotation().eulerAngles(0, 1, 2);
   std::cout << "xyz=\"" << c.translation()(0) << " " << c.translation()(1) << " " << c.translation()(2) << "\"\n";
   std::cout << "rpy=\"" << rpy(0) << " " << rpy(1) << " " << rpy(2) << "\"\n";
 
