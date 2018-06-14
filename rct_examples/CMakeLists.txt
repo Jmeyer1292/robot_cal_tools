@@ -32,7 +32,9 @@ include_directories(
 # Create a library for loading and saving "data sets": directory based
 # archives of poses and images that can be reloaded for testing and
 # development purposes.
-add_library(${PROJECT_NAME}_data_set src/${PROJECT_NAME}/data_set.cpp)
+add_library(${PROJECT_NAME}_data_set
+  src/utilities/data_set.cpp
+  src/utilities/parameter_loaders.cpp)
 
 add_dependencies(${PROJECT_NAME}_data_set ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
