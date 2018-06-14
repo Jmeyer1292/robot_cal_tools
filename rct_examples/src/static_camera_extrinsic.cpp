@@ -2,6 +2,7 @@
 #include <rct_optimizations/eigen_conversions.h>
 #include <rct_optimizations/extrinsic_static_camera.h>
 #include "rct_examples/data_set.h"
+#include "rct_examples/parameter_loaders.h"
 
 #include <opencv2/highgui.hpp>
 #include <ros/ros.h>
@@ -41,24 +42,30 @@ int main(int argc, char** argv)
   }
   auto& data_set = *maybe_data_set;
 
-  // Process each image into observations
-  // Load Target Definition
+  // Load target definition from parameter server
   rct_image_tools::ModifiedCircleGridTarget target(5, 5, 0.015);
+  if (!rct_examples::loadTarget(pnh, "target_definition", target))
+  {
+    ROS_WARN_STREAM("Unable to load target from the 'target_definition' parameter struct");
+  }
 
-  rct_image_tools::ImageObservationFinder obs_finder(target);
-
-  // Construct problem
+  // Load the camera intrinsics from the parameter server
   rct_optimizations::CameraIntrinsics intr;
   intr.fx() = 1411.0;
   intr.fy() = 1408.0;
   intr.cx() = 807.2;
   intr.cy() = 615.0;
+  if (!rct_examples::loadIntrinsics(pnh, "intrinsics", intr))
+  {
+    ROS_WARN_STREAM("Unable to load camera intrinsics from the 'intrinsics' parameter struct");
+  }
 
+  rct_image_tools::ImageObservationFinder obs_finder(target);
+
+  // Construct problem
   rct_optimizations::ExtrinsicStaticCameraMovingTargetProblem problem_def;
   problem_def.intr = intr;
   problem_def.base_to_camera_guess = lookat(Eigen::Vector3d(1.5, 1.5, 0), Eigen::Vector3d(1.5, 0, 0), Eigen::Vector3d(0,0,1));
-//      rct_optimizations::poseCalToEigen(rct_optimizations::Pose6d({0, 0, -M_PI_2, 0.019, 0, 0.15}));
-
   problem_def.wrist_to_target_guess = Eigen::Affine3d::Identity();
   problem_def.wrist_to_target_guess.matrix().col(0).head<3>() = Eigen::Vector3d(1, 0, 0);
   problem_def.wrist_to_target_guess.matrix().col(1).head<3>() = Eigen::Vector3d(0, 0, -1);

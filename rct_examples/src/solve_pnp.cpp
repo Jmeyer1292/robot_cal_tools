@@ -10,6 +10,7 @@
 
 #include <rct_image_tools/image_observation_finder.h>
 #include <rct_optimizations/experimental/pnp.h>
+#include <rct_examples/parameter_loaders.h>
 
 static Eigen::Affine3d solveCVPnP(const rct_optimizations::CameraIntrinsics& intr,
                                   const rct_image_tools::ModifiedCircleGridTarget& target,
@@ -56,37 +57,46 @@ static Eigen::Affine3d solveCVPnP(const rct_optimizations::CameraIntrinsics& int
 
 int main(int argc, char** argv)
 {
-  if (argc != 2)
-  {
-    std::cout << "Usage: ./solve_pnp image_path\n";
-    return 1;
-  }
+  ros::init(argc, argv, "solve_pnp_ex", ros::init_options::AnonymousName);
+  ros::NodeHandle pnh ("~");
 
   // Load the image
-  std::string image_path (argv[1]);
+  std::string image_path;
+  if (!pnh.getParam("image_path", image_path))
+  {
+    ROS_ERROR_STREAM("Must set the 'image_path' private parameter");
+    return 1;
+  }
   cv::Mat mat = cv::imread(image_path);
 
-  // Load the target
-  rct_image_tools::ModifiedCircleGridTarget target (5, 5, 0.015);
-  rct_image_tools::ImageObservationFinder finder (target);
+  // Load target definition from parameter server
+  rct_image_tools::ModifiedCircleGridTarget target(5, 5, 0.015);
+  if (!rct_examples::loadTarget(pnh, "target_definition", target))
+  {
+    ROS_WARN_STREAM("Unable to load target from the 'target_definition' parameter struct");
+  }
 
+  // Load the camera intrinsics from the parameter server
+  rct_optimizations::CameraIntrinsics intr;
+  intr.fx() = 1411.0;
+  intr.fy() = 1408.0;
+  intr.cx() = 807.2;
+  intr.cy() = 615.0;
+  if (!rct_examples::loadIntrinsics(pnh, "intrinsics", intr))
+  {
+    ROS_WARN_STREAM("Unable to load camera intrinsics from the 'intrinsics' parameter struct");
+  }
+
+  rct_image_tools::ImageObservationFinder finder (target);
   auto maybe_obs = finder.findObservations(mat);
   if (!maybe_obs)
   {
     std::cerr << "Unable to detect the target!\n";
     return 1;
   }
-
   cv::Mat show = finder.drawObservations(mat, *maybe_obs);
   cv::imshow("win", show);
   cv::waitKey();
-
-  // Load the camera
-  rct_optimizations::CameraIntrinsics intr;
-  intr.cx() = 800;
-  intr.cy() = 600;
-  intr.fx() = 1400;
-  intr.fy() = 1400;
 
   // Solve with OpenCV
   Eigen::Affine3d cv_pose = solveCVPnP(intr, target, *maybe_obs);
