@@ -54,7 +54,7 @@ static void reproject(const Eigen::Affine3d& wrist_to_camera, const Eigen::Affin
   rct_optimizations::PnPResult r = rct_optimizations::optimize(pb);
   std::cout << "PNP\n" << r.camera_to_target.matrix() << "\n";
 
-  Eigen::Affine3d delta = r.camera_to_target * cam_to_target.inverse();
+  Eigen::Affine3d delta = cam_to_target.inverse() * r.camera_to_target;
   std::cout << "DELTA S: " << delta.translation().norm() << " at " << delta.translation().transpose() << "\n";
   Eigen::AngleAxisd aa (delta.linear());
   std::cout << "DELTA A: " << (180.0 * aa.angle() / M_PI) << " and axis = " << aa.axis().transpose() << "\n";

@@ -9,6 +9,57 @@
 #include <opencv2/highgui.hpp>
 #include <ros/ros.h>
 
+#include <opencv2/imgproc.hpp>
+#include <rct_optimizations/ceres_math_utilities.h>
+#include <rct_optimizations/experimental/pnp.h>
+
+static void reproject(const Eigen::Affine3d& wrist_to_target, const Eigen::Affine3d& base_to_camera,
+                      const Eigen::Affine3d& base_to_wrist, const rct_optimizations::CameraIntrinsics& intr,
+                      const rct_image_tools::ModifiedCircleGridTarget& target, const cv::Mat& image,
+                      const rct_optimizations::CorrespondenceSet& corr)
+{
+  std::vector<cv::Point2d> reprojections;
+  Eigen::Affine3d target_to_camera = wrist_to_target.inverse() * base_to_wrist.inverse() * base_to_camera;
+
+  for (const auto& point_in_target : target.points)
+  {
+    Eigen::Vector3d in_camera = target_to_camera.inverse() * point_in_target;
+
+    double uv[2];
+    rct_optimizations::projectPoint(intr, in_camera.data(), uv);
+
+    reprojections.push_back(cv::Point2d(uv[0], uv[1]));
+  }
+
+  cv::Mat frame = image.clone();
+
+  for (const auto& pt : reprojections)
+  {
+    cv::circle(frame, pt, 3, cv::Scalar(0, 0, 255));
+  }
+
+  // We want to compute the "positional error" as well
+  // So first we compute the "camera to target" transform based on the calibration...
+  std::cout << "CAM TO TARGET\n\n" << target_to_camera.inverse().matrix() << "\n";
+
+  rct_optimizations::PnPProblem pb;
+  pb.camera_to_target_guess = target_to_camera.inverse();
+  pb.correspondences = corr;
+  pb.intr = intr;
+
+
+  rct_optimizations::PnPResult r = rct_optimizations::optimize(pb);
+  std::cout << "PNP\n" << r.camera_to_target.matrix() << "\n";
+
+  Eigen::Affine3d delta = target_to_camera * r.camera_to_target;
+  std::cout << "OTHER S: " << (r.camera_to_target.translation() - target_to_camera.translation()).norm() << "\n";
+  std::cout << "DELTA S: " << delta.translation().norm() << " at " << delta.translation().transpose() << "\n";
+  Eigen::AngleAxisd aa (delta.linear());
+  std::cout << "DELTA A: " << (180.0 * aa.angle() / M_PI) << " and axis = " << aa.axis().transpose() << "\n";
+
+  cv::imshow("repr", frame);
+  cv::waitKey();
+}
 /**
  * @brief Defines a camera matrix using a camera origin, a position its looking at, and an up vector hint
  * @param origin The position of the camera focal point
@@ -150,6 +201,12 @@ int main(int argc, char** argv)
   Eigen::Vector3d rpy = c.rotation().eulerAngles(0, 1, 2);
   std::cout << "xyz=\"" << c.translation()(0) << " " << c.translation()(1) << " " << c.translation()(2) << "\"\n";
   std::cout << "rpy=\"" << rpy(0) << " " << rpy(1) << " " << rpy(2) << "\"\n";
+
+  for (std::size_t i = 0; i < data_set.images.size(); ++i)
+  {
+    reproject(opt_result.wrist_to_target, opt_result.base_to_camera, data_set.tool_poses[i],
+              intr, target, data_set.images[i], problem_def.image_observations[i]);
+  }
 
   return 0;
 }
