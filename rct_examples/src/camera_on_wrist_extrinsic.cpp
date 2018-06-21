@@ -6,9 +6,62 @@
 // The calibration function for 'moving camera' on robot wrist
 #include <rct_optimizations/extrinsic_camera_on_wrist.h>
 
+#include <rct_optimizations/experimental/pnp.h>
+
 // For display of found targets
-#include <opencv2/highgui.hpp>
+#include <opencv2/highgui/highgui.hpp>
 #include <ros/ros.h>
+#include <opencv2/imgproc.hpp>
+#include <rct_optimizations/ceres_math_utilities.h>
+
+static void reproject(const Eigen::Affine3d& wrist_to_camera, const Eigen::Affine3d& base_to_target,
+                      const Eigen::Affine3d& base_to_wrist, const rct_optimizations::CameraIntrinsics& intr,
+                      const rct_image_tools::ModifiedCircleGridTarget& target, const cv::Mat& image,
+                      const rct_optimizations::CorrespondenceSet& corr)
+{
+  std::vector<cv::Point2d> reprojections;
+
+  for (const auto& point_in_target : target.points)
+  {
+    Eigen::Vector3d in_base = (base_to_target * point_in_target);
+    Eigen::Vector3d in_wrist = base_to_wrist.inverse() * in_base;
+    Eigen::Vector3d in_camera =wrist_to_camera.inverse() * in_wrist;
+
+    double uv[2];
+    rct_optimizations::projectPoint(intr, in_camera.data(), uv);
+
+    reprojections.push_back(cv::Point2d(uv[0], uv[1]));
+  }
+
+  cv::Mat frame = image.clone();
+
+  for (const auto& pt : reprojections)
+  {
+    cv::circle(frame, pt, 3, cv::Scalar(0, 0, 255));
+  }
+
+  // We want to compute the "positional error" as well
+  // So first we compute the "camera to target" transform based on the calibration...
+  Eigen::Affine3d cam_to_target = wrist_to_camera.inverse() * base_to_wrist.inverse() * base_to_target;
+  std::cout << "CAM TO TARGET\n\n" << cam_to_target.matrix() << "\n";
+
+  rct_optimizations::PnPProblem pb;
+  pb.camera_to_target_guess = cam_to_target;
+  pb.correspondences = corr;
+  pb.intr = intr;
+
+
+  rct_optimizations::PnPResult r = rct_optimizations::optimize(pb);
+  std::cout << "PNP\n" << r.camera_to_target.matrix() << "\n";
+
+  Eigen::Affine3d delta = r.camera_to_target * cam_to_target.inverse();
+  std::cout << "DELTA S: " << delta.translation().norm() << " at " << delta.translation().transpose() << "\n";
+  Eigen::AngleAxisd aa (delta.linear());
+  std::cout << "DELTA A: " << (180.0 * aa.angle() / M_PI) << " and axis = " << aa.axis().transpose() << "\n";
+
+  cv::imshow("repr", frame);
+  cv::waitKey();
+}
 
 int main(int argc, char** argv)
 {
@@ -140,6 +193,12 @@ int main(int argc, char** argv)
   Eigen::Vector3d rpy = c.rotation().eulerAngles(0, 1, 2);
   std::cout << "xyz=\"" << c.translation()(0) << " " << c.translation()(1) << " " << c.translation()(2) << "\"\n";
   std::cout << "rpy=\"" << rpy(0) << " " << rpy(1) << " " << rpy(2) << "\"\n";
+
+  for (std::size_t i = 0; i < data_set.images.size(); ++i)
+  {
+    reproject(opt_result.wrist_to_camera, opt_result.base_to_target, data_set.tool_poses[i],
+              intr, target, data_set.images[i], problem_def.image_observations[i]);
+  }
 
   return 0;
 }
