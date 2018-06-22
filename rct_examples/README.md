@@ -17,7 +17,7 @@ Sorry for the paint drawings, but I hope it gets the idea across. Note the orien
 
 **wrist to camera**
 ```
-translation = [0.2, 0, 0.2];
+translation = [-0.2, 0, 0.2];
 rotation = 
 	 [0,  1,  0,
 	 -1,  0,  0,
