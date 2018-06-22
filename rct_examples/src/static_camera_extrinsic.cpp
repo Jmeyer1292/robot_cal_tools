@@ -198,9 +198,9 @@ int main(int argc, char** argv)
   std::cout << t.matrix() << "\n";
 
   std::cout << "--- URDF Format Base to Camera---\n";
-  Eigen::Vector3d rpy = c.rotation().eulerAngles(0, 1, 2);
+  Eigen::Vector3d rpy = c.rotation().eulerAngles(2, 1, 0);
   std::cout << "xyz=\"" << c.translation()(0) << " " << c.translation()(1) << " " << c.translation()(2) << "\"\n";
-  std::cout << "rpy=\"" << rpy(0) << " " << rpy(1) << " " << rpy(2) << "\"\n";
+  std::cout << "rpy=\"" << rpy(2) << " " << rpy(1) << " " << rpy(0) << "\"\n";
 
   for (std::size_t i = 0; i < data_set.images.size(); ++i)
   {
