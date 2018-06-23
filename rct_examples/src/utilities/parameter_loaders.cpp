@@ -41,3 +41,25 @@ bool rct_examples::loadIntrinsics(const ros::NodeHandle& nh, const std::string& 
   intr = temp_intr;
   return true;
 }
+
+bool rct_examples::loadPose(const ros::NodeHandle& nh, const std::string& key,
+                            Eigen::Affine3d& pose)
+{
+  XmlRpc::XmlRpcValue xml;
+  if (!nh.getParam(key, xml)) return false;
+
+  pose = Eigen::Affine3d::Identity();
+  double x, y, z, qx, qy, qz, qw;
+  if (!read(xml, "x", x)) return false;
+  if (!read(xml, "y", y)) return false;
+  if (!read(xml, "x", z)) return false;
+  if (!read(xml, "qx", qx)) return false;
+  if (!read(xml, "qy", qy)) return false;
+  if (!read(xml, "qz", qz)) return false;
+  if (!read(xml, "qw", qw)) return false;
+
+  pose.translation() = Eigen::Vector3d(x, y, z);
+  pose.linear() = Eigen::Quaterniond(qw, qx, qy, qz).toRotationMatrix();
+
+  return true;
+}

@@ -1,0 +1,4 @@
+target_definition:
+  rows: 7
+  cols: 7
+  spacing: 0.0125 # (meters between dot centers)

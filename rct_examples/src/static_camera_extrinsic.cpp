@@ -130,13 +130,17 @@ int main(int argc, char** argv)
   rct_optimizations::ExtrinsicStaticCameraMovingTargetProblem problem_def;
   // Our camera intrinsics to use
   problem_def.intr = intr;
+
   // Our 'base to camera guess': A camera off to the side, looking at a point centered in front of the robot
-  problem_def.base_to_camera_guess = lookat(Eigen::Vector3d(1.5, 1.5, 0), Eigen::Vector3d(1.5, 0, 0), Eigen::Vector3d(0,0,1));
-  // Another way of defining rotation matrices by accessing the column vectors directoy:
-  problem_def.wrist_to_target_guess = Eigen::Affine3d::Identity(); // Make sure we initialize the memory
-  problem_def.wrist_to_target_guess.matrix().col(0).head<3>() = Eigen::Vector3d(1, 0, 0); // X vector of target in wrist frame
-  problem_def.wrist_to_target_guess.matrix().col(1).head<3>() = Eigen::Vector3d(0, 0, -1); // Y vector of target in wrist frame
-  problem_def.wrist_to_target_guess.matrix().col(2).head<3>() = Eigen::Vector3d(0, 1, 0); // Z vector of target in wrist frame
+  if (!rct_examples::loadPose(pnh, "base_to_camera_guess", problem_def.base_to_camera_guess))
+  {
+    ROS_WARN_STREAM("Unable to load guess for base to camera from the 'base_to_camera_guess' parameter struct");
+  }
+
+  if (!rct_examples::loadPose(pnh, "wrist_to_target_guess", problem_def.wrist_to_target_guess))
+  {
+    ROS_WARN_STREAM("Unable to load guess for wrist to target from the 'wrist_to_target_guess' parameter struct");
+  }
 
   // Finally, we need to process our images into correspondence sets: for each dot in the
   // target this will be where that dot is in the target and where it was seen in the image.
@@ -200,7 +204,7 @@ int main(int argc, char** argv)
   std::cout << "--- URDF Format Base to Camera---\n";
   Eigen::Vector3d rpy = c.rotation().eulerAngles(2, 1, 0);
   std::cout << "xyz=\"" << c.translation()(0) << " " << c.translation()(1) << " " << c.translation()(2) << "\"\n";
-  std::cout << "rpy=\"" << rpy(2) << " " << rpy(1) << " " << rpy(0) << "\"\n";
+  std::cout << "rpy=\"" << rpy(2) << "(" << rpy(2) * 180/M_PI << " deg) " << rpy(1) << "(" << rpy(1) * 180/M_PI << " deg) " << rpy(0) << "(" << rpy(0) * 180/M_PI << " deg)\"\n";
 
   for (std::size_t i = 0; i < data_set.images.size(); ++i)
   {
