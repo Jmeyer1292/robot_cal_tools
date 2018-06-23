@@ -1,11 +1,13 @@
 <launch>
   <arg name="camera_file" default="$(find rct_examples)/config/avt_gige_camera_intr.yaml"/>
   <arg name="target_file" default="$(find rct_examples)/config/target_5x5.yaml"/>
+  <arg name="guess_file" default="$(find rct_examples)/config/guess.yaml"/>
   <arg name="data_path"/>
 
   <node pkg="rct_examples" type="static_cam_extr_cal_ex" name="static_camera_cal" output="screen">
     <rosparam command="load" file="$(arg camera_file)"/>
     <rosparam command="load" file="$(arg target_file)"/>
+    <rosparam command="load" file="$(arg guess_file)"/>
     <param name="data_path" value="$(arg data_path)"/>
   </node>
 </launch>

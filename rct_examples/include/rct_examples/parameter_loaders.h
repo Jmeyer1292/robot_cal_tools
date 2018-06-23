@@ -12,6 +12,8 @@ bool loadTarget(const ros::NodeHandle& nh, const std::string& key, rct_image_too
 
 bool loadIntrinsics(const ros::NodeHandle& nh, const std::string& key, rct_optimizations::CameraIntrinsics& intr);
 
+bool loadPose(const ros::NodeHandle& nh, const std::string& key, Eigen::Affine3d& pose);
+
 }
 
 #endif
