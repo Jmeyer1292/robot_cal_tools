@@ -67,6 +67,18 @@ target_link_libraries(${PROJECT_NAME}_static_camera
  ${PROJECT_NAME}_data_set
 )
 
+# Executable for demonstrating extrinsic cal of multiple static camera, moving target functionality
+add_executable(${PROJECT_NAME}_multi_static_camera src/multi_static_camera_extrinsic.cpp)
+
+set_target_properties(${PROJECT_NAME}_multi_static_camera PROPERTIES OUTPUT_NAME multi_static_cam_extr_cal_ex PREFIX "")
+
+add_dependencies(${PROJECT_NAME}_multi_static_camera ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(${PROJECT_NAME}_multi_static_camera
+ ${catkin_LIBRARIES}
+ ${PROJECT_NAME}_data_set
+)
+
 #Executable for demonstrating intrinsic calibration of a camera
 add_executable(${PROJECT_NAME}_intr
   src/intrinsic_calibration.cpp)
@@ -114,6 +126,7 @@ target_link_libraries(${PROJECT_NAME}_cmd
 install(TARGETS
     ${PROJECT_NAME}_moving_camera
     ${PROJECT_NAME}_static_camera
+    ${PROJECT_NAME}_multi_static_camera
     ${PROJECT_NAME}_intr
     ${PROJECT_NAME}_pnp
     ${PROJECT_NAME}_cmd
