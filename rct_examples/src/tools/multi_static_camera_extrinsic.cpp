@@ -66,7 +66,6 @@ int main(int argc, char** argv)
   ros::init(argc, argv, "multi_static_camera_extrinsic");
   ros::NodeHandle pnh("~");
 
-  sleep(10);
   int camera_count;
   if (!pnh.getParam("num_of_cameras", camera_count))
   {
