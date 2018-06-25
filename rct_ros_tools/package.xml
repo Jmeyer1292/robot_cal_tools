@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>rct_ros_tools</name>
+  <version>0.1.0</version>
+  <description>The rct_ros_tools package</description>
+
+  <author email="jmeyer1292@gmail.com">Jon Meyer</author>
+  <maintainer email="jmeyer1292@gmail.com">Jon Meyer</maintainer>
+
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>cv_bridge</depend>
+  <depend>eigen_conversions</depend>
+  <depend>image_transport</depend>
+  <depend>rct_image_tools</depend>
+  <depend>roscpp</depend>
+  <depend>tf2_ros</depend>
+
+</package>

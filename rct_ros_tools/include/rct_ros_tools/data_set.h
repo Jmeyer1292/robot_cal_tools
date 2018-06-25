@@ -5,7 +5,7 @@
 #include <Eigen/Dense>
 #include <opencv2/core.hpp>
 
-namespace rct_examples
+namespace rct_ros_tools
 {
 
 struct ExtrinsicDataSet

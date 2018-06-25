@@ -5,7 +5,7 @@
 #include <rct_optimizations/types.h>
 #include <ros/node_handle.h>
 
-namespace rct_examples
+namespace rct_ros_tools
 {
 
 bool loadTarget(const ros::NodeHandle& nh, const std::string& key, rct_image_tools::ModifiedCircleGridTarget& target);

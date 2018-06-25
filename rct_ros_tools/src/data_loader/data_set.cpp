@@ -1,5 +1,5 @@
-#include "rct_examples/data_set.h"
-#include "rct_examples/parameter_loaders.h"
+#include "rct_ros_tools/data_set.h"
+#include "rct_ros_tools/parameter_loaders.h"
 
 #include <yaml-cpp/yaml.h>
 #include <ros/console.h>
@@ -26,9 +26,9 @@ static cv::Mat readImageOpenCV(const std::string& path)
   return cv::imread(path, CV_LOAD_IMAGE_COLOR); // TODO: Is CV_LOAD_IMAGE_COLOR needed?
 }
 
-static rct_examples::ExtrinsicDataSet parse(const YAML::Node& root, const std::string& root_path)
+static rct_ros_tools::ExtrinsicDataSet parse(const YAML::Node& root, const std::string& root_path)
 {
-  rct_examples::ExtrinsicDataSet data;
+  rct_ros_tools::ExtrinsicDataSet data;
 
   for (std::size_t i = 0; i < root.size(); ++i)
   {
@@ -37,7 +37,7 @@ static rct_examples::ExtrinsicDataSet parse(const YAML::Node& root, const std::s
     const auto pose_path = root[i]["pose"].as<std::string>();
     cv::Mat image = readImageOpenCV(combine(root_path, img_path));
     Eigen::Affine3d p;
-    rct_examples::loadPose(combine(root_path, pose_path), p);
+    rct_ros_tools::loadPose(combine(root_path, pose_path), p);
 
     data.images.push_back(image);
     data.tool_poses.push_back(p);
@@ -47,7 +47,7 @@ static rct_examples::ExtrinsicDataSet parse(const YAML::Node& root, const std::s
 }
 
 
-boost::optional<rct_examples::ExtrinsicDataSet> rct_examples::parseFromFile(const std::string &path)
+boost::optional<rct_ros_tools::ExtrinsicDataSet> rct_ros_tools::parseFromFile(const std::string &path)
 {
   try
   {
@@ -79,7 +79,7 @@ void writePose(const std::string& path, const Eigen::Affine3d& pose)
   ofh << root;
 }
 
-void writeDirectory(const std::string& path, const rct_examples::ExtrinsicDataSet& data)
+void writeDirectory(const std::string& path, const rct_ros_tools::ExtrinsicDataSet& data)
 {
   YAML::Node root;
 
@@ -96,7 +96,7 @@ void writeDirectory(const std::string& path, const rct_examples::ExtrinsicDataSe
   ofh << root;
 }
 
-bool rct_examples::saveToDirectory(const std::string& path, const rct_examples::ExtrinsicDataSet& data)
+bool rct_ros_tools::saveToDirectory(const std::string& path, const rct_ros_tools::ExtrinsicDataSet& data)
 {
   mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
   mkdir((path + "/images").c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);

@@ -1,5 +1,5 @@
 #include <ros/ros.h>
-#include <rct_examples/data_set.h>
+#include <rct_ros_tools/data_set.h>
 
 #include <tf2_ros/transform_listener.h>
 #include <opencv2/highgui.hpp>
@@ -93,7 +93,7 @@ struct DataCollection
 
   bool onSave(std_srvs::EmptyRequest&, std_srvs::EmptyResponse&)
   {
-    rct_examples::ExtrinsicDataSet data;
+    rct_ros_tools::ExtrinsicDataSet data;
     for (std::size_t i = 0; i < poses.size(); ++i)
     {
       cv::Mat image = images[i]->image;
@@ -105,7 +105,7 @@ struct DataCollection
       data.tool_poses.push_back(pose);
     }
 
-    rct_examples::saveToDirectory("cal_test", data);
+    rct_ros_tools::saveToDirectory("cal_test", data);
     return true;
   }
 };

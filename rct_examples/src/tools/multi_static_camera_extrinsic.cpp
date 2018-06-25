@@ -1,6 +1,6 @@
 // Utilities for loading data sets and calib parameters from YAML files via ROS
-#include "rct_examples/data_set.h"
-#include "rct_examples/parameter_loaders.h"
+#include "rct_ros_tools/data_set.h"
+#include "rct_ros_tools/parameter_loaders.h"
 // To find 2D  observations from images
 #include <rct_image_tools/image_observation_finder.h>
 // The calibration function for 'static camera' on robot wrist
@@ -78,7 +78,7 @@ int main(int argc, char** argv)
   rct_optimizations::ExtrinsicMultiStaticCameraMovingTargetProblem problem_def;
   std::vector<std::string> data_path;
   std::string target_path;
-  std::vector<boost::optional<rct_examples::ExtrinsicDataSet> > maybe_data_set;
+  std::vector<boost::optional<rct_ros_tools::ExtrinsicDataSet> > maybe_data_set;
 
   data_path.resize(num_of_cameras);
   maybe_data_set.resize(num_of_cameras);
@@ -98,7 +98,7 @@ int main(int argc, char** argv)
     }
 
     // Attempt to load the data set from the specified path
-    maybe_data_set[c] = rct_examples::parseFromFile(data_path[c]);
+    maybe_data_set[c] = rct_ros_tools::parseFromFile(data_path[c]);
     if (!maybe_data_set[c])
     {
       ROS_ERROR_STREAM("Failed to parse data set from path = " << data_path[c]);
@@ -112,20 +112,20 @@ int main(int argc, char** argv)
     problem_def.intr[c].fy() = 1408.0;
     problem_def.intr[c].cx() = 807.2;
     problem_def.intr[c].cy() = 615.0;
-    if (!rct_examples::loadIntrinsics(pnh, param_name, problem_def.intr[c]))
+    if (!rct_ros_tools::loadIntrinsics(pnh, param_name, problem_def.intr[c]))
     {
       ROS_WARN("Unable to load camera intrinsics from the '%s' parameter struct", param_name.c_str());
     }
 
     param_name = param_base + "base_to_camera_guess";
     // Our 'base to camera guess': A camera off to the side, looking at a point centered in front of the robot
-    if (!rct_examples::loadPose(pnh, param_name, problem_def.base_to_camera_guess[c]))
+    if (!rct_ros_tools::loadPose(pnh, param_name, problem_def.base_to_camera_guess[c]))
     {
       ROS_WARN("Unable to load guess for base to camera from the '%s' parameter struct", param_name.c_str());
     }
   }
 
-  if (!rct_examples::loadPose(pnh, "wrist_to_target_guess", problem_def.wrist_to_target_guess))
+  if (!rct_ros_tools::loadPose(pnh, "wrist_to_target_guess", problem_def.wrist_to_target_guess))
   {
     ROS_WARN_STREAM("Unable to load guess for wrist to target from the 'wrist_to_target_guess' parameter struct");
   }
@@ -139,7 +139,7 @@ int main(int argc, char** argv)
   // Load target definition from parameter server. Target will get
   // reset if such a parameter was set.
   rct_image_tools::ModifiedCircleGridTarget target(5, 5, 0.015);
-  if (!rct_examples::loadTarget(target_path, target))
+  if (!rct_ros_tools::loadTarget(target_path, target))
   {
     ROS_WARN_STREAM("Unable to load target file from the 'target_path' parameter");
   }
@@ -147,12 +147,12 @@ int main(int argc, char** argv)
   // Lets create a class that will search for the target in our raw images.
   rct_image_tools::ModifiedCircleGridObservationFinder obs_finder(target);
 
-  std::vector<rct_examples::ExtrinsicDataSet> found_images;
+  std::vector<rct_ros_tools::ExtrinsicDataSet> found_images;
   found_images.resize(num_of_cameras);
   for (std::size_t c = 0; c < num_of_cameras; ++c)
   {
     // We know it exists, so define a helpful alias
-    const rct_examples::ExtrinsicDataSet& data_set = *maybe_data_set[c];
+    const rct_ros_tools::ExtrinsicDataSet& data_set = *maybe_data_set[c];
 
     // Finally, we need to process our images into correspondence sets: for each dot in the
     // target this will be where that dot is in the target and where it was seen in the image.

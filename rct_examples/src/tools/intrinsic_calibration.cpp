@@ -1,8 +1,8 @@
 #include <rct_image_tools/image_observation_finder.h>
 #include <rct_optimizations/eigen_conversions.h>
 #include <rct_optimizations/experimental/camera_intrinsic.h>
-#include "rct_examples/data_set.h"
-#include "rct_examples/parameter_loaders.h"
+#include "rct_ros_tools/data_set.h"
+#include "rct_ros_tools/parameter_loaders.h"
 
 #include <opencv2/highgui.hpp>
 #include <ros/ros.h>
@@ -60,7 +60,7 @@ int main(int argc, char** argv)
     return 1;
   }
 
-  boost::optional<rct_examples::ExtrinsicDataSet> maybe_data_set = rct_examples::parseFromFile(data_path);
+  boost::optional<rct_ros_tools::ExtrinsicDataSet> maybe_data_set = rct_ros_tools::parseFromFile(data_path);
   if (!maybe_data_set)
   {
     ROS_ERROR_STREAM("Failed to parse data set from path = " << data_path);
@@ -70,7 +70,7 @@ int main(int argc, char** argv)
 
   // Load target definition from parameter server
   rct_image_tools::ModifiedCircleGridTarget target(5, 5, 0.015);
-  if (!rct_examples::loadTarget(pnh, "target_definition", target))
+  if (!rct_ros_tools::loadTarget(pnh, "target_definition", target))
   {
     ROS_WARN_STREAM("Unable to load target from the 'target_definition' parameter struct");
   }
@@ -81,7 +81,7 @@ int main(int argc, char** argv)
   intr.fy() = 1408.0;
   intr.cx() = 807.2;
   intr.cy() = 615.0;
-  if (!rct_examples::loadIntrinsics(pnh, "intrinsics", intr))
+  if (!rct_ros_tools::loadIntrinsics(pnh, "intrinsics", intr))
   {
     ROS_WARN_STREAM("Unable to load camera intrinsics from the 'intrinsics' parameter struct");
   }

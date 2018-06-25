@@ -13,12 +13,7 @@
   <buildtool_depend>catkin</buildtool_depend>
   <depend>rct_image_tools</depend>
   <depend>rct_optimizations</depend>
-
-  <depend>cv_bridge</depend>
-  <depend>image_transport</depend>
-  <depend>tf2_ros</depend>
-  <depend>eigen_conversions</depend>
-
-  <depend>roscpp</depend>
+  <depend>rct_ros_tools</depend>
+  <depend>roslib</depend>
 
 </package>

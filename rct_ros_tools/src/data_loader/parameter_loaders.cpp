@@ -1,4 +1,4 @@
-#include "rct_examples/parameter_loaders.h"
+#include "rct_ros_tools/parameter_loaders.h"
 #include <yaml-cpp/yaml.h>
 
 template<typename T>
@@ -9,7 +9,7 @@ static bool read(XmlRpc::XmlRpcValue& xml, const std::string& key, T& value)
   return true;
 }
 
-bool rct_examples::loadTarget(const ros::NodeHandle& nh, const std::string& key,
+bool rct_ros_tools::loadTarget(const ros::NodeHandle& nh, const std::string& key,
                               rct_image_tools::ModifiedCircleGridTarget& target)
 {
   XmlRpc::XmlRpcValue xml;
@@ -27,7 +27,7 @@ bool rct_examples::loadTarget(const ros::NodeHandle& nh, const std::string& key,
   return true;
 }
 
-bool rct_examples::loadTarget(const std::string& path, rct_image_tools::ModifiedCircleGridTarget& target)
+bool rct_ros_tools::loadTarget(const std::string& path, rct_image_tools::ModifiedCircleGridTarget& target)
 {
   YAML::Node n = YAML::LoadFile(path);
   int rows = n["target_definition"]["rows"].as<int>();
@@ -38,7 +38,7 @@ bool rct_examples::loadTarget(const std::string& path, rct_image_tools::Modified
   return true;
 }
 
-bool rct_examples::loadIntrinsics(const ros::NodeHandle& nh, const std::string& key,
+bool rct_ros_tools::loadIntrinsics(const ros::NodeHandle& nh, const std::string& key,
                                   rct_optimizations::CameraIntrinsics& intr)
 {
   XmlRpc::XmlRpcValue xml;
@@ -54,7 +54,7 @@ bool rct_examples::loadIntrinsics(const ros::NodeHandle& nh, const std::string& 
   return true;
 }
 
-bool rct_examples::loadPose(const ros::NodeHandle& nh, const std::string& key,
+bool rct_ros_tools::loadPose(const ros::NodeHandle& nh, const std::string& key,
                             Eigen::Affine3d& pose)
 {
   XmlRpc::XmlRpcValue xml;
@@ -76,7 +76,7 @@ bool rct_examples::loadPose(const ros::NodeHandle& nh, const std::string& key,
   return true;
 }
 
-bool rct_examples::loadPose(const std::string& path, Eigen::Affine3d& pose)
+bool rct_ros_tools::loadPose(const std::string& path, Eigen::Affine3d& pose)
 {
   YAML::Node n = YAML::LoadFile(path);
   Eigen::Vector3d position;
