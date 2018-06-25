@@ -60,25 +60,6 @@ static void reproject(const Eigen::Affine3d& wrist_to_target, const Eigen::Affin
   cv::imshow("repr", frame);
   cv::waitKey();
 }
-/**
- * @brief Defines a camera matrix using a camera origin, a position its looking at, and an up vector hint
- * @param origin The position of the camera focal point
- * @param eye A point that the camera is looking at
- * @param up The upvector in world-space
- */
-static Eigen::Affine3d lookat(const Eigen::Vector3d& origin, const Eigen::Vector3d& eye, const Eigen::Vector3d& up)
-{
-  Eigen::Vector3d z = (eye - origin).normalized();
-  Eigen::Vector3d x = z.cross(up).normalized();
-  Eigen::Vector3d y = z.cross(x).normalized();
-
-  auto p = Eigen::Affine3d::Identity();
-  p.translation() = origin;
-  p.matrix().col(0).head<3>() = x;
-  p.matrix().col(1).head<3>() = y;
-  p.matrix().col(2).head<3>() = z;
-  return p;
-}
 
 int main(int argc, char** argv)
 {
