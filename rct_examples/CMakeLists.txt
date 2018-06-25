@@ -7,6 +7,7 @@ find_package(catkin REQUIRED COMPONENTS
   rct_image_tools
   rct_optimizations
   rct_ros_tools
+  roslib
 )
 
 find_package(OpenCV REQUIRED)
@@ -19,9 +20,20 @@ catkin_package()
 ###########
 
 include_directories(
-  include
   ${catkin_INCLUDE_DIRS}
 )
+
+#####################
+## SIMPLE Examples ##
+#####################
+
+add_executable(${PROJECT_NAME}_wrist_example src/examples/camera_on_wrist.cpp)
+
+set_target_properties(${PROJECT_NAME}_wrist_example PROPERTIES OUTPUT_NAME example_camera_on_wrist PREFIX "")
+
+add_dependencies(${PROJECT_NAME}_wrist_example ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(${PROJECT_NAME}_wrist_example ${catkin_LIBRARIES})
 
 # Executable for demonstrating extrinsic, camera-on-wrist functionality
 add_executable(${PROJECT_NAME}_moving_camera src/camera_on_wrist_extrinsic.cpp)
@@ -83,14 +95,11 @@ target_link_libraries(${PROJECT_NAME}_pnp
 ## Testing ##
 #############
 if(CATKIN_ENABLE_TESTING)
-#  find_package(rostest REQUIRED)
-#  add_rostest_gtest(${PROJECT_NAME}_cam_on_wrist_test
-#    test/cam_on_wrist.test # The launch file
-#    test/camera_on_wrist_extrinsic_test.cpp # The source file(s)
-#  )
-#  target_link_libraries(${PROJECT_NAME}_cam_on_wrist_test ${catkin_LIBRARIES})
+  # Tests extrinsic wrist calibration example
+  catkin_add_gtest(${PROJECT_NAME}_wrist_test src/examples/camera_on_wrist.cpp)
+  target_compile_definitions(${PROJECT_NAME}_wrist_test PRIVATE -DRCT_ENABLE_TESTING)
+  target_link_libraries(${PROJECT_NAME}_wrist_test ${catkin_LIBRARIES})
 endif()
-
 #############
 ## Install ##
 #############

@@ -14,5 +14,6 @@
   <depend>rct_image_tools</depend>
   <depend>rct_optimizations</depend>
   <depend>rct_ros_tools</depend>
+  <depend>roslib</depend>
 
 </package>
