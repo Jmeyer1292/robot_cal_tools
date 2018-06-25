@@ -36,8 +36,9 @@ add_library(${PROJECT_NAME}
   # Optimizations (3D sensor)
   src/${PROJECT_NAME}/extrinsic_3d_camera_on_wrist.cpp
   # Optimizations (Experimental) - Intrinsic
-  src/${PROJECT_NAME}/pnp.cpp
   src/${PROJECT_NAME}/camera_intrinsic.cpp
+  src/${PROJECT_NAME}/pnp.cpp
+  src/${PROJECT_NAME}/multi_camera_pnp.cpp
 )
 
 add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
