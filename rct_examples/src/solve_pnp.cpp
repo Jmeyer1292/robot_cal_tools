@@ -12,6 +12,8 @@
 #include <rct_optimizations/experimental/pnp.h>
 #include <rct_examples/parameter_loaders.h>
 
+#include <rct_optimizations/experimental/multi_camera_pnp.h>
+
 static Eigen::Affine3d solveCVPnP(const rct_optimizations::CameraIntrinsics& intr,
                                   const rct_image_tools::ModifiedCircleGridTarget& target,
                                   const std::vector<Eigen::Vector2d>& obs)
@@ -110,16 +112,30 @@ int main(int argc, char** argv)
   params.intr = intr;
   params.camera_to_target_guess = guess;
 
+  rct_optimizations::CorrespondenceSet correspondences;
   for (std::size_t i = 0; i < maybe_obs->size(); ++i)
   {
     rct_optimizations::Correspondence2D3D pair;
     pair.in_image = (*maybe_obs)[i];
     pair.in_target = target.points[i];
-    params.correspondences.push_back(pair);
+    correspondences.push_back(pair);
   }
+
+  params.correspondences = correspondences;
 
   rct_optimizations::PnPResult pnp_result = rct_optimizations::optimize(params);
   std::cout << "RCT_POSE\n" << pnp_result.camera_to_target.matrix() << "\n";
+
+  // Solve with the multi-camera PnP solver, and confirm it works with a single image
+  rct_optimizations::MultiCameraPnPProblem multi_problem;
+  multi_problem.camera_to_target_guess = guess;
+  multi_problem.intr.push_back(intr);
+  multi_problem.correspondences.push_back(correspondences);
+//  multi_problem.camera_transforms // I don't need to set a transform because there's only one camera
+
+  auto multi_pnp_result = rct_optimizations::optimize(multi_problem);
+  std::cout << "MULTI_RCT_CONVERGED: " << multi_pnp_result.converged << "\n";
+  std::cout << "MULTI_RCT_POSE\n" << multi_pnp_result.camera_to_target.matrix() << "\n";
 
   return 0;
 }
