@@ -26,7 +26,6 @@ include_directories(
 #####################
 ## SIMPLE Examples ##
 #####################
-
 add_executable(${PROJECT_NAME}_wrist_example src/examples/camera_on_wrist.cpp)
 
 set_target_properties(${PROJECT_NAME}_wrist_example PROPERTIES OUTPUT_NAME example_camera_on_wrist PREFIX "")
@@ -35,61 +34,53 @@ add_dependencies(${PROJECT_NAME}_wrist_example ${${PROJECT_NAME}_EXPORTED_TARGET
 
 target_link_libraries(${PROJECT_NAME}_wrist_example ${catkin_LIBRARIES})
 
+###############################
+## Offline Calibration Tools ##
+###############################
 # Executable for demonstrating extrinsic, camera-on-wrist functionality
-add_executable(${PROJECT_NAME}_moving_camera src/camera_on_wrist_extrinsic.cpp)
+add_executable(${PROJECT_NAME}_moving_camera src/tools/camera_on_wrist_extrinsic.cpp)
 
 set_target_properties(${PROJECT_NAME}_moving_camera PROPERTIES OUTPUT_NAME moving_cam_extr_cal_ex PREFIX "")
 
 add_dependencies(${PROJECT_NAME}_moving_camera ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(${PROJECT_NAME}_moving_camera
- ${catkin_LIBRARIES}
-)
+target_link_libraries(${PROJECT_NAME}_moving_camera ${catkin_LIBRARIES})
 
 # Executable for demonstrating extrinsic cal of static camera, moving target functionality
-add_executable(${PROJECT_NAME}_static_camera src/static_camera_extrinsic.cpp)
+add_executable(${PROJECT_NAME}_static_camera src/tools/static_camera_extrinsic.cpp)
 
 set_target_properties(${PROJECT_NAME}_static_camera PROPERTIES OUTPUT_NAME static_cam_extr_cal_ex PREFIX "")
 
 add_dependencies(${PROJECT_NAME}_static_camera ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(${PROJECT_NAME}_static_camera
- ${catkin_LIBRARIES}
-)
+target_link_libraries(${PROJECT_NAME}_static_camera ${catkin_LIBRARIES})
 
 # Executable for demonstrating extrinsic cal of multiple static camera, moving target functionality
-add_executable(${PROJECT_NAME}_multi_static_camera src/multi_static_camera_extrinsic.cpp)
+add_executable(${PROJECT_NAME}_multi_static_camera src/tools/multi_static_camera_extrinsic.cpp)
 
 set_target_properties(${PROJECT_NAME}_multi_static_camera PROPERTIES OUTPUT_NAME multi_static_cam_extr_cal_ex PREFIX "")
 
 add_dependencies(${PROJECT_NAME}_multi_static_camera ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(${PROJECT_NAME}_multi_static_camera
- ${catkin_LIBRARIES}
-)
+target_link_libraries(${PROJECT_NAME}_multi_static_camera ${catkin_LIBRARIES})
 
 #Executable for demonstrating intrinsic calibration of a camera
-add_executable(${PROJECT_NAME}_intr
-  src/intrinsic_calibration.cpp)
+add_executable(${PROJECT_NAME}_intr src/tools/intrinsic_calibration.cpp)
 
 set_target_properties(${PROJECT_NAME}_intr PROPERTIES OUTPUT_NAME intr_camera_cal_ex PREFIX "")
 
 add_dependencies(${PROJECT_NAME}_intr ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(${PROJECT_NAME}_intr
- ${catkin_LIBRARIES}
-)
+target_link_libraries(${PROJECT_NAME}_intr ${catkin_LIBRARIES})
 
 # Executable demonstrating solving for the pose of a target given camera properties
-add_executable(${PROJECT_NAME}_pnp src/solve_pnp.cpp)
+add_executable(${PROJECT_NAME}_pnp src/tools/solve_pnp.cpp)
 
 set_target_properties(${PROJECT_NAME}_pnp PROPERTIES OUTPUT_NAME solve_pnp_ex PREFIX "")
 
 add_dependencies(${PROJECT_NAME}_pnp ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(${PROJECT_NAME}_pnp
- ${catkin_LIBRARIES}
-)
+target_link_libraries(${PROJECT_NAME}_pnp ${catkin_LIBRARIES})
 
 #############
 ## Testing ##
@@ -100,10 +91,10 @@ if(CATKIN_ENABLE_TESTING)
   target_compile_definitions(${PROJECT_NAME}_wrist_test PRIVATE -DRCT_ENABLE_TESTING)
   target_link_libraries(${PROJECT_NAME}_wrist_test ${catkin_LIBRARIES})
 endif()
+
 #############
 ## Install ##
 #############
-
 install(TARGETS
     ${PROJECT_NAME}_moving_camera
     ${PROJECT_NAME}_static_camera
