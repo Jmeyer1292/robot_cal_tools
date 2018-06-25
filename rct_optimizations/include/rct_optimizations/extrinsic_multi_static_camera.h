@@ -1,41 +1,15 @@
 /*
- * This file defines a solver for calibrating the EXTRINSIC parameters of a pinhole
- * camera in a static position to the base of a robot. It works by imaging a target
- * fixed to the robot's wrist from many robot poses.
+ * This file mirrors the interface for ExtrinsicStaticCameraMovingTarget found in
+ * rct_optimizations/extrinsic_static_camera.h but extends it to work for simultaneously
+ * localizing multiple cameras.
  *
- * This calibration works on undistorted or rectified images!
+ * Thus you now pass:
+ *  1. A vector of intrinsics, one for each camera
+ *  2. A vector of vector of wrist poses, one for each camera
+ *  2. A vector of vector of image observations, one for each camera
+ *  3. A vector of base to camera guesses, one for each camera
  *
- * This calibration uses the following "frames":
- * 1. A "base frame" in which the robot's wrist positions and the camera frame are reported
- *    in. It should be static with respect to the camera. This will commonly be the robot
- *    "base_link" or your workcell's "world" frame.
- * 2. A "wrist frame" to which your target is rigidly attached. You must give this frame's
- *    position with respect to the above "base frame" at every image location. This will
- *    commonly be "tool0" or some fixed offset from the robot's flange.
- * 3. A "target frame" which is represented as the origin of your rigid 3D pattern. It is
- *    rigidly attached to the robot's wrist frame. It is in this frame that the 3D entries of
- *    ObservationSet are given. For the circle grid target, this is the big dot, with +X going
- *    left to right across the bottom row and +Y going up the first column.
- * 4. The "camera frame" or "camera optical frame". This frame is solved for and should be fixed
- *    with respect to the "base frame". Uses the OpenCV model for camera coordinates.
- *
- * Inputs:
- *  - Camera intrisic parameters (fx, fy, cx, cy)
- *  - A sequence of transformations: "base frame" to "wrist frame" for each image position
- *  - A sequence of correspondence sets for each image position
- *  - Each correspondence set is a set of correspondences: a position in the "target frame" (3D)
- *    and where that point was seen in the image (2D).
- *  - You must also provide a guess for the two transforms being calibrated.
- *
- * Output:
- *  - The best-fit transform from robot "base frame" to the "camera optical frame"
- *  - The best-fit transform from "wrist frame" to the "target frame"
- *  - A final cost per observation representing the average reprojection error, in pixels,
- *    along the u or v image axis.
- *
- * To use: Fill out ExtrinsicStaticCameraMovingTargetProblem then call optimize()
- *
- *  author: Jonathan Meyer
+ * author: Levi Armstrong
  */
 
 #ifndef RCT_EXTRINSIC_STATIC_CAMERA_H
@@ -50,24 +24,27 @@ namespace rct_optimizations
 
 struct ExtrinsicMultiStaticCameraMovingTargetProblem
 {
-  /** @brief The basic camera intrinsic propeties: fx, fy, cx, cy used to reproject points */
+  /** @brief The basic camera intrinsic propeties: fx, fy, cx, cy used to reproject points;
+      one for each camera */
   std::vector<CameraIntrinsics> intr;
 
-  /** @brief The transforms, "base to wrist", at which each observation set was taken. Should be
-   * same size as @e image_observations.
+  /** @brief The transforms, "base to wrist", at which each observation set was taken. The outer
+   * vector is for each camera, the inner vector is the poses valid for that camera. This inner
+   * vector should match the inner vector of @e image_observations in size.
    */
-  std::vector<std::vector<Eigen::Affine3d> > wrist_poses;
+  std::vector<std::vector<Eigen::Affine3d>> wrist_poses;
 
   /** @brief A sequence of observation sets corresponding to the image locations in @e wrist_poses.
    * Each observation set consists of a set of correspodences: a 3D position (e.g. a dot) in "target
-   * frame" to the image location it was detected at (2D).
+   * frame" to the image location it was detected at (2D). The outer-most vector is for each camera,
+   * the inner vector is the images valid for that camera.
    */
-  std::vector<std::vector<CorrespondenceSet> > image_observations;
+  std::vector<std::vector<CorrespondenceSet>> image_observations;
 
   /** @brief Your best guess at the "wrist frame" to "target frame" transform */
   Eigen::Affine3d wrist_to_target_guess;
 
-  /** @brief Your best guess at the "base frame" to "camera frame" transform */
+  /** @brief Your best guess at the "base frame" to "camera frame" transform; one for each camera */
   std::vector<Eigen::Affine3d> base_to_camera_guess;
 };
 

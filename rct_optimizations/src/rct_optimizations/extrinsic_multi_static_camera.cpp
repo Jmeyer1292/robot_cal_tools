@@ -71,7 +71,7 @@ rct_optimizations::optimize(const rct_optimizations::ExtrinsicMultiStaticCameraM
 
   ceres::Problem problem;
 
-  for (std::size_t c = 0; c < params.base_to_camera_guess.size(); ++c)
+  for (std::size_t c = 0; c < params.base_to_camera_guess.size(); ++c) // For each camera
   {
     assert(params.image_observations[c].size() == params.wrist_poses[c].size());
     internal_camera_to_base[c] = poseEigenToCal(params.base_to_camera_guess[c].inverse());
@@ -94,8 +94,8 @@ rct_optimizations::optimize(const rct_optimizations::ExtrinsicMultiStaticCameraM
         problem.AddResidualBlock(cost_block, NULL, internal_camera_to_base[c].values.data(),
                                  internal_wrist_to_target.values.data());
       }
-    }
-  }
+    } // for each wrist pose
+  } // end for each camera
 
   ceres::Solver::Options options;
   ceres::Solver::Summary summary;
