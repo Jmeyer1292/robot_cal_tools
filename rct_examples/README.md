@@ -41,7 +41,7 @@ For this calibration you want to:
  2. Capture a data set of `base_to_wrist` transforms and corresponding **undistorted** images
  3. Prepare a problem definition of type `ExtrinsicCameraOnWristProblem` in header `rct_optimizations/extrinsic_camera_on_wrist.h` and call optimize.
  
- See an example of this in `rct_examples/src/camera_on_wrist_extrinsic.cpp`. Run this calibration against a test set via `roslaunch rct_examples camera_on_wrist_example.launch`.
+ See an example of this in `rct_examples/src/examples/camera_on_wrist.cpp`. An configurable offline calibration tool is provided via `roslaunch rct_examples camera_on_wrist_example.launch`.
  
  The example launch file can be run against your own test set by modifying the default arguments for target definition, camera parameters, and data source:
  
@@ -89,7 +89,7 @@ For this calibration you want to:
  2. Capture a data set of `base_to_wrist` transforms and corresponding **undistorted** images
  3. Prepare a problem definition of type `ExtrinsicStaticCameraMovingTargetProblem` in header `rct_optimizations/extrinsic_static_camera.h` and call optimize.
  
- See an example of this in `rct_examples/src/static_camera_extrinsic.cpp`. You may run this calibration offline through a launch file, **but I currently have no test data sets in this repo: they were too big**. Run this calibration against a test set via `roslaunch rct_examples static_camera_example.launch`.
+ See an example of this in `rct_examples/src/tools/static_camera_extrinsic.cpp`. You may run this calibration offline through a launch file, **but I currently have no test data sets in this repo: they were too big**. Run this calibration against a test set via `roslaunch rct_examples static_camera_example.launch`.
  
  The example launch file can be run against your own test set by modifying the default arguments for target definition, camera parameters, and data source:
  
@@ -116,7 +116,7 @@ For this calibration you want to:
  2. Capture a data set of `base_to_wrist` transforms and corresponding **undistorted** images for each camera
  3. Prepare a problem definition of type `ExtrinsicMultiStaticCameraMovingTargetProblem` in header `rct_optimizations/extrinsic_multi_static_camera.h` and call optimize.
 
-See an example of this in `rct_examples/src/multi_static_camera_extrinsic.cpp`. You may run this calibration offline through a launch file, **but I currently have no test data sets in this repo**.
+See an example of this in `rct_examples/src/tools/multi_static_camera_extrinsic.cpp`. You may run this calibration offline through a launch file, **but I currently have no test data sets in this repo**.
 Run this calibration against a test set via `roslaunch rct_examples multi_static_camera_example.launch`. The specification of this calibration can be burdensome, so we define a YAML file that specifies the data:
 ```yaml
 target_path: PATH_TO_YOUR_TARGET.yaml
