@@ -54,6 +54,9 @@ target_link_libraries(${PROJECT_NAME}
 if(CATKIN_ENABLE_TESTING)
   catkin_add_gtest(${PROJECT_NAME}_conversion_tests test/conversion_utest.cpp)
   target_link_libraries(${PROJECT_NAME}_conversion_tests ${PROJECT_NAME})
+
+  catkin_add_gtest(${PROJECT_NAME}_extrinsic_multi_static_camera_tests test/extrinsic_multi_static_camera_utest.cpp)
+  target_link_libraries(${PROJECT_NAME}_extrinsic_multi_static_camera_tests ${PROJECT_NAME})
 endif()
 
 #############
