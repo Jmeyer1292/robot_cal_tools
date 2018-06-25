@@ -145,6 +145,7 @@ int main(int argc, char** argv)
   // Finally, we need to process our images into correspondence sets: for each dot in the
   // target this will be where that dot is in the target and where it was seen in the image.
   // Repeat for each image. We also tell where the wrist was when the image was taken.
+  rct_examples::ExtrinsicDataSet found_images;
   for (std::size_t i = 0; i < data_set.images.size(); ++i)
   {
     // Try to find the circle grid in this image:
@@ -162,6 +163,10 @@ int main(int argc, char** argv)
       cv::imshow("points", obs_finder.drawObservations(data_set.images[i], *maybe_obs));
       cv::waitKey();
     }
+
+    // cache found image data
+    found_images.images.push_back(data_set.images[i]);
+    found_images.tool_poses.push_back(data_set.tool_poses[i]);
 
     // So for each image we need to:
     //// 1. Record the wrist position
@@ -206,11 +211,12 @@ int main(int argc, char** argv)
   std::cout << "xyz=\"" << c.translation()(0) << " " << c.translation()(1) << " " << c.translation()(2) << "\"\n";
   std::cout << "rpy=\"" << rpy(2) << "(" << rpy(2) * 180/M_PI << " deg) " << rpy(1) << "(" << rpy(1) * 180/M_PI << " deg) " << rpy(0) << "(" << rpy(0) * 180/M_PI << " deg)\"\n";
 
-  for (std::size_t i = 0; i < data_set.images.size(); ++i)
+  for (std::size_t i = 0; i < found_images.images.size(); ++i)
   {
-    reproject(opt_result.wrist_to_target, opt_result.base_to_camera, data_set.tool_poses[i],
-              intr, target, data_set.images[i], problem_def.image_observations[i]);
+    reproject(opt_result.wrist_to_target, opt_result.base_to_camera, found_images.tool_poses[i],
+              intr, target, found_images.images[i], problem_def.image_observations[i]);
   }
+
 
   return 0;
 }

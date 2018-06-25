@@ -31,6 +31,8 @@ add_library(${PROJECT_NAME}
   # Optimizations (monocular camera)
   src/${PROJECT_NAME}/extrinsic_camera_on_wrist.cpp
   src/${PROJECT_NAME}/extrinsic_static_camera.cpp
+  # Optimizations (multiple cameras)
+  src/${PROJECT_NAME}/extrinsic_multi_static_camera.cpp
   # Optimizations (3D sensor)
   src/${PROJECT_NAME}/extrinsic_3d_camera_on_wrist.cpp
   # Optimizations (Experimental) - Intrinsic

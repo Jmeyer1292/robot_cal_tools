@@ -1,4 +1,6 @@
 #include "rct_examples/data_set.h"
+#include "rct_examples/parameter_loaders.h"
+
 #include <yaml-cpp/yaml.h>
 #include <ros/console.h>
 
@@ -24,27 +26,6 @@ static cv::Mat readImageOpenCV(const std::string& path)
   return cv::imread(path, CV_LOAD_IMAGE_COLOR); // TODO: Is CV_LOAD_IMAGE_COLOR needed?
 }
 
-static Eigen::Affine3d readPoseFromYaml(const std::string& path)
-{
-  YAML::Node n = YAML::LoadFile(path);
-  Eigen::Vector3d position;
-
-  position(0) = n["x"].as<double>();
-  position(1) = n["y"].as<double>();
-  position(2) = n["z"].as<double>();
-
-  double qw, qx, qy, qz;
-  qw = n["qw"].as<double>();
-  qx = n["qx"].as<double>();
-  qy = n["qy"].as<double>();
-  qz = n["qz"].as<double>();
-
-  Eigen::Affine3d pose = Eigen::Affine3d::Identity();
-  pose.translation() = position;
-  pose.linear() = Eigen::Quaterniond(qw, qx, qy, qz).toRotationMatrix();
-  return pose;
-}
-
 static rct_examples::ExtrinsicDataSet parse(const YAML::Node& root, const std::string& root_path)
 {
   rct_examples::ExtrinsicDataSet data;
@@ -55,7 +36,8 @@ static rct_examples::ExtrinsicDataSet parse(const YAML::Node& root, const std::s
     const auto img_path = root[i]["image"].as<std::string>();
     const auto pose_path = root[i]["pose"].as<std::string>();
     cv::Mat image = readImageOpenCV(combine(root_path, img_path));
-    Eigen::Affine3d p = readPoseFromYaml(combine(root_path, pose_path));
+    Eigen::Affine3d p;
+    rct_examples::loadPose(combine(root_path, pose_path), p);
 
     data.images.push_back(image);
     data.tool_poses.push_back(p);

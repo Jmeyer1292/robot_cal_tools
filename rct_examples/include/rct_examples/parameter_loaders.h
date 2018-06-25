@@ -9,10 +9,12 @@ namespace rct_examples
 {
 
 bool loadTarget(const ros::NodeHandle& nh, const std::string& key, rct_image_tools::ModifiedCircleGridTarget& target);
+bool loadTarget(const std::string& path, rct_image_tools::ModifiedCircleGridTarget& target);
 
 bool loadIntrinsics(const ros::NodeHandle& nh, const std::string& key, rct_optimizations::CameraIntrinsics& intr);
 
 bool loadPose(const ros::NodeHandle& nh, const std::string& key, Eigen::Affine3d& pose);
+bool loadPose(const std::string& path, Eigen::Affine3d& pose);
 
 }
 

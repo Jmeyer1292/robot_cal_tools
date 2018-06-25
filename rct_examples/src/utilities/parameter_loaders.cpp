@@ -1,4 +1,5 @@
 #include "rct_examples/parameter_loaders.h"
+#include <yaml-cpp/yaml.h>
 
 template<typename T>
 static bool read(XmlRpc::XmlRpcValue& xml, const std::string& key, T& value)
@@ -21,6 +22,17 @@ bool rct_examples::loadTarget(const ros::NodeHandle& nh, const std::string& key,
   if (!read(xml, "rows", rows)) return false;
   if (!read(xml, "cols", cols)) return false;
   if (!read(xml, "spacing", spacing)) return false;
+
+  target = rct_image_tools::ModifiedCircleGridTarget(rows, cols, spacing);
+  return true;
+}
+
+bool rct_examples::loadTarget(const std::string& path, rct_image_tools::ModifiedCircleGridTarget& target)
+{
+  YAML::Node n = YAML::LoadFile(path);
+  int rows = n["target_definition"]["rows"].as<int>();
+  int cols = n["target_definition"]["cols"].as<int>();
+  double spacing = n["target_definition"]["spacing"].as<double>(); // (meters between dot centers)
 
   target = rct_image_tools::ModifiedCircleGridTarget(rows, cols, spacing);
   return true;
@@ -52,7 +64,7 @@ bool rct_examples::loadPose(const ros::NodeHandle& nh, const std::string& key,
   double x, y, z, qx, qy, qz, qw;
   if (!read(xml, "x", x)) return false;
   if (!read(xml, "y", y)) return false;
-  if (!read(xml, "x", z)) return false;
+  if (!read(xml, "z", z)) return false;
   if (!read(xml, "qx", qx)) return false;
   if (!read(xml, "qy", qy)) return false;
   if (!read(xml, "qz", qz)) return false;
@@ -61,5 +73,26 @@ bool rct_examples::loadPose(const ros::NodeHandle& nh, const std::string& key,
   pose.translation() = Eigen::Vector3d(x, y, z);
   pose.linear() = Eigen::Quaterniond(qw, qx, qy, qz).toRotationMatrix();
 
+  return true;
+}
+
+bool rct_examples::loadPose(const std::string& path, Eigen::Affine3d& pose)
+{
+  YAML::Node n = YAML::LoadFile(path);
+  Eigen::Vector3d position;
+
+  position(0) = n["x"].as<double>();
+  position(1) = n["y"].as<double>();
+  position(2) = n["z"].as<double>();
+
+  double qw, qx, qy, qz;
+  qw = n["qw"].as<double>();
+  qx = n["qx"].as<double>();
+  qy = n["qy"].as<double>();
+  qz = n["qz"].as<double>();
+
+  pose = Eigen::Affine3d::Identity();
+  pose.translation() = position;
+  pose.linear() = Eigen::Quaterniond(qw, qx, qy, qz).toRotationMatrix();
   return true;
 }
