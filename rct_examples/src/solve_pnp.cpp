@@ -10,7 +10,7 @@
 
 #include <rct_image_tools/image_observation_finder.h>
 #include <rct_optimizations/experimental/pnp.h>
-#include <rct_examples/parameter_loaders.h>
+#include <rct_ros_tools/parameter_loaders.h>
 
 #include <rct_optimizations/experimental/multi_camera_pnp.h>
 
@@ -73,7 +73,7 @@ int main(int argc, char** argv)
 
   // Load target definition from parameter server
   rct_image_tools::ModifiedCircleGridTarget target(5, 5, 0.015);
-  if (!rct_examples::loadTarget(pnh, "target_definition", target))
+  if (!rct_ros_tools::loadTarget(pnh, "target_definition", target))
   {
     ROS_WARN_STREAM("Unable to load target from the 'target_definition' parameter struct");
   }
@@ -84,7 +84,7 @@ int main(int argc, char** argv)
   intr.fy() = 1408.0;
   intr.cx() = 807.2;
   intr.cy() = 615.0;
-  if (!rct_examples::loadIntrinsics(pnh, "intrinsics", intr))
+  if (!rct_ros_tools::loadIntrinsics(pnh, "intrinsics", intr))
   {
     ROS_WARN_STREAM("Unable to load camera intrinsics from the 'intrinsics' parameter struct");
   }

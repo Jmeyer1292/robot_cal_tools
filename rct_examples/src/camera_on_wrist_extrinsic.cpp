@@ -1,6 +1,6 @@
 // Utilities for loading data sets and calib parameters from YAML files via ROS
-#include "rct_examples/data_set.h"
-#include "rct_examples/parameter_loaders.h"
+#include "rct_ros_tools/data_set.h"
+#include "rct_ros_tools/parameter_loaders.h"
 // To find 2D  observations from images
 #include <rct_image_tools/image_observation_finder.h>
 // The calibration function for 'moving camera' on robot wrist
@@ -79,7 +79,7 @@ int main(int argc, char** argv)
   // Load target definition from parameter server. Target will get
   // reset if such a parameter was set.
   rct_image_tools::ModifiedCircleGridTarget target(10, 10, 0.0254);
-  if (!rct_examples::loadTarget(pnh, "target_definition", target))
+  if (!rct_ros_tools::loadTarget(pnh, "target_definition", target))
   {
     ROS_WARN_STREAM("Unable to load target from the 'target_definition' parameter struct");
   }
@@ -92,20 +92,20 @@ int main(int argc, char** argv)
   intr.cx() = 320.2;
   intr.cy() = 208.9;
 
-  if (!rct_examples::loadIntrinsics(pnh, "intrinsics", intr))
+  if (!rct_ros_tools::loadIntrinsics(pnh, "intrinsics", intr))
   {
     ROS_WARN_STREAM("Unable to load camera intrinsics from the 'intrinsics' parameter struct");
   }
 
   // Attempt to load the data set via the data record yaml file:
-  boost::optional<rct_examples::ExtrinsicDataSet> maybe_data_set = rct_examples::parseFromFile(data_path);
+  boost::optional<rct_ros_tools::ExtrinsicDataSet> maybe_data_set = rct_ros_tools::parseFromFile(data_path);
   if (!maybe_data_set)
   {
     ROS_ERROR_STREAM("Failed to parse data set from path = " << data_path);
     return 2;
   }
   // We know it exists, so define a helpful alias
-  const rct_examples::ExtrinsicDataSet& data_set = *maybe_data_set;
+  const rct_ros_tools::ExtrinsicDataSet& data_set = *maybe_data_set;
 
   // Lets create a class that will search for the target in our raw images.
   rct_image_tools::ModifiedCircleGridObservationFinder obs_finder(target);

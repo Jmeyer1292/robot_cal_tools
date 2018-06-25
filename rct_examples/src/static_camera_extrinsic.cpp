@@ -1,6 +1,6 @@
 // Utilities for loading data sets and calib parameters from YAML files via ROS
-#include "rct_examples/data_set.h"
-#include "rct_examples/parameter_loaders.h"
+#include "rct_ros_tools/data_set.h"
+#include "rct_ros_tools/parameter_loaders.h"
 // To find 2D  observations from images
 #include <rct_image_tools/image_observation_finder.h>
 // The calibration function for 'static camera' on robot wrist
@@ -94,19 +94,19 @@ int main(int argc, char** argv)
   }
 
   // Attempt to load the data set from the specified path
-  boost::optional<rct_examples::ExtrinsicDataSet> maybe_data_set = rct_examples::parseFromFile(data_path);
+  boost::optional<rct_ros_tools::ExtrinsicDataSet> maybe_data_set = rct_ros_tools::parseFromFile(data_path);
   if (!maybe_data_set)
   {
     ROS_ERROR_STREAM("Failed to parse data set from path = " << data_path);
     return 2;
   }
   // We know it exists, so define a helpful alias
-  const rct_examples::ExtrinsicDataSet& data_set = *maybe_data_set;
+  const rct_ros_tools::ExtrinsicDataSet& data_set = *maybe_data_set;
 
   // Load target definition from parameter server. Target will get
   // reset if such a parameter was set.
   rct_image_tools::ModifiedCircleGridTarget target(5, 5, 0.015);
-  if (!rct_examples::loadTarget(pnh, "target_definition", target))
+  if (!rct_ros_tools::loadTarget(pnh, "target_definition", target))
   {
     ROS_WARN_STREAM("Unable to load target from the 'target_definition' parameter struct");
   }
@@ -118,7 +118,7 @@ int main(int argc, char** argv)
   intr.fy() = 1408.0;
   intr.cx() = 807.2;
   intr.cy() = 615.0;
-  if (!rct_examples::loadIntrinsics(pnh, "intrinsics", intr))
+  if (!rct_ros_tools::loadIntrinsics(pnh, "intrinsics", intr))
   {
     ROS_WARN_STREAM("Unable to load camera intrinsics from the 'intrinsics' parameter struct");
   }
@@ -132,12 +132,12 @@ int main(int argc, char** argv)
   problem_def.intr = intr;
 
   // Our 'base to camera guess': A camera off to the side, looking at a point centered in front of the robot
-  if (!rct_examples::loadPose(pnh, "base_to_camera_guess", problem_def.base_to_camera_guess))
+  if (!rct_ros_tools::loadPose(pnh, "base_to_camera_guess", problem_def.base_to_camera_guess))
   {
     ROS_WARN_STREAM("Unable to load guess for base to camera from the 'base_to_camera_guess' parameter struct");
   }
 
-  if (!rct_examples::loadPose(pnh, "wrist_to_target_guess", problem_def.wrist_to_target_guess))
+  if (!rct_ros_tools::loadPose(pnh, "wrist_to_target_guess", problem_def.wrist_to_target_guess))
   {
     ROS_WARN_STREAM("Unable to load guess for wrist to target from the 'wrist_to_target_guess' parameter struct");
   }
@@ -145,7 +145,7 @@ int main(int argc, char** argv)
   // Finally, we need to process our images into correspondence sets: for each dot in the
   // target this will be where that dot is in the target and where it was seen in the image.
   // Repeat for each image. We also tell where the wrist was when the image was taken.
-  rct_examples::ExtrinsicDataSet found_images;
+  rct_ros_tools::ExtrinsicDataSet found_images;
   for (std::size_t i = 0; i < data_set.images.size(); ++i)
   {
     // Try to find the circle grid in this image:
