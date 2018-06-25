@@ -1,0 +1,11 @@
+<launch>
+  <arg name="camera_file" default="$(find rct_examples)/config/kinect_camera_intr.yaml"/>
+  <arg name="target_file" default="$(find rct_examples)/config/target_10x10.yaml"/>
+  <arg name="data_path" default="$(find rct_examples)/data/test_set_10x10/cal_data.yaml"/>
+
+  <test pkg="rct_examples" type="rct_examples_cam_on_wrist_test" test-name="camera_on_wrist">
+    <rosparam command="load" file="$(arg camera_file)"/>
+    <rosparam command="load" file="$(arg target_file)"/>
+    <param name="data_path" value="$(arg data_path)"/>
+  </test>
+</launch>

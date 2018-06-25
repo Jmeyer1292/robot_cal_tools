@@ -118,6 +118,17 @@ target_link_libraries(${PROJECT_NAME}_cmd
  ${PROJECT_NAME}_data_set
 )
 
+#############
+## Testing ##
+#############
+if(CATKIN_ENABLE_TESTING)
+  find_package(rostest REQUIRED)
+  add_rostest_gtest(${PROJECT_NAME}_cam_on_wrist_test
+    test/cam_on_wrist.test # The launch file
+    test/camera_on_wrist_extrinsic_test.cpp # The source file(s)
+  )
+  target_link_libraries(${PROJECT_NAME}_cam_on_wrist_test ${catkin_LIBRARIES} ${PROJECT_NAME}_data_set)
+endif()
 
 #############
 ## Install ##

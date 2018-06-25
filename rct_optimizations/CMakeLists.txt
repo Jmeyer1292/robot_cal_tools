@@ -28,11 +28,13 @@ include_directories(
 add_library(${PROJECT_NAME}
   # Utilities
   src/${PROJECT_NAME}/eigen_conversions.cpp
-  # Optimizations
+  # Optimizations (monocular camera)
   src/${PROJECT_NAME}/extrinsic_camera_on_wrist.cpp
-  src/${PROJECT_NAME}/extrinsic_3d_camera_on_wrist.cpp
   src/${PROJECT_NAME}/extrinsic_static_camera.cpp
+  # Optimizations (multiple cameras)
   src/${PROJECT_NAME}/extrinsic_multi_static_camera.cpp
+  # Optimizations (3D sensor)
+  src/${PROJECT_NAME}/extrinsic_3d_camera_on_wrist.cpp
   # Optimizations (Experimental) - Intrinsic
   src/${PROJECT_NAME}/pnp.cpp
   src/${PROJECT_NAME}/camera_intrinsic.cpp
@@ -44,6 +46,14 @@ target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
   ${CERES_LIBRARIES}
 )
+
+#############
+## Testing ##
+#############
+if(CATKIN_ENABLE_TESTING)
+  catkin_add_gtest(${PROJECT_NAME}_conversion_tests test/conversion_utest.cpp)
+  target_link_libraries(${PROJECT_NAME}_conversion_tests ${PROJECT_NAME})
+endif()
 
 #############
 ## Install ##
