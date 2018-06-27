@@ -22,10 +22,10 @@ static void reproject(const Eigen::Affine3d& wrist_to_target,
                       const std::vector<rct_optimizations::CorrespondenceSet>& corr)
 {
   std::vector<cv::Point2d> reprojections;
-  Eigen::Affine3d target_to_camera = wrist_to_target.inverse() * base_to_wrist.inverse() * base_to_camera[0];
+  Eigen::Affine3d camera_to_target = base_to_camera[0].inverse() * base_to_wrist * wrist_to_target;
   for (const auto& point_in_target : target.points)
   {
-    Eigen::Vector3d in_camera = target_to_camera.inverse() * point_in_target;
+    Eigen::Vector3d in_camera = camera_to_target * point_in_target;
 
     double uv[2];
     rct_optimizations::projectPoint(intr[0], in_camera.data(), uv);
@@ -47,7 +47,7 @@ static void reproject(const Eigen::Affine3d& wrist_to_target,
   for (std::size_t i = 1; i < base_to_camera.size(); ++i)
     camera_transforms.push_back(camera_0_inverse * base_to_camera[i]);
 
-  pb.camera_to_target_guess = target_to_camera.inverse();
+  pb.camera_to_target_guess = camera_to_target;
   pb.correspondences = corr;
   pb.intr = intr;
   pb.camera_transforms = camera_transforms;
@@ -60,12 +60,12 @@ static void reproject(const Eigen::Affine3d& wrist_to_target,
 
   // We want to compute the "positional error" as well
   // So first we compute the "camera to target" transform based on the calibration...
-  std::cout << "CAMERA 0 TO TARGET\n\n" << target_to_camera.inverse().matrix() << "\n";
+  std::cout << "CAMERA 0 TO TARGET\n\n" << camera_to_target.matrix() << "\n";
 
   std::cout << "PNP\n" << r.camera_to_target.matrix() << "\n";
 
-  Eigen::Affine3d delta = target_to_camera * r.camera_to_target;
-  std::cout << "OTHER S: " << (r.camera_to_target.translation() - target_to_camera.translation()).norm() << "\n";
+  Eigen::Affine3d delta = camera_to_target.inverse() * r.camera_to_target;
+  std::cout << "OTHER S: " << (r.camera_to_target.translation() - camera_to_target.translation()).norm() << "\n";
   std::cout << "DELTA S: " << delta.translation().norm() << " at " << delta.translation().transpose() << "\n";
   Eigen::AngleAxisd aa (delta.linear());
   Eigen::Vector3d rpy = delta.rotation().eulerAngles(2, 1, 0);
@@ -79,6 +79,8 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "multi_static_camera_extrinsic");
   ros::NodeHandle pnh("~");
+
+  sleep(10);
 
   int camera_count;
   if (!pnh.getParam("num_of_cameras", camera_count))
@@ -161,7 +163,10 @@ int main(int argc, char** argv)
   rct_image_tools::ModifiedCircleGridObservationFinder obs_finder(target);
 
   std::vector<std::vector<bool>> found_images;
+  std::vector<std::vector<rct_optimizations::CorrespondenceSet>> all_image_observations;
+
   found_images.resize(num_of_cameras);
+  all_image_observations.resize(num_of_cameras);
   for (std::size_t c = 0; c < num_of_cameras; ++c)
   {
     // We know it exists, so define a helpful alias
@@ -171,6 +176,7 @@ int main(int argc, char** argv)
     // target this will be where that dot is in the target and where it was seen in the image.
     // Repeat for each image. We also tell where the wrist was when the image was taken.
     found_images[c].resize(data_set.images.size());
+    all_image_observations[c].resize(data_set.images.size());
     for (std::size_t i = 0; i < data_set.images.size(); ++i)
     {
       // Try to find the circle grid in this image:
@@ -210,6 +216,7 @@ int main(int argc, char** argv)
         obs_set.push_back(pair);
       }
       //// And finally add that to the problem
+      all_image_observations[c][i] = obs_set;
       problem_def.image_observations[c].push_back(obs_set);
     }
   }
@@ -269,7 +276,7 @@ int main(int argc, char** argv)
       {
         base_to_camera.push_back(opt_result.base_to_camera[c]);
         intr.push_back(problem_def.intr[c]);
-        corr_set.push_back(problem_def.image_observations[c][i]);
+        corr_set.push_back(all_image_observations[c][i]);
         if (cnt == 0)
         {
           image = maybe_data_set[c]->images[i];
@@ -285,6 +292,9 @@ int main(int argc, char** argv)
 
     if (cnt >= 2)
     {
+      std::cout << "***************************\n";
+      std::cout << "**** REPROJECT IMAGE " << i << " ****\n";
+      std::cout << "***************************\n";
       reproject(opt_result.wrist_to_target, base_to_wrist, base_to_camera,
                 intr, target, image, corr_set);
     }
