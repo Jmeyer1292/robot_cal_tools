@@ -11,10 +11,72 @@
 
 #include <opencv2/imgproc.hpp>
 #include <rct_optimizations/ceres_math_utilities.h>
-#include <rct_optimizations/experimental/multi_camera_pnp.h>
+//#include <rct_optimizations/experimental/multi_camera_pnp.h>
+#include <rct_optimizations/multi_static_camera_pnp.h>
 
-static void reproject(const Eigen::Affine3d& wrist_to_target,
-                      const Eigen::Affine3d& base_to_wrist,
+//static void reproject(const Eigen::Affine3d& wrist_to_target,
+//                      const Eigen::Affine3d& base_to_wrist,
+//                      const std::vector<Eigen::Affine3d>& base_to_camera,
+//                      const std::vector<rct_optimizations::CameraIntrinsics>& intr,
+//                      const rct_image_tools::ModifiedCircleGridTarget& target,
+//                      const cv::Mat& image,
+//                      const std::vector<rct_optimizations::CorrespondenceSet>& corr)
+//{
+//  std::vector<cv::Point2d> reprojections;
+//  Eigen::Affine3d camera_to_target = base_to_camera[0].inverse() * base_to_wrist * wrist_to_target;
+//  for (const auto& point_in_target : target.points)
+//  {
+//    Eigen::Vector3d in_camera = camera_to_target * point_in_target;
+
+//    double uv[2];
+//    rct_optimizations::projectPoint(intr[0], in_camera.data(), uv);
+
+//    reprojections.push_back(cv::Point2d(uv[0], uv[1]));
+//  }
+
+//  cv::Mat frame = image.clone();
+
+//  for (const auto& pt : reprojections)
+//  {
+//    cv::circle(frame, pt, 3, cv::Scalar(0, 0, 255));
+//  }
+
+//  rct_optimizations::MultiCameraPnPProblem pb;
+//  std::vector<Eigen::Affine3d> camera_transforms;
+//  Eigen::Affine3d camera_0_inverse = base_to_camera[0].inverse();
+
+//  for (std::size_t i = 1; i < base_to_camera.size(); ++i)
+//    camera_transforms.push_back(camera_0_inverse * base_to_camera[i]);
+
+//  pb.camera_to_target_guess = camera_to_target;
+//  pb.correspondences = corr;
+//  pb.intr = intr;
+//  pb.camera_transforms = camera_transforms;
+
+//  rct_optimizations::MultiCameraPnPResult r = rct_optimizations::optimize(pb);
+//  // Report results
+//  std::cout << "Did converge?: " << r.converged << "\n";
+//  std::cout << "Initial cost?: " << r.initial_cost_per_obs << "\n";
+//  std::cout << "Final cost?: " << r.final_cost_per_obs << "\n";
+
+//  // We want to compute the "positional error" as well
+//  // So first we compute the "camera to target" transform based on the calibration...
+//  std::cout << "CAMERA 0 TO TARGET\n\n" << camera_to_target.matrix() << "\n";
+
+//  std::cout << "PNP\n" << r.camera_to_target.matrix() << "\n";
+
+//  Eigen::Affine3d delta = camera_to_target.inverse() * r.camera_to_target;
+//  std::cout << "OTHER S: " << (r.camera_to_target.translation() - camera_to_target.translation()).norm() << "\n";
+//  std::cout << "DELTA S: " << delta.translation().norm() << " at " << delta.translation().transpose() << "\n";
+//  Eigen::AngleAxisd aa (delta.linear());
+//  Eigen::Vector3d rpy = delta.rotation().eulerAngles(2, 1, 0);
+//  std::cout << "DELTA A: " << (180.0 * aa.angle() / M_PI) << " and rpy=\"" << rpy(2) << "(" << rpy(2) * 180/M_PI << " deg) " << rpy(1) << "(" << rpy(1) * 180/M_PI << " deg) " << rpy(0) << "(" << rpy(0) * 180/M_PI << " deg)\"\n";
+
+//  cv::imshow("repr", frame);
+//  cv::waitKey();
+//}
+
+static void reproject(const Eigen::Affine3d& base_to_target,
                       const std::vector<Eigen::Affine3d>& base_to_camera,
                       const std::vector<rct_optimizations::CameraIntrinsics>& intr,
                       const rct_image_tools::ModifiedCircleGridTarget& target,
@@ -22,7 +84,7 @@ static void reproject(const Eigen::Affine3d& wrist_to_target,
                       const std::vector<rct_optimizations::CorrespondenceSet>& corr)
 {
   std::vector<cv::Point2d> reprojections;
-  Eigen::Affine3d camera_to_target = base_to_camera[0].inverse() * base_to_wrist * wrist_to_target;
+  Eigen::Affine3d camera_to_target = base_to_camera[0].inverse() * base_to_target;
   for (const auto& point_in_target : target.points)
   {
     Eigen::Vector3d in_camera = camera_to_target * point_in_target;
@@ -40,19 +102,13 @@ static void reproject(const Eigen::Affine3d& wrist_to_target,
     cv::circle(frame, pt, 3, cv::Scalar(0, 0, 255));
   }
 
-  rct_optimizations::MultiCameraPnPProblem pb;
-  std::vector<Eigen::Affine3d> camera_transforms;
-  Eigen::Affine3d camera_0_inverse = base_to_camera[0].inverse();
-
-  for (std::size_t i = 1; i < base_to_camera.size(); ++i)
-    camera_transforms.push_back(camera_0_inverse * base_to_camera[i]);
-
-  pb.camera_to_target_guess = camera_to_target;
-  pb.correspondences = corr;
+  rct_optimizations::MultiStaticCameraPnPProblem pb;
+  pb.base_to_camera = base_to_camera;
+  pb.base_to_target_guess = base_to_target;
+  pb.image_observations = corr;
   pb.intr = intr;
-  pb.camera_transforms = camera_transforms;
 
-  rct_optimizations::MultiCameraPnPResult r = rct_optimizations::optimize(pb);
+  rct_optimizations::MultiStaticCameraPnPResult r = rct_optimizations::optimize(pb);
   // Report results
   std::cout << "Did converge?: " << r.converged << "\n";
   std::cout << "Initial cost?: " << r.initial_cost_per_obs << "\n";
@@ -62,10 +118,11 @@ static void reproject(const Eigen::Affine3d& wrist_to_target,
   // So first we compute the "camera to target" transform based on the calibration...
   std::cout << "CAMERA 0 TO TARGET\n\n" << camera_to_target.matrix() << "\n";
 
-  std::cout << "PNP\n" << r.camera_to_target.matrix() << "\n";
+  Eigen::Affine3d result_camera_to_target = base_to_camera[0].inverse() * r.base_to_target;
+  std::cout << "PNP\n" << result_camera_to_target.matrix() << "\n";
 
-  Eigen::Affine3d delta = camera_to_target.inverse() * r.camera_to_target;
-  std::cout << "OTHER S: " << (r.camera_to_target.translation() - camera_to_target.translation()).norm() << "\n";
+  Eigen::Affine3d delta = camera_to_target.inverse() * result_camera_to_target;
+  std::cout << "OTHER S: " << (result_camera_to_target.translation() - camera_to_target.translation()).norm() << "\n";
   std::cout << "DELTA S: " << delta.translation().norm() << " at " << delta.translation().transpose() << "\n";
   Eigen::AngleAxisd aa (delta.linear());
   Eigen::Vector3d rpy = delta.rotation().eulerAngles(2, 1, 0);
@@ -295,7 +352,7 @@ int main(int argc, char** argv)
       std::cout << "***************************\n";
       std::cout << "**** REPROJECT IMAGE " << i << " ****\n";
       std::cout << "***************************\n";
-      reproject(opt_result.wrist_to_target, base_to_wrist, base_to_camera,
+      reproject(base_to_wrist * opt_result.wrist_to_target, base_to_camera,
                 intr, target, image, corr_set);
     }
   }
