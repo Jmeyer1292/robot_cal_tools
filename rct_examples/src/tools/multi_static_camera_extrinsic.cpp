@@ -83,8 +83,9 @@ static void reproject(const Eigen::Affine3d& base_to_target,
                       const cv::Mat& image,
                       const std::vector<rct_optimizations::CorrespondenceSet>& corr)
 {
-  std::vector<cv::Point2d> reprojections;
+
   Eigen::Affine3d camera_to_target = base_to_camera[0].inverse() * base_to_target;
+  std::vector<cv::Point2d> reprojections;
   for (const auto& point_in_target : target.points)
   {
     Eigen::Vector3d in_camera = camera_to_target * point_in_target;
@@ -95,11 +96,11 @@ static void reproject(const Eigen::Affine3d& base_to_target,
     reprojections.push_back(cv::Point2d(uv[0], uv[1]));
   }
 
-  cv::Mat frame = image.clone();
+  cv::Mat before_frame = image.clone();
 
   for (const auto& pt : reprojections)
   {
-    cv::circle(frame, pt, 3, cv::Scalar(0, 0, 255));
+    cv::circle(before_frame, pt, 3, cv::Scalar(0, 0, 255));
   }
 
   rct_optimizations::MultiStaticCameraPnPProblem pb;
@@ -128,7 +129,26 @@ static void reproject(const Eigen::Affine3d& base_to_target,
   Eigen::Vector3d rpy = delta.rotation().eulerAngles(2, 1, 0);
   std::cout << "DELTA A: " << (180.0 * aa.angle() / M_PI) << " and rpy=\"" << rpy(2) << "(" << rpy(2) * 180/M_PI << " deg) " << rpy(1) << "(" << rpy(1) * 180/M_PI << " deg) " << rpy(0) << "(" << rpy(0) * 180/M_PI << " deg)\"\n";
 
-  cv::imshow("repr", frame);
+  reprojections.clear();
+  for (const auto& point_in_target : target.points)
+  {
+    Eigen::Vector3d in_camera = result_camera_to_target * point_in_target;
+
+    double uv[2];
+    rct_optimizations::projectPoint(intr[0], in_camera.data(), uv);
+
+    reprojections.push_back(cv::Point2d(uv[0], uv[1]));
+  }
+
+  cv::Mat after_frame = image.clone();
+
+  for (const auto& pt : reprojections)
+  {
+    cv::circle(after_frame, pt, 3, cv::Scalar(0, 255, 0));
+  }
+
+  cv::imshow("repr_before", before_frame);
+  cv::imshow("repr_after", after_frame);
   cv::waitKey();
 }
 
