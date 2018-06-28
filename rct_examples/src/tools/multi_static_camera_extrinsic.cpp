@@ -12,7 +12,7 @@
 #include <opencv2/imgproc.hpp>
 #include <rct_optimizations/ceres_math_utilities.h>
 //#include <rct_optimizations/experimental/multi_camera_pnp.h>
-#include <rct_optimizations/multi_static_camera_pnp.h>
+#include <rct_optimizations/experimental/multi_camera_pnp.h>
 
 //static void reproject(const Eigen::Affine3d& wrist_to_target,
 //                      const Eigen::Affine3d& base_to_wrist,
@@ -103,13 +103,13 @@ static void reproject(const Eigen::Affine3d& base_to_target,
     cv::circle(before_frame, pt, 3, cv::Scalar(0, 0, 255));
   }
 
-  rct_optimizations::MultiStaticCameraPnPProblem pb;
+  rct_optimizations::MultiCameraPnPProblem pb;
   pb.base_to_camera = base_to_camera;
   pb.base_to_target_guess = base_to_target;
   pb.image_observations = corr;
   pb.intr = intr;
 
-  rct_optimizations::MultiStaticCameraPnPResult r = rct_optimizations::optimize(pb);
+  rct_optimizations::MultiCameraPnPResult r = rct_optimizations::optimize(pb);
   // Report results
   std::cout << "Did converge?: " << r.converged << "\n";
   std::cout << "Initial cost?: " << r.initial_cost_per_obs << "\n";
