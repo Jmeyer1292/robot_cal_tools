@@ -1,99 +1,101 @@
 #include "rct_optimizations/experimental/multi_camera_pnp.h"
 #include "rct_optimizations/ceres_math_utilities.h"
 #include "rct_optimizations/eigen_conversions.h"
+#include "rct_optimizations/types.h"
 
 #include <ceres/ceres.h>
+
+using namespace rct_optimizations;
 
 namespace
 {
 
-struct SolvePnPCostFunc
+class ReprojectionCost
 {
 public:
-  SolvePnPCostFunc(const rct_optimizations::CameraIntrinsics& intr, const Eigen::Vector3d& pt_in_target,
-                   const Eigen::Vector2d& pt_in_image,
-                   const rct_optimizations::Pose6d& trans_to_first_camera)
-    : intr_(intr), in_target_(pt_in_target), in_image_(pt_in_image)
-    , trans_to_first_camera_(trans_to_first_camera)
+  ReprojectionCost(const Eigen::Vector2d& obs,
+                   const CameraIntrinsics& intr,
+                   const Eigen::Affine3d& camera_to_base,
+                   const Eigen::Vector3d& point_in_target)
+    : obs_(obs),
+      intr_(intr),
+      camera_to_base_pose_(poseEigenToCal(camera_to_base)),
+      target_pt_(point_in_target)
   {}
 
-  template<typename T>
-  bool operator()(const T* const target_pose, T* const residual) const
+  template <typename T>
+  bool operator() (const T* const pose_base_to_target, T* residual) const
   {
-    const T* target_angle_axis = target_pose + 0;
-    const T* target_position = target_pose + 3;
+    const T* target_angle_axis = pose_base_to_target + 0;
+    const T* target_position = pose_base_to_target + 3;
+
+    T world_point[3]; // Point in world coordinates (base of robot)
+    T camera_point[3]; // Point in camera coordinates
 
     // Transform points into camera coordinates
     T target_pt[3];
-    target_pt[0] = T(in_target_(0));
-    target_pt[1] = T(in_target_(1));
-    target_pt[2] = T(in_target_(2));
+    target_pt[0] = T(target_pt_(0));
+    target_pt[1] = T(target_pt_(1));
+    target_pt[2] = T(target_pt_(2));
 
-    T camera_point[3];  // Point in the FIRST camera coordinates
-    rct_optimizations::transformPoint(target_angle_axis, target_position, target_pt, camera_point);
+    transformPoint(target_angle_axis, target_position, target_pt, world_point);
+    poseTransformPoint(camera_to_base_pose_, world_point, camera_point);
 
-    T this_camera_point[3]; // Point in THIS camera's coordinates
-    rct_optimizations::poseTransformPoint(trans_to_first_camera_, camera_point, this_camera_point);
-
+    // Compute projected point into image plane and compute residual
     T xy_image[2];
-    rct_optimizations::projectPoint(intr_, camera_point, xy_image);
+    projectPoint(intr_, camera_point, xy_image);
 
-    residual[0] = xy_image[0] - in_image_.x();
-    residual[1] = xy_image[1] - in_image_.y();
+    residual[0] = xy_image[0] - obs_.x();
+    residual[1] = xy_image[1] - obs_.y();
 
     return true;
   }
 
-  rct_optimizations::CameraIntrinsics intr_;
-  Eigen::Vector3d in_target_;
-  Eigen::Vector2d in_image_;
-  rct_optimizations::Pose6d trans_to_first_camera_;
+private:
+  Eigen::Vector2d obs_;
+  CameraIntrinsics intr_;
+  Pose6d camera_to_base_pose_;
+  Eigen::Vector3d target_pt_;
 };
 
-}
+} // end anon ns
 
-rct_optimizations::MultiCameraPnPResult rct_optimizations::optimize(const MultiCameraPnPProblem& params)
+rct_optimizations::MultiCameraPnPResult
+rct_optimizations::optimize(const rct_optimizations::MultiCameraPnPProblem& params)
 {
-  using namespace rct_optimizations;
-
-  // We optimize over a single pose guess; this represents the target in the FIRST camera
-  // Each cost will understand its camera transfrom to the first camera
-  Pose6d internal_camera_to_target = poseEigenToCal(params.camera_to_target_guess);
+  Pose6d internal_base_to_target = poseEigenToCal(params.base_to_target_guess);
 
   ceres::Problem problem;
 
-  for (std::size_t i = 0; i < params.correspondences.size(); ++i) // For each camera
+  for (std::size_t c = 0; c < params.base_to_camera.size(); ++c) // For each camera
   {
-    // Look up the camera parameters for this camera
-    const auto& camera_intr = params.intr[i];
-
-    // Determine this camera's transfrom to get back to FIRST camera
-    Pose6d trans_to_first_camera;
-    if (i == 0) trans_to_first_camera = poseEigenToCal(Eigen::Affine3d::Identity()); // This IS first camera
-    else trans_to_first_camera = poseEigenToCal(params.camera_transforms[i-1].inverse());
-
-    for (std::size_t j = 0; j < params.correspondences[i].size(); ++j) // For each 3D point seen in the 2D image
+    for (std::size_t i = 0; i < params.image_observations[c].size(); ++i) // For each 3D point seen in the 2D image
     {
-      const auto& point_in_image = params.correspondences[i][j].in_image;
-      const auto& point_in_target = params.correspondences[i][j].in_target;
+      // Define
+      const auto& img_obs = params.image_observations[c][i].in_image;
+      const auto& point_in_target = params.image_observations[c][i].in_target;
+      const auto& base_to_camera = params.base_to_camera[c];
+      const auto& intr = params.intr[c];
 
       // Allocate Ceres data structures - ownership is taken by the ceres
       // Problem data structure
-      auto* cost_fn = new SolvePnPCostFunc(camera_intr, point_in_target, point_in_image, trans_to_first_camera);
-      auto* cost_block = new ceres::AutoDiffCostFunction<SolvePnPCostFunc, 2, 6>(cost_fn);
-      problem.AddResidualBlock(cost_block, NULL, internal_camera_to_target.values.data());
+      auto* cost_fn = new ReprojectionCost(img_obs, intr, base_to_camera.inverse(), point_in_target);
+
+      auto* cost_block = new ceres::AutoDiffCostFunction<ReprojectionCost, 2, 6>(cost_fn);
+
+      problem.AddResidualBlock(cost_block, NULL, internal_base_to_target.values.data());
     }
-  }
+  } // end for each camera
 
   ceres::Solver::Options options;
   ceres::Solver::Summary summary;
+
   ceres::Solve(options, &problem, &summary);
 
   MultiCameraPnPResult result;
   result.converged = summary.termination_type == ceres::CONVERGENCE;
+  result.base_to_target = poseCalToEigen(internal_base_to_target);
   result.initial_cost_per_obs = summary.initial_cost / summary.num_residuals;
   result.final_cost_per_obs = summary.final_cost / summary.num_residuals;
-  result.camera_to_target = poseCalToEigen(internal_camera_to_target);
-
   return result;
 }
