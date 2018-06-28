@@ -12,7 +12,7 @@ catkin_package(
   INCLUDE_DIRS
     include
   LIBRARIES
-    rct_image_tools
+    ${PROJECT_NAME}
   CATKIN_DEPENDS
     rct_optimizations
   DEPENDS
