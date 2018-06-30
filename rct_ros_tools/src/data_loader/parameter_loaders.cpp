@@ -1,11 +1,17 @@
 #include "rct_ros_tools/parameter_loaders.h"
+#include <xmlrpcpp/XmlRpcException.h>
 #include <yaml-cpp/yaml.h>
 
 template<typename T>
 static bool read(XmlRpc::XmlRpcValue& xml, const std::string& key, T& value)
 {
   if (!xml.hasMember(key)) return false;
-  value = static_cast<T>(xml[key]);
+  try {
+    value = static_cast<T>(xml[key]);
+  } catch (const XmlRpc::XmlRpcException& ex) {
+    ROS_ERROR_STREAM(ex.getMessage());
+    return false;
+  }
   return true;
 }
 

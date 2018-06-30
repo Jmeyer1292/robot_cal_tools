@@ -5,7 +5,6 @@
 #include <rct_image_tools/image_observation_finder.h>
 // The calibration function for 'moving camera' on robot wrist
 #include <rct_optimizations/extrinsic_camera_on_wrist.h>
-
 #include <rct_optimizations/experimental/pnp.h>
 
 // For display of found targets
@@ -43,21 +42,20 @@ static void reproject(const Eigen::Affine3d& wrist_to_camera, const Eigen::Affin
   // We want to compute the "positional error" as well
   // So first we compute the "camera to target" transform based on the calibration...
   Eigen::Affine3d cam_to_target = wrist_to_camera.inverse() * base_to_wrist.inverse() * base_to_target;
-  std::cout << "CAM TO TARGET\n\n" << cam_to_target.matrix() << "\n";
 
   rct_optimizations::PnPProblem pb;
   pb.camera_to_target_guess = cam_to_target;
   pb.correspondences = corr;
   pb.intr = intr;
-
-
   rct_optimizations::PnPResult r = rct_optimizations::optimize(pb);
-  std::cout << "PNP\n" << r.camera_to_target.matrix() << "\n";
 
   Eigen::Affine3d delta = cam_to_target.inverse() * r.camera_to_target;
-  std::cout << "DELTA S: " << delta.translation().norm() << " at " << delta.translation().transpose() << "\n";
+  std::cout << "---\n";
+  std::cout << "Expected Position to PnP Solution\n\tTransln Error:\t" << delta.translation().norm() << " meters along vector = "
+            << delta.translation().transpose() << "\n";
   Eigen::AngleAxisd aa (delta.linear());
-  std::cout << "DELTA A: " << (180.0 * aa.angle() / M_PI) << " and axis = " << aa.axis().transpose() << "\n";
+  std::cout << "\tAngular Error:\t" << (180.0 * aa.angle() / M_PI)
+            << " degrees around axis = " << aa.axis().transpose() << "\n";
 
   cv::imshow("repr", frame);
   cv::waitKey();
@@ -76,25 +74,18 @@ int main(int argc, char** argv)
     return 1;
   }
 
-  // Load target definition from parameter server. Target will get
-  // reset if such a parameter was set.
-  rct_image_tools::ModifiedCircleGridTarget target(10, 10, 0.0254);
+  rct_image_tools::ModifiedCircleGridTarget target;
   if (!rct_ros_tools::loadTarget(pnh, "target_definition", target))
   {
     ROS_WARN_STREAM("Unable to load target from the 'target_definition' parameter struct");
+    return 1;
   }
 
-  // Load the camera intrinsics from the parameter server. Intr will get
-  // reset if such a parameter was set
   rct_optimizations::CameraIntrinsics intr;
-  intr.fx() = 510.0;
-  intr.fy() = 510.0;
-  intr.cx() = 320.2;
-  intr.cy() = 208.9;
-
   if (!rct_ros_tools::loadIntrinsics(pnh, "intrinsics", intr))
   {
     ROS_WARN_STREAM("Unable to load camera intrinsics from the 'intrinsics' parameter struct");
+    return 1;
   }
 
   // Attempt to load the data set via the data record yaml file:
@@ -114,23 +105,18 @@ int main(int argc, char** argv)
   rct_optimizations::ExtrinsicCameraOnWristProblem problem_def;
   problem_def.intr = intr; // Set the camera properties
 
-  // Provide a guess for the wrist to camera transform:
-  Eigen::Vector3d wrist_to_camera_tx (0.015, 0, 0.15);
-  Eigen::Matrix3d wrist_to_camera_rot;
-  wrist_to_camera_rot << 0, 1, 0,
-                        -1, 0, 0,
-                         0, 0, 1;
-  problem_def.wrist_to_camera_guess.translation() = wrist_to_camera_tx;
-  problem_def.wrist_to_camera_guess.linear() = wrist_to_camera_rot;
+  // Our 'base to camera guess': A camera off to the side, looking at a point centered in front of the robot
+  if (!rct_ros_tools::loadPose(pnh, "base_to_target_guess", problem_def.base_to_target_guess))
+  {
+    ROS_WARN_STREAM("Unable to load guess for base to camera from the 'base_to_target_guess' parameter struct");
+    return 1;
+  }
 
-  // Provide a guess for the base to target transform:
-  Eigen::Vector3d base_to_target_tx (1, 0, 0);
-  Eigen::Matrix3d base_to_target_rot;
-  base_to_target_rot << 0, 1, 0,
-                       -1, 0, 0,
-                        0, 0, 1;
-  problem_def.base_to_target_guess.translation() = base_to_target_tx;
-  problem_def.base_to_target_guess.linear() = base_to_target_rot;
+  if (!rct_ros_tools::loadPose(pnh, "wrist_to_camera_guess", problem_def.wrist_to_camera_guess))
+  {
+    ROS_WARN_STREAM("Unable to load guess for wrist to target from the 'wrist_to_camera_guess' parameter struct");
+    return 1;
+  }
 
   // Finally, we need to process our images into correspondence sets: for each dot in the
   // target this will be where that dot is in the target and where it was seen in the image.
