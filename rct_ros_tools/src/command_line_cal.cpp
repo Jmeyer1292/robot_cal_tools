@@ -61,7 +61,7 @@ public:
     , it_(ros::NodeHandle())
   {
     im_sub_ = it_.subscribe(nominal_image_topic, 1, &ImageMonitor::onNewImage, this);
-    im_pub_ = it_.advertise(nominal_image_topic + "_observed", 1);
+    im_pub_ = it_.advertise(nominal_image_topic + "_observer", 1);
   }
 
   void onNewImage(const sensor_msgs::ImageConstPtr& msg)
