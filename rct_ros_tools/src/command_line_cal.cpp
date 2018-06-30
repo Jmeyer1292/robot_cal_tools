@@ -117,6 +117,8 @@ struct DataCollectionConfig
 
   std::string image_topic;
   rct_image_tools::ModifiedCircleGridTarget target;
+
+  std::string save_dir;
 };
 
 struct DataCollection
@@ -125,14 +127,19 @@ struct DataCollection
   DataCollection(const DataCollectionConfig& config)
     : tf_monitor(config.base_frame, config.tool_frame)
     , image_monitor(config.target, config.image_topic)
+    , save_dir_(config.save_dir)
   {
     ros::NodeHandle nh;
     trigger_server = nh.advertiseService("collect", &DataCollection::onTrigger, this);
     save_server = nh.advertiseService("save", &DataCollection::onSave, this);
+
+    ROS_INFO_STREAM("Call " << trigger_server.getService() << " to capture a pose/image pair");
+    ROS_INFO_STREAM("Call " << save_server.getService() << " to save the captured data");
   }
 
   bool onTrigger(std_srvs::EmptyRequest&, std_srvs::EmptyResponse&)
   {
+    ROS_INFO_STREAM("Pose/Image capture triggered...");
     geometry_msgs::TransformStamped pose;
     cv::Mat image;
 
@@ -140,6 +147,7 @@ struct DataCollection
     {
       poses.push_back(pose);
       images.push_back(image);
+      ROS_INFO_STREAM("Data collected successfully");
       return true;
     }
     else
@@ -163,7 +171,8 @@ struct DataCollection
       data.tool_poses.push_back(pose);
     }
 
-    rct_ros_tools::saveToDirectory("cal_test", data);
+    ROS_INFO_STREAM("Saving data-set to " << save_dir_);
+    rct_ros_tools::saveToDirectory(save_dir_, data);
     return true;
   }
 
@@ -175,6 +184,8 @@ struct DataCollection
 
   TransformMonitor tf_monitor;
   ImageMonitor image_monitor;
+
+  std::string save_dir_;
 };
 
 template <typename T>
@@ -200,6 +211,7 @@ int main(int argc, char** argv)
   if (!get(pnh, "base_frame", config.base_frame)) return 1;
   if (!get(pnh, "tool_frame", config.tool_frame)) return 1;
   if (!get(pnh, "image_topic", config.image_topic)) return 1;
+  if (!get(pnh, "save_dir", config.save_dir)) return 1;
   if (!rct_ros_tools::loadTarget(pnh, "target_definition", config.target))
   {
     ROS_ERROR_STREAM("Must provide parameters to load target!");

@@ -9,10 +9,14 @@
   <!-- Image topic parameters -->
   <arg name="image_topic" default="camera"/>
 
+  <!--The save directory-->
+  <arg name="save_dir" default="cmd_line_cal_data_set"/>
+
   <node pkg="rct_ros_tools" type="command_line_data_collection" name="$(anon cmd_line_data)" output="screen">
     <rosparam command="load" file="$(arg target_file)"/>
     <param name="base_frame" value="$(arg base_frame)"/>
     <param name="tool_frame" value="$(arg tool_frame)"/>
     <param name="image_topic" value="$(arg image_topic)"/>
+    <param name="save_dir" value="$(arg save_dir)"/>
   </node>
 </launch>
