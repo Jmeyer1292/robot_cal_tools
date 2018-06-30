@@ -1,52 +1,67 @@
 #include <ros/ros.h>
 #include <rct_ros_tools/data_set.h>
+#include <rct_ros_tools/parameter_loaders.h>
 
 #include <tf2_ros/transform_listener.h>
 #include <opencv2/highgui.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.h>
-
 #include <eigen_conversions/eigen_msg.h>
 
 #include <std_srvs/Empty.h>
 
 #include <rct_image_tools/image_observation_finder.h>
 
-struct DataCollection
+class TransformMonitor
 {
-  std::string base_frame;
-  std::string tool_frame;
-
-  tf2_ros::Buffer buffer;
-  tf2_ros::TransformListener listener;
-
-  image_transport::ImageTransport it;
-  image_transport::Subscriber im_sub;
-  image_transport::Publisher im_pub;
-  cv_bridge::CvImagePtr last_frame;
-
-  ros::ServiceServer trigger_server;
-  ros::ServiceServer save_server;
-
-  std::vector<geometry_msgs::TransformStamped> poses;
-  std::vector<cv_bridge::CvImagePtr> images;
-
-  rct_image_tools::ModifiedCircleGridObservationFinder finder;
-
-  DataCollection(ros::NodeHandle& nh)
-    : listener(buffer)
-    , it(nh)
-    , finder (rct_image_tools::ModifiedCircleGridTarget(5, 5, 0.015))
+public:
+  TransformMonitor(const std::string& base_frame, const std::string& tool_frame)
+    : base_frame_(base_frame)
+    , tool_frame_(tool_frame)
+    , listener_(buffer_)
   {
-    ros::NodeHandle pnh ("~");
-    pnh.getParam("base", base_frame);
-    pnh.getParam("tool", tool_frame);
+    // Validate that we can look up required transforms
+    geometry_msgs::TransformStamped dummy;
+    if (!capture(dummy))
+    {
+      throw std::runtime_error("Transform from " + base_frame_ + " to " + tool_frame_ + " not available");
+    }
+  }
 
-    im_sub = it.subscribe("camera", 1, &DataCollection::onNewImage, this);
-    im_pub = it.advertise("observer", 1);
+  bool capture(geometry_msgs::TransformStamped& out)
+  {
+    try
+    {
+      geometry_msgs::TransformStamped t = buffer_.lookupTransform(base_frame_, tool_frame_, ros::Time(), ros::Duration(3.0));
+      out = t;
+      return true;
+    }
+    catch (const tf2::TransformException& ex)
+    {
+      ROS_WARN_STREAM("Failed to compute transfrom between " << base_frame_ << " and " << tool_frame_ << ": "
+                      << ex.what());
+      return false;
+    }
+  }
 
-    trigger_server = nh.advertiseService("collect", &DataCollection::onTrigger, this);
-    save_server = nh.advertiseService("save", &DataCollection::onSave, this);
+private:
+  std::string base_frame_;
+  std::string tool_frame_;
+
+  tf2_ros::Buffer buffer_;
+  tf2_ros::TransformListener listener_;
+};
+
+class ImageMonitor
+{
+public:
+  ImageMonitor(const rct_image_tools::ModifiedCircleGridObservationFinder& finder,
+               const std::string& nominal_image_topic)
+    : finder_(finder)
+    , it_(ros::NodeHandle())
+  {
+    im_sub_ = it_.subscribe(nominal_image_topic, 1, &ImageMonitor::onNewImage, this);
+    im_pub_ = it_.advertise(nominal_image_topic + "_observed", 1);
   }
 
   void onNewImage(const sensor_msgs::ImageConstPtr& msg)
@@ -57,20 +72,18 @@ struct DataCollection
     {
       cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
 
-
-      auto obs = finder.findObservations(cv_ptr->image);
+      auto obs = finder_.findObservations(cv_ptr->image);
       if (obs)
       {
-        auto modified = finder.drawObservations(cv_ptr->image, *obs);
+        auto modified = finder_.drawObservations(cv_ptr->image, *obs);
         cv_bridge::CvImagePtr ptr (new cv_bridge::CvImage(cv_ptr->header, cv_ptr->encoding, modified));
-        im_pub.publish(ptr->toImageMsg());
+        im_pub_.publish(ptr->toImageMsg());
       }
       else
       {
-        im_pub.publish(cv_ptr->toImageMsg());
+        im_pub_.publish(cv_ptr->toImageMsg());
       }
-
-      last_frame = cv_ptr;
+      last_frame_ = cv_ptr;
     }
     catch (cv_bridge::Exception& e)
     {
@@ -79,16 +92,61 @@ struct DataCollection
     }
   }
 
+  bool capture(cv::Mat& frame)
+  {
+    if (last_frame_)
+    {
+      frame = last_frame_->image;
+      return true;
+    }
+    return false;
+  }
+
+private:
+  rct_image_tools::ModifiedCircleGridObservationFinder finder_;
+  image_transport::ImageTransport it_;
+  image_transport::Subscriber im_sub_;
+  image_transport::Publisher im_pub_;
+  cv_bridge::CvImagePtr last_frame_;
+};
+
+struct DataCollectionConfig
+{
+  std::string base_frame;
+  std::string tool_frame;
+
+  std::string image_topic;
+  rct_image_tools::ModifiedCircleGridTarget target;
+};
+
+struct DataCollection
+{
+
+  DataCollection(const DataCollectionConfig& config)
+    : tf_monitor(config.base_frame, config.tool_frame)
+    , image_monitor(config.target, config.image_topic)
+  {
+    ros::NodeHandle nh;
+    trigger_server = nh.advertiseService("collect", &DataCollection::onTrigger, this);
+    save_server = nh.advertiseService("save", &DataCollection::onSave, this);
+  }
+
   bool onTrigger(std_srvs::EmptyRequest&, std_srvs::EmptyResponse&)
   {
-    geometry_msgs::TransformStamped tf = buffer.lookupTransform(base_frame, tool_frame, ros::Time(), ros::Duration(5));
-    if (last_frame)
-    {
-      poses.push_back(tf);
-      images.push_back(last_frame);
-    }
+    geometry_msgs::TransformStamped pose;
+    cv::Mat image;
 
-    return true;
+    if (tf_monitor.capture(pose) && image_monitor.capture(image))
+    {
+      poses.push_back(pose);
+      images.push_back(image);
+      return true;
+    }
+    else
+    {
+      ROS_WARN_STREAM("Failed to capture pose/image pair");
+      return false;
+    }
   }
 
   bool onSave(std_srvs::EmptyRequest&, std_srvs::EmptyResponse&)
@@ -96,7 +154,7 @@ struct DataCollection
     rct_ros_tools::ExtrinsicDataSet data;
     for (std::size_t i = 0; i < poses.size(); ++i)
     {
-      cv::Mat image = images[i]->image;
+      cv::Mat image = images[i];
       auto msg = poses[i];
       Eigen::Affine3d pose;
       tf::transformMsgToEigen(msg.transform, pose);
@@ -108,13 +166,47 @@ struct DataCollection
     rct_ros_tools::saveToDirectory("cal_test", data);
     return true;
   }
+
+  ros::ServiceServer trigger_server;
+  ros::ServiceServer save_server;
+
+  std::vector<geometry_msgs::TransformStamped> poses;
+  std::vector<cv::Mat> images;
+
+  TransformMonitor tf_monitor;
+  ImageMonitor image_monitor;
 };
+
+template <typename T>
+bool get(const ros::NodeHandle& nh, const std::string& key, T& value)
+{
+  if (!nh.getParam(key, value))
+  {
+    ROS_ERROR_STREAM("Must set parameter, " << key << "!");
+    return false;
+  }
+  ROS_INFO_STREAM("Parameter " << key << " set to: " << value);
+  return true;
+}
 
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "rct_examples");
-  ros::NodeHandle nh;
-  DataCollection dc (nh);
+  ros::NodeHandle pnh ("~");
+
+  // Load data collection parameters
+  DataCollectionConfig config;
+
+  if (!get(pnh, "base_frame", config.base_frame)) return 1;
+  if (!get(pnh, "tool_frame", config.tool_frame)) return 1;
+  if (!get(pnh, "image_topic", config.image_topic)) return 1;
+  if (!rct_ros_tools::loadTarget(pnh, "target_definition", config.target))
+  {
+    ROS_ERROR_STREAM("Must provide parameters to load target!");
+    return 1;
+  }
+
+  DataCollection dc (config);
   ros::spin();
   return 0;
 }

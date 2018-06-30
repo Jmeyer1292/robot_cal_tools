@@ -10,7 +10,7 @@ static bool read(XmlRpc::XmlRpcValue& xml, const std::string& key, T& value)
 }
 
 bool rct_ros_tools::loadTarget(const ros::NodeHandle& nh, const std::string& key,
-                              rct_image_tools::ModifiedCircleGridTarget& target)
+                               rct_image_tools::ModifiedCircleGridTarget& target)
 {
   XmlRpc::XmlRpcValue xml;
   if (!nh.getParam(key, xml)) return false;
