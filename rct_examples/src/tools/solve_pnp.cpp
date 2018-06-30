@@ -70,21 +70,19 @@ int main(int argc, char** argv)
   cv::Mat mat = cv::imread(image_path);
 
   // Load target definition from parameter server
-  rct_image_tools::ModifiedCircleGridTarget target(5, 5, 0.015);
+  rct_image_tools::ModifiedCircleGridTarget target;
   if (!rct_ros_tools::loadTarget(pnh, "target_definition", target))
   {
     ROS_WARN_STREAM("Unable to load target from the 'target_definition' parameter struct");
+    return 1;
   }
 
   // Load the camera intrinsics from the parameter server
   rct_optimizations::CameraIntrinsics intr;
-  intr.fx() = 1411.0;
-  intr.fy() = 1408.0;
-  intr.cx() = 807.2;
-  intr.cy() = 615.0;
   if (!rct_ros_tools::loadIntrinsics(pnh, "intrinsics", intr))
   {
     ROS_WARN_STREAM("Unable to load camera intrinsics from the 'intrinsics' parameter struct");
+    return 1;
   }
 
   rct_image_tools::ModifiedCircleGridObservationFinder finder (target);

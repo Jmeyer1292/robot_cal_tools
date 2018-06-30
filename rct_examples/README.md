@@ -2,7 +2,11 @@
 ## Introduction
 Calibrate your camera intrinsically first. See the front page readme and calibration primer for more information.
 
-This document describes, with pictures, the "experimental setup" for common calibrations. 
+This document describes, with pictures, the "experimental setup" for common calibrations.
+
+Note that the source folder contains both stand-alone examples and tools meant to make testing/offline processing easier.
+
+If you're new and want the minimal example for integrating this library with your code, see `src/examples/`.
 
 ***
 

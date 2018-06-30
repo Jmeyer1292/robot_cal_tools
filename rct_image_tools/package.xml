@@ -6,7 +6,7 @@
 
   <maintainer email="jmeyer1292@gmail.com">Jonathan Meyer</maintainer>
 
-  <license>TODO</license>
+  <license>Apache 2.0</license>
 
   <buildtool_depend>catkin</buildtool_depend>
   <depend>rct_optimizations</depend>

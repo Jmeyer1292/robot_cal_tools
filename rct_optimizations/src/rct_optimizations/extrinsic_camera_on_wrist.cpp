@@ -100,7 +100,9 @@ rct_optimizations::ExtrinsicCameraOnWristResult rct_optimizations::optimize(cons
   }
 
   ceres::Solver::Options options;
+  options.max_num_iterations = 150; // TODO: How do we expose these?
   ceres::Solver::Summary summary;
+
 
   ceres::Solve(options, &problem, &summary);
 

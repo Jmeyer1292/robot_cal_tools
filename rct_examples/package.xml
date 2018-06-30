@@ -5,10 +5,9 @@
   <description>The rct_examples package</description>
 
   <maintainer email="jmeyer1292@gmail.com">Jonathan Meyer</maintainer>
-
   <author email="jmeyer1292@gmail.com">Jonathan Meyer</author>
 
-  <license>TODO</license>
+  <license>Apache 2.0</license>
 
   <buildtool_depend>catkin</buildtool_depend>
   <depend>rct_image_tools</depend>

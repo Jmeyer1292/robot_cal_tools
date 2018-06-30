@@ -7,8 +7,8 @@ Calibrating a camera in your workspace typically happens in two steps:
  2. Armed with the intrinsics, calibrate the "extrinsics", or the pose of the camera in your workcell.
 
 For the second step, you need to choose the correct calibration function depending on whether your camera is moving in the workcell or watching something that moves.
- - For an RGB pinhole camera that is attached to a robot wrist, see `rct_optimizations/extrinsic_camera_on_wrist.h`.
- - For an RGB pinhole camera that is static and watching a robot, see `rct_optimizations/extrinsic_static_camera.h`.
+ - For a pinhole camera that is attached to a robot wrist, see `rct_optimizations/extrinsic_camera_on_wrist.h`.
+ - For a pinhole camera that is static and watching a robot, see `rct_optimizations/extrinsic_static_camera.h`.
 
 These calibrations compute the transform between the camera and the robot wrist or base respectively. They do so by analzying images of calibration target: a
 patterned set of holes with known dimensions and spacing. This target is fixed in your workcell for camera to wrist calibrations, and attached to the wrist for
@@ -25,16 +25,17 @@ is then compared with what it actually saw, and the guess is adjusted to bring i
 ## The Camera
  - We use the OpenCV model. See [OpenCV's discussion](https://docs.opencv.org/2.4/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html) at the top of their calib3d module.
  - In brief: +Z looks "down the barrel" of the camera lens, +Y looks down the vertical axis, and +X looks from left to right along  the horizontal axis.
+ - When talking about pixel space, the origin of your image is the top left corner. The +Y axis runs down the height, and the +X axis runs right along the width.
  - Most of the calibrations in this package assume they are working on an undistored or rectified image.
 
-**TODO IMAGE OF CAMERA COORDINATES ON A PHYSICAL CAMERA**
+![OpenCV Camera Model](docs/pinhole_camera_model.png)
 
 ## The Target
-- The core calibrations don't make assumptions about the target: Instead you just provide 2D to 3D correspondences however you find them.
+- The core calibrations don't make assumptions about the target: Instead you just provide 2D to 3D correspondences, however you find them.
 - However I do provide a default target finder in `rct_image_tools`. The type of target compatible with this package is a grid of circles with a single larger dot in the bottom left corner.
-- The big dot means you know what angle you're looking at the target from. 
+- The one big dot allows us to disambiguate the orientation of symmetrical targets.
 - The big dot is the "origin" or (0,0,0) of the target. The +Z axis comes out of the page, the +X axis runs along the bottom of the page, left to right (the last row if your big dot is in the bottom left). The +Y runs up the page from the big dot.
-- When using the observation finder in `rct_image_tools`, the points are ordered top to bottom, left to right as if reading a book with the big dot, or origin, in the bottom left. So the top left point is `0`, the top right point is `cols - 1`, the second row first column is point `cols`, etc. See the image. The target class in `rct_image_tools` has a points field which matches this ordering.
+- When using the observation finder in `rct_image_tools`, the points are ordered left to right, top to bottomas if reading a book. The big dot, or origin, is in the bottom left. So the top left point is `0`, the top right point is `cols - 1`, the second row first column is point `cols`, etc. See the image. The target class in `rct_image_tools` has a points field which matches this ordering.
 
 ![Calibration Target](docs/mod_circle_target_annotated.png)
 

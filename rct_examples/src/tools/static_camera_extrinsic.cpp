@@ -40,44 +40,22 @@ static void reproject(const Eigen::Affine3d& wrist_to_target, const Eigen::Affin
 
   // We want to compute the "positional error" as well
   // So first we compute the "camera to target" transform based on the calibration...
-  std::cout << "CAM TO TARGET\n\n" << target_to_camera.inverse().matrix() << "\n";
-
   rct_optimizations::PnPProblem pb;
   pb.camera_to_target_guess = target_to_camera.inverse();
   pb.correspondences = corr;
   pb.intr = intr;
-
-
   rct_optimizations::PnPResult r = rct_optimizations::optimize(pb);
-  std::cout << "PNP\n" << r.camera_to_target.matrix() << "\n";
 
   Eigen::Affine3d delta = target_to_camera * r.camera_to_target;
-  std::cout << "OTHER S: " << (r.camera_to_target.translation() - target_to_camera.translation()).norm() << "\n";
-  std::cout << "DELTA S: " << delta.translation().norm() << " at " << delta.translation().transpose() << "\n";
+  std::cout << "---\n";
+  std::cout << "Expected Position to PnP Solution\n\tTransln Error:\t" << delta.translation().norm() << " meters along vector = "
+            << delta.translation().transpose() << "\n";
   Eigen::AngleAxisd aa (delta.linear());
-  std::cout << "DELTA A: " << (180.0 * aa.angle() / M_PI) << " and axis = " << aa.axis().transpose() << "\n";
+  std::cout << "\tAngular Error:\t" << (180.0 * aa.angle() / M_PI)
+            << " degrees around axis = " << aa.axis().transpose() << "\n";
 
   cv::imshow("repr", frame);
   cv::waitKey();
-}
-/**
- * @brief Defines a camera matrix using a camera origin, a position its looking at, and an up vector hint
- * @param origin The position of the camera focal point
- * @param eye A point that the camera is looking at
- * @param up The upvector in world-space
- */
-static Eigen::Affine3d lookat(const Eigen::Vector3d& origin, const Eigen::Vector3d& eye, const Eigen::Vector3d& up)
-{
-  Eigen::Vector3d z = (eye - origin).normalized();
-  Eigen::Vector3d x = z.cross(up).normalized();
-  Eigen::Vector3d y = z.cross(x).normalized();
-
-  auto p = Eigen::Affine3d::Identity();
-  p.translation() = origin;
-  p.matrix().col(0).head<3>() = x;
-  p.matrix().col(1).head<3>() = y;
-  p.matrix().col(2).head<3>() = z;
-  return p;
 }
 
 int main(int argc, char** argv)
@@ -103,24 +81,18 @@ int main(int argc, char** argv)
   // We know it exists, so define a helpful alias
   const rct_ros_tools::ExtrinsicDataSet& data_set = *maybe_data_set;
 
-  // Load target definition from parameter server. Target will get
-  // reset if such a parameter was set.
   rct_image_tools::ModifiedCircleGridTarget target(5, 5, 0.015);
   if (!rct_ros_tools::loadTarget(pnh, "target_definition", target))
   {
     ROS_WARN_STREAM("Unable to load target from the 'target_definition' parameter struct");
+    return 1;
   }
 
-  // Load the camera intrinsics from the parameter server. Intr will get
-  // reset if such a parameter was set
   rct_optimizations::CameraIntrinsics intr;
-  intr.fx() = 1411.0;
-  intr.fy() = 1408.0;
-  intr.cx() = 807.2;
-  intr.cy() = 615.0;
   if (!rct_ros_tools::loadIntrinsics(pnh, "intrinsics", intr))
   {
     ROS_WARN_STREAM("Unable to load camera intrinsics from the 'intrinsics' parameter struct");
+    return 1;
   }
 
   // Lets create a class that will search for the target in our raw images.
@@ -135,11 +107,13 @@ int main(int argc, char** argv)
   if (!rct_ros_tools::loadPose(pnh, "base_to_camera_guess", problem_def.base_to_camera_guess))
   {
     ROS_WARN_STREAM("Unable to load guess for base to camera from the 'base_to_camera_guess' parameter struct");
+    return 1;
   }
 
   if (!rct_ros_tools::loadPose(pnh, "wrist_to_target_guess", problem_def.wrist_to_target_guess))
   {
     ROS_WARN_STREAM("Unable to load guess for wrist to target from the 'wrist_to_target_guess' parameter struct");
+    return 1;
   }
 
   // Finally, we need to process our images into correspondence sets: for each dot in the
@@ -209,7 +183,7 @@ int main(int argc, char** argv)
   std::cout << "--- URDF Format Base to Camera---\n";
   Eigen::Vector3d rpy = c.rotation().eulerAngles(2, 1, 0);
   std::cout << "xyz=\"" << c.translation()(0) << " " << c.translation()(1) << " " << c.translation()(2) << "\"\n";
-  std::cout << "rpy=\"" << rpy(2) << "(" << rpy(2) * 180/M_PI << " deg) " << rpy(1) << "(" << rpy(1) * 180/M_PI << " deg) " << rpy(0) << "(" << rpy(0) * 180/M_PI << " deg)\"\n";
+  std::cout << "rpy=\"" << rpy(2) << " " << rpy(1) << " " << rpy(0) << "\"\n";
 
   for (std::size_t i = 0; i < found_images.images.size(); ++i)
   {
