@@ -33,9 +33,20 @@ static void reproject(const Eigen::Affine3d& wrist_to_target, const Eigen::Affin
 
   cv::Mat frame = image.clone();
 
-  for (const auto& pt : reprojections)
+  for (std::size_t i = 0; i < reprojections.size(); ++i)
   {
-    cv::circle(frame, pt, 3, cv::Scalar(0, 0, 255));
+    const auto& pt = reprojections[i];
+    cv::Scalar color;
+    if (i == 0) {
+      color = cv::Scalar(0, 255, 0);
+    } else if (static_cast<int>(i) == (target.rows * target.cols - target.cols))
+    {
+      color = cv::Scalar(255, 0, 0);
+    }
+    else
+      color = cv::Scalar(0,0,255);
+
+    cv::circle(frame, pt, 3, color);
   }
 
   // We want to compute the "positional error" as well
@@ -82,7 +93,7 @@ static Eigen::Affine3d lookat(const Eigen::Vector3d& origin, const Eigen::Vector
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "camera_on_wrist_extrinsic");
+  ros::init(argc, argv, "camera_on_wrist_extrinsic", ros::init_options::AnonymousName);
   ros::NodeHandle pnh("~");
 
   // Load the data set path from ROS param
@@ -137,10 +148,21 @@ int main(int argc, char** argv)
     ROS_WARN_STREAM("Unable to load guess for base to camera from the 'base_to_camera_guess' parameter struct");
   }
 
+//  Eigen::Matrix3d mm;
+//  mm << 0,  0,  1,
+//        1,  0,  0,
+//        0,  1,  0;
+
+//  problem_def.base_to_camera_guess.linear() = mm;
+
+  ROS_WARN_STREAM("Base to camera guess:\n" << problem_def.base_to_camera_guess.matrix());
+
   if (!rct_ros_tools::loadPose(pnh, "wrist_to_target_guess", problem_def.wrist_to_target_guess))
   {
     ROS_WARN_STREAM("Unable to load guess for wrist to target from the 'wrist_to_target_guess' parameter struct");
   }
+
+  ROS_WARN_STREAM("Wrist to Target guess:\n" << problem_def.wrist_to_target_guess.matrix());
 
   // Finally, we need to process our images into correspondence sets: for each dot in the
   // target this will be where that dot is in the target and where it was seen in the image.
@@ -171,6 +193,18 @@ int main(int argc, char** argv)
     // So for each image we need to:
     //// 1. Record the wrist position
     problem_def.wrist_poses.push_back(data_set.tool_poses[i]);
+
+
+    ROS_INFO_STREAM("WRIST POSE AT " << i << ":\n" << data_set.tool_poses[i].matrix());
+    if (i != 0)
+    {
+      auto prev_wrist = data_set.tool_poses[i-1];
+      Eigen::Vector3d delta = data_set.tool_poses[i].translation() - prev_wrist.translation();
+
+      ROS_INFO_STREAM("DELTA SPACE: " << delta.transpose());
+
+    }
+
 
     //// Create the correspondence pairs
     rct_optimizations::CorrespondenceSet obs_set;
@@ -206,6 +240,13 @@ int main(int argc, char** argv)
   std::cout << "Wrist to Target:\n";
   std::cout << t.matrix() << "\n";
 
+  Eigen::Quaterniond qs (c.linear());
+  ROS_INFO("QUAT (x, y, z, w): %f %f %f %f", qs.x(), qs.y(), qs.z(), qs.w());
+
+  qs = Eigen::Quaterniond(t.linear());
+  ROS_INFO("QUAT TARGET (x, y, z, w): %f %f %f %f", qs.x(), qs.y(), qs.z(), qs.w());
+
+
   std::cout << "--- URDF Format Base to Camera---\n";
   Eigen::Vector3d rpy = c.rotation().eulerAngles(2, 1, 0);
   std::cout << "xyz=\"" << c.translation()(0) << " " << c.translation()(1) << " " << c.translation()(2) << "\"\n";
@@ -216,6 +257,44 @@ int main(int argc, char** argv)
     reproject(opt_result.wrist_to_target, opt_result.base_to_camera, found_images.tool_poses[i],
               intr, target, found_images.images[i], problem_def.image_observations[i]);
   }
+
+  std::vector<Eigen::Affine3d> writes;
+  for (std::size_t i = 0; i < found_images.images.size(); ++i)
+  {
+    // Solve PnP
+    Eigen::Affine3d guess = Eigen::Affine3d::Identity();
+    guess = guess * Eigen::Translation3d(0,0,0.1) * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX());
+
+    rct_optimizations::PnPProblem params;
+    params.intr = intr;
+    params.camera_to_target_guess = guess;
+    params.correspondences = problem_def.image_observations[i];
+
+    rct_optimizations::PnPResult r = rct_optimizations::optimize(params);
+    writes.push_back(r.camera_to_target);
+    std::cout << "Pnp " << i << ": " << r.converged << " " << r.final_cost_per_obs << "\n";
+  }
+
+  for (std::size_t i = 1; i < found_images.images.size(); ++i)
+  {
+    // Robot
+    auto r1 = found_images.tool_poses[i] * problem_def.wrist_to_target_guess;
+    auto r0 = found_images.tool_poses[i - 1] * problem_def.wrist_to_target_guess;
+
+    // PnP
+    auto p1 = writes[i];
+    auto p0 = writes[i-1];
+
+    // Delta
+    auto dr = r0.inverse() * r1;
+    auto dp = p0.inverse() * p1;
+
+    std::cout << "DR\n" << dr.matrix() << "\n";
+    std::cout << "DP\n" << dp.matrix() << "\n";
+    std::cout << "TX\n" << (dr.translation() - dp.translation()).transpose() << "\n\n";
+
+  }
+
 
 
   return 0;

@@ -78,13 +78,22 @@ rct_optimizations::optimize(const rct_optimizations::ExtrinsicStaticCameraMoving
       // Define
       const auto& img_obs = params.image_observations[i][j].in_image;
       const auto& point_in_target = params.image_observations[i][j].in_target;
-      const auto wrist_to_base = params.wrist_poses[i];//.inverse();
+      const auto base_to_wrist = params.wrist_poses[i];
 
       // Allocate Ceres data structures - ownership is taken by the ceres
       // Problem data structure
-      auto* cost_fn = new ReprojectionCost(img_obs, params.intr, wrist_to_base, point_in_target);
+      auto* cost_fn = new ReprojectionCost(img_obs, params.intr, base_to_wrist, point_in_target);
 
       auto* cost_block = new ceres::AutoDiffCostFunction<ReprojectionCost, 2, 6, 6>(cost_fn);
+
+      double uv[2];
+
+      (*cost_fn)(internal_camera_to_base.values.data(), internal_wrist_to_target.values.data(),
+                 uv);
+
+      std::cout << "-- INITIAL RESIDUAL --\n";
+      std::cout << "In image: " << img_obs.transpose() << "\t\tIn target: " << point_in_target.transpose() << "\n";
+      std::cout << "Residual: " << uv[0] << "   " << uv[1] << "\n";
 
       problem.AddResidualBlock(cost_block, NULL, internal_camera_to_base.values.data(),
                                internal_wrist_to_target.values.data());
