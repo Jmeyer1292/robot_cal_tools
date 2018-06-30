@@ -52,11 +52,22 @@ target_link_libraries(${PROJECT_NAME}
 ## Testing ##
 #############
 if(CATKIN_ENABLE_TESTING)
+  # Build the test support library
+  add_library(${PROJECT_NAME}_test_support
+    test/src/observation_creator.cpp
+    test/src/utilities.cpp)
+  target_link_libraries(${PROJECT_NAME}_test_support ${PROJECT_NAME})
+  target_include_directories(${PROJECT_NAME}_test_support PUBLIC test/include)
+
+  # The actual tests...
   catkin_add_gtest(${PROJECT_NAME}_conversion_tests test/conversion_utest.cpp)
-  target_link_libraries(${PROJECT_NAME}_conversion_tests ${PROJECT_NAME})
+  target_link_libraries(${PROJECT_NAME}_conversion_tests ${PROJECT_NAME}_test_support)
 
   catkin_add_gtest(${PROJECT_NAME}_extrinsic_multi_static_camera_tests test/extrinsic_multi_static_camera_utest.cpp)
-  target_link_libraries(${PROJECT_NAME}_extrinsic_multi_static_camera_tests ${PROJECT_NAME})
+  target_link_libraries(${PROJECT_NAME}_extrinsic_multi_static_camera_tests ${PROJECT_NAME}_test_support)
+
+  catkin_add_gtest(${PROJECT_NAME}_extrinsic_camera_on_wrist_tests test/extrinsic_camera_on_wrist_utest.cpp)
+  target_link_libraries(${PROJECT_NAME}_extrinsic_camera_on_wrist_tests ${PROJECT_NAME}_test_support)
 endif()
 
 #############
