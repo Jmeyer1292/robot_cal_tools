@@ -64,14 +64,16 @@ add_dependencies(${PROJECT_NAME}_multi_static_camera ${${PROJECT_NAME}_EXPORTED_
 
 target_link_libraries(${PROJECT_NAME}_multi_static_camera ${catkin_LIBRARIES})
 
-# Executable for demonstrating extrinsic cal of multiple static camera only, moving target functionality
-add_executable(${PROJECT_NAME}_multi_static_camera_only src/tools/multi_static_camera_only_extrinsic.cpp)
+# Executable for demonstrating extrinsic cal of multiple static camera multi step, moving target functionality
+# First it calibrates the cameras to each other then it calibrates the set of camera where there relationship
+# between cameras is fixed but as a whole they can be transformed along with wrist calibration.
+add_executable(${PROJECT_NAME}_multi_static_camera_multi_step src/tools/multi_static_camera_multi_step_extrinsic.cpp)
 
-set_target_properties(${PROJECT_NAME}_multi_static_camera_only PROPERTIES OUTPUT_NAME multi_static_cam_only_extr_cal_ex PREFIX "")
+set_target_properties(${PROJECT_NAME}_multi_static_camera_multi_step PROPERTIES OUTPUT_NAME multi_static_cam_multi_step_extr_cal_ex PREFIX "")
 
-add_dependencies(${PROJECT_NAME}_multi_static_camera_only ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME}_multi_static_camera_multi_step ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(${PROJECT_NAME}_multi_static_camera_only ${catkin_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}_multi_static_camera_multi_step ${catkin_LIBRARIES})
 
 #Executable for demonstrating intrinsic calibration of a camera
 add_executable(${PROJECT_NAME}_intr src/tools/intrinsic_calibration.cpp)

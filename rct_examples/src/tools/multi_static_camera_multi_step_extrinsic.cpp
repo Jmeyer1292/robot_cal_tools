@@ -5,13 +5,14 @@
 #include <rct_image_tools/image_observation_finder.h>
 // The calibration function for 'static camera' on robot wrist
 #include <rct_optimizations/extrinsic_multi_static_camera_only.h>
+#include <rct_optimizations/extrinsic_multi_static_camera_wrist_only.h>
 
 #include <opencv2/highgui.hpp>
 #include <ros/ros.h>
 
 #include <opencv2/imgproc.hpp>
 #include <rct_optimizations/ceres_math_utilities.h>
-#include <rct_optimizations/multi_static_camera_pnp.h>
+#include <rct_optimizations/experimental/multi_camera_pnp.h>
 
 static void reproject(const Eigen::Affine3d& base_to_target,
                       const std::vector<Eigen::Affine3d>& base_to_camera,
@@ -40,13 +41,13 @@ static void reproject(const Eigen::Affine3d& base_to_target,
     cv::circle(before_frame, pt, 3, cv::Scalar(0, 0, 255));
   }
 
-  rct_optimizations::MultiStaticCameraPnPProblem pb;
+  rct_optimizations::MultiCameraPnPProblem pb;
   pb.base_to_camera = base_to_camera;
   pb.base_to_target_guess = base_to_target;
   pb.image_observations = corr;
   pb.intr = intr;
 
-  rct_optimizations::MultiStaticCameraPnPResult r = rct_optimizations::optimize(pb);
+  rct_optimizations::MultiCameraPnPResult r = rct_optimizations::optimize(pb);
   // Report results
   std::cout << "Did converge?: " << r.converged << "\n";
   std::cout << "Initial cost?: " << r.initial_cost_per_obs << "\n";
@@ -91,7 +92,7 @@ static void reproject(const Eigen::Affine3d& base_to_target,
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "multi_static_camera_extrinsic_only");
+  ros::init(argc, argv, "multi_static_camera_multi_step_extrinsic");
   ros::NodeHandle pnh("~");
 
   int camera_count;
@@ -102,6 +103,7 @@ int main(int argc, char** argv)
   }
   std::size_t num_of_cameras = camera_count;
 
+  rct_optimizations::ExtrinsicMultiStaticCameraMovingTargetWristOnlyProblem problem_wrist_def;
   rct_optimizations::ExtrinsicMultiStaticCameraOnlyProblem problem_def;
   std::vector<std::string> data_path;
   std::string target_path;
@@ -230,10 +232,10 @@ int main(int argc, char** argv)
   }
 
   Eigen::Affine3d wrist_to_target;
-  wrist_to_target.setIdentity();
-  if (pnh.hasParam("wrist_to_target_guess") && !rct_ros_tools::loadPose(pnh, "wrist_to_target_guess", wrist_to_target))
+  if (!rct_ros_tools::loadPose(pnh, "wrist_to_target_guess", wrist_to_target))
   {
     ROS_WARN_STREAM("Unable to load guess for wrist to target from the 'wrist_to_target_guess' parameter struct");
+    return 1;
   }
 
   std::vector<cv::Mat> images;
@@ -243,6 +245,7 @@ int main(int argc, char** argv)
     {
       images.push_back(maybe_data_set[0]->images[i]);
       problem_def.base_to_target_guess.push_back(maybe_data_set[0]->tool_poses[i] * wrist_to_target);
+      problem_wrist_def.wrist_poses.push_back(maybe_data_set[0]->tool_poses[i]);
       for (std::size_t c = 0; c < num_of_cameras; ++c)
       {
         problem_def.image_observations[c].push_back(all_image_observations[c][i]);
@@ -253,6 +256,10 @@ int main(int argc, char** argv)
   problem_def.fix_first_camera = fix_first_camera;
 
   // Run optimization
+  std::cout << "******************************************************************\n";
+  std::cout << "************** Running calibration for only cameras **************\n";
+  std::cout << "******************************************************************\n";
+
   rct_optimizations::ExtrinsicMultiStaticCameraOnlyResult
       opt_result = rct_optimizations::optimize(problem_def);
 
@@ -268,32 +275,88 @@ int main(int argc, char** argv)
     Eigen::Affine3d t = opt_result.base_to_camera[c];
 
     std::cout << "Base to Camera (" + param_base + "):\n";
-    std::cout << t.matrix() << "\n";
+    std::cout << t.matrix() << "\n\n";
 
     std::cout << "--- URDF Format Base to Camera (" + param_base + ") ---\n";
     Eigen::Vector3d rpy = t.rotation().eulerAngles(2, 1, 0);
     Eigen::Quaterniond q(t.rotation());
     std::cout << "xyz=\"" << t.translation()(0) << " " << t.translation()(1) << " " << t.translation()(2) << "\"\n";
     std::cout << "rpy=\"" << rpy(2) << "(" << rpy(2) * 180/M_PI << " deg) " << rpy(1) << "(" << rpy(1) * 180/M_PI << " deg) " << rpy(0) << "(" << rpy(0) * 180/M_PI << " deg)\"\n";
-    std::cout << "qxyzw=\"" << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << "\"\n";
+    std::cout << "qxyzw=\"" << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << "\"\n\n";
 
     t = opt_result.base_to_camera[0].inverse()  * t;
     std::cout << "Camera 0 to Camera " << c << ":\n";
-    std::cout << t.matrix() << "\n";
+    std::cout << t.matrix() << "\n\n";
 
     std::cout << "--- URDF Format Camera 0 to Camera (" + param_base + ") ---\n";
     rpy = t.rotation().eulerAngles(2, 1, 0);
     q = Eigen::Quaterniond(t.rotation());
     std::cout << "xyz  =\"" << t.translation()(0) << " " << t.translation()(1) << " " << t.translation()(2) << "\"\n";
     std::cout << "rpy  =\"" << rpy(2) << "(" << rpy(2) * 180/M_PI << " deg) " << rpy(1) << "(" << rpy(1) * 180/M_PI << " deg) " << rpy(0) << "(" << rpy(0) * 180/M_PI << " deg)\"\n";
-    std::cout << "qxyzw=\"" << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << "\"\n";
+    std::cout << "qxyzw=\"" << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << "\"\n\n";
+  }
+
+  // Run optimization
+  std::cout << "******************************************************************\n";
+  std::cout << "** Running calibration for wrist only using camera only results **\n";
+  std::cout << "******************************************************************\n";
+
+  problem_wrist_def.intr = problem_def.intr;
+  problem_wrist_def.wrist_to_target_guess = wrist_to_target;
+  problem_wrist_def.image_observations = problem_def.image_observations;
+  problem_wrist_def.base_to_camera_guess = opt_result.base_to_camera;
+  rct_optimizations::ExtrinsicMultiStaticCameraMovingTargetWristOnlyResult
+      opt_wrist_only_result = rct_optimizations::optimize(problem_wrist_def);
+
+  // Report results
+  std::cout << "Did converge?: " << opt_wrist_only_result.converged << "\n";
+  std::cout << "Initial cost?: " << opt_wrist_only_result.initial_cost_per_obs << "\n";
+  std::cout << "Final cost?: " << opt_wrist_only_result.final_cost_per_obs << "\n";
+
+  Eigen::Affine3d t = opt_wrist_only_result.wrist_to_target;
+
+  std::cout << "Wrist to Target:\n";
+  std::cout << t.matrix() << "\n\n";
+  std::cout << "--- URDF Format Wrist to Target ---\n";
+  Eigen::Vector3d rpy = t.rotation().eulerAngles(2, 1, 0);
+  Eigen::Quaterniond q(t.rotation());
+  std::cout << "xyz=\"" << t.translation()(0) << " " << t.translation()(1) << " " << t.translation()(2) << "\"\n";
+  std::cout << "rpy=\"" << rpy(2) << "(" << rpy(2) * 180/M_PI << " deg) " << rpy(1) << "(" << rpy(1) * 180/M_PI << " deg) " << rpy(0) << "(" << rpy(0) * 180/M_PI << " deg)\"\n";
+  std::cout << "qxyzw=\"" << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << "\"\n\n";
+
+  for (std::size_t c = 0; c < num_of_cameras; ++c)
+  {
+    // Load the data set path from ROS param
+    std::string param_base = "camera_" + std::to_string(c);
+
+    t = opt_wrist_only_result.base_to_camera[c];
+    std::cout << "Base to Camera (" + param_base + "):\n";
+    std::cout << t.matrix() << "\n\n";
+
+    std::cout << "--- URDF Format Base to Camera (" + param_base + ") ---\n";
+    rpy = t.rotation().eulerAngles(2, 1, 0);
+    q = Eigen::Quaterniond(t.rotation());
+    std::cout << "xyz=\"" << t.translation()(0) << " " << t.translation()(1) << " " << t.translation()(2) << "\"\n";
+    std::cout << "rpy=\"" << rpy(2) << "(" << rpy(2) * 180/M_PI << " deg) " << rpy(1) << "(" << rpy(1) * 180/M_PI << " deg) " << rpy(0) << "(" << rpy(0) * 180/M_PI << " deg)\"\n";
+    std::cout << "qxyzw=\"" << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << "\"\n\n";
+
+    t = opt_wrist_only_result.base_to_camera[0].inverse() * t;
+    std::cout << "Camera 0 to Camera " << c << ":\n";
+    std::cout << t.matrix() << "\n\n";
+
+    std::cout << "--- URDF Format Camera 0 to Camera (" + param_base + ") ---\n";
+    rpy = t.rotation().eulerAngles(2, 1, 0);
+    q = Eigen::Quaterniond(t.rotation());
+    std::cout << "xyz  =\"" << t.translation()(0) << " " << t.translation()(1) << " " << t.translation()(2) << "\"\n";
+    std::cout << "rpy  =\"" << rpy(2) << "(" << rpy(2) * 180/M_PI << " deg) " << rpy(1) << "(" << rpy(1) * 180/M_PI << " deg) " << rpy(0) << "(" << rpy(0) * 180/M_PI << " deg)\"\n";
+    std::cout << "qxyzw=\"" << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << "\"\n\n";
   }
 
   std::cout << "**************************************************************\n";
   std::cout << "********************* REPROJECTION ERROR *********************\n";
   std::cout << "**************************************************************\n";
 
-  for (std::size_t i = 0; i < opt_result.base_to_target.size(); ++i)
+  for (std::size_t i = 0; i < problem_wrist_def.wrist_poses.size(); ++i)
   {
     std::vector<rct_optimizations::CorrespondenceSet> corr_set;
     std::vector<Eigen::Affine3d> base_to_camera;
@@ -304,11 +367,11 @@ int main(int argc, char** argv)
     base_to_camera.reserve(num_of_cameras);
     intr.reserve(num_of_cameras);
 
-    base_to_target = opt_result.base_to_target[i];
+    base_to_target = problem_wrist_def.wrist_poses[i] * opt_wrist_only_result.wrist_to_target;
 
     for (std::size_t c = 0; c < num_of_cameras; ++c)
     {
-      base_to_camera.push_back(opt_result.base_to_camera[c]);
+      base_to_camera.push_back(opt_wrist_only_result.base_to_camera[c]);
       intr.push_back(problem_def.intr[c]);
       corr_set.push_back(problem_def.image_observations[c][i]);
     }
