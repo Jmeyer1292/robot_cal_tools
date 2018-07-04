@@ -150,9 +150,6 @@ rct_optimizations::optimize(const rct_optimizations::ExtrinsicMultiStaticCameraO
   ceres::Solver::Options options;
   ceres::Solver::Summary summary;
 
-//  options.initial_trust_region_radius = 0.25;
-//  options.max_trust_region_radius = 1;
-
   ceres::Solve(options, &problem, &summary);
 
   ExtrinsicMultiStaticCameraOnlyResult result;

@@ -93,6 +93,15 @@ add_dependencies(${PROJECT_NAME}_pnp ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catki
 
 target_link_libraries(${PROJECT_NAME}_pnp ${catkin_LIBRARIES})
 
+# Executable demonstrating solving for the pose of a target given multiple camera properties
+add_executable(${PROJECT_NAME}_multi_camera_pnp src/tools/solve_multi_camera_pnp.cpp)
+
+set_target_properties(${PROJECT_NAME}_multi_camera_pnp PROPERTIES OUTPUT_NAME solve_multi_camera_pnp_ex PREFIX "")
+
+add_dependencies(${PROJECT_NAME}_multi_camera_pnp ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(${PROJECT_NAME}_multi_camera_pnp ${catkin_LIBRARIES})
+
 #############
 ## Testing ##
 #############

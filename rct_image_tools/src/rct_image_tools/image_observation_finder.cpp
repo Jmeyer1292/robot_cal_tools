@@ -300,9 +300,8 @@ static bool extractModifiedCircleGrid(const cv::Mat& image, const rct_image_tool
                                       ObservationPoints& observation_points)
 {
   PARAMS detector_params;
-  detector_params.maxArea = image.cols * image.rows;
 
-  cv::Ptr<DETECTOR_PTR> detector_ptr = DETECTOR::create();
+  cv::Ptr<DETECTOR_PTR> detector_ptr = DETECTOR::create(detector_params);
 
   bool flipped = false;
 

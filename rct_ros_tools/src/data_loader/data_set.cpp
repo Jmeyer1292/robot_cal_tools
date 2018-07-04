@@ -23,7 +23,12 @@ static std::string combine(const std::string& dir, const std::string& rel_path)
 
 static cv::Mat readImageOpenCV(const std::string& path)
 {
-  return cv::imread(path, CV_LOAD_IMAGE_COLOR); // TODO: Is CV_LOAD_IMAGE_COLOR needed?
+  cv::Mat image = cv::imread(path, CV_LOAD_IMAGE_COLOR); // TODO: Is CV_LOAD_IMAGE_COLOR needed?
+  if (image.data == NULL)
+  {
+    ROS_ERROR("File failed to load or does not exist: %s", path.c_str());
+  }
+  return image;
 }
 
 static rct_ros_tools::ExtrinsicDataSet parse(const YAML::Node& root, const std::string& root_path)
