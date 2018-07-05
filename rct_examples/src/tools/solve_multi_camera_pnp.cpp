@@ -69,8 +69,6 @@ int main(int argc, char** argv)
   ros::init(argc, argv, "solve_multi_camera_pnp_ex", ros::init_options::AnonymousName);
   ros::NodeHandle pnh("~");
 
-  sleep(10);
-
   int camera_count;
   if (!pnh.getParam("num_of_cameras", camera_count))
   {
