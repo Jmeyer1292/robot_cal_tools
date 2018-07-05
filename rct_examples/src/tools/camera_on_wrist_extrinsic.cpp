@@ -1,6 +1,7 @@
 // Utilities for loading data sets and calib parameters from YAML files via ROS
 #include "rct_ros_tools/data_set.h"
 #include "rct_ros_tools/parameter_loaders.h"
+#include "rct_ros_tools/print_utils.h"
 // To find 2D  observations from images
 #include <rct_image_tools/image_observation_finder.h>
 // The calibration function for 'moving camera' on robot wrist
@@ -49,13 +50,14 @@ static void reproject(const Eigen::Affine3d& wrist_to_camera, const Eigen::Affin
   pb.intr = intr;
   rct_optimizations::PnPResult r = rct_optimizations::optimize(pb);
 
-  Eigen::Affine3d delta = cam_to_target.inverse() * r.camera_to_target;
-  std::cout << "---\n";
-  std::cout << "Expected Position to PnP Solution\n\tTransln Error:\t" << delta.translation().norm() << " meters along vector = "
-            << delta.translation().transpose() << "\n";
-  Eigen::AngleAxisd aa (delta.linear());
-  std::cout << "\tAngular Error:\t" << (180.0 * aa.angle() / M_PI)
-            << " degrees around axis = " << aa.axis().transpose() << "\n";
+  rct_ros_tools::printOptResults(r.converged, r.initial_cost_per_obs, r.final_cost_per_obs);
+  rct_ros_tools::printNewLine();
+
+  rct_ros_tools::printTransform(r.camera_to_target, "Camera", "Target", "PNP");
+  rct_ros_tools::printNewLine();
+
+  rct_ros_tools::printTransformDiff(cam_to_target, r.camera_to_target, "Camera", "Target", "PNP DIFF");
+  rct_ros_tools::printNewLine();
 
   cv::imshow("repr", frame);
   cv::waitKey();
@@ -163,25 +165,21 @@ int main(int argc, char** argv)
   rct_optimizations::ExtrinsicCameraOnWristResult opt_result = rct_optimizations::optimize(problem_def);
 
   // Report results
-  std::cout << "Did converge?: " << opt_result.converged << "\n";
-  std::cout << "Initial cost?: " << opt_result.initial_cost_per_obs << "\n";
-  std::cout << "Final cost?: " << opt_result.final_cost_per_obs << "\n";
+  rct_ros_tools::printOptResults(opt_result.converged, opt_result.initial_cost_per_obs, opt_result.final_cost_per_obs);
+  rct_ros_tools::printNewLine();
 
   Eigen::Affine3d c = opt_result.wrist_to_camera;
+  rct_ros_tools::printTransform(c, "Wrist", "Camera", "WRIST TO CAMERA");
+  rct_ros_tools::printNewLine();
+
   Eigen::Affine3d t = opt_result.base_to_target;
+  rct_ros_tools::printTransform(t, "Base", "Target", "BASE TO TARGET");
+  rct_ros_tools::printNewLine();
 
-  std::cout << "Wrist To Camera:\n";
-  std::cout << c.matrix() << "\n";
-  std::cout << "Base to Target:\n";
-  std::cout << t.matrix() << "\n";
-
-  std::cout << "--- URDF Format Wrist to Camera---\n";
-  Eigen::Vector3d rpy = c.rotation().eulerAngles(2, 1, 0);
-  std::cout << "xyz=\"" << c.translation()(0) << " " << c.translation()(1) << " " << c.translation()(2) << "\"\n";
-  std::cout << "rpy=\"" << rpy(2) << " " << rpy(1) << " " << rpy(0) << "\"\n";
-
+  rct_ros_tools::printTitle("REPROJECTION ERROR");
   for (std::size_t i = 0; i < data_set.images.size(); ++i)
   {
+    rct_ros_tools::printTitle("REPROJECT IMAGE " + std::to_string(i));
     reproject(opt_result.wrist_to_camera, opt_result.base_to_target, data_set.tool_poses[i],
               intr, target, data_set.images[i], problem_def.image_observations[i]);
   }

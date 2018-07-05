@@ -14,6 +14,7 @@
 #include <rct_optimizations/ceres_math_utilities.h>
 #include <rct_ros_tools/parameter_loaders.h>
 #include <rct_ros_tools/data_set.h>
+#include <rct_ros_tools/print_utils.h>
 
 static void reproject(const Eigen::Affine3d& base_to_target,
                       const std::vector<Eigen::Affine3d>& base_to_camera,
@@ -50,35 +51,19 @@ static void reproject(const Eigen::Affine3d& base_to_target,
 
   rct_optimizations::MultiCameraPnPResult r = rct_optimizations::optimize(pb);
   // Report results
-  std::cout << "Did converge?: " << r.converged << "\n";
-  std::cout << "Initial cost?: " << r.initial_cost_per_obs << "\n";
-  std::cout << "Final cost?: " << r.final_cost_per_obs << "\n";
+  rct_ros_tools::printOptResults(r.converged, r.initial_cost_per_obs, r.final_cost_per_obs);
+  rct_ros_tools::printNewLine();
 
   // We want to compute the "positional error" as well
   // So first we compute the "camera to target" transform based on the calibration...
-  std::cout << "BASE TO TARGET\n\n" << base_to_target.matrix() << "\n";
-  std::cout << "--- URDF Format Base to Target ---\n";
-  Eigen::Vector3d rpy = base_to_target.rotation().eulerAngles(2, 1, 0);
-  Eigen::Quaterniond q(base_to_target.rotation());
-  std::cout << "xyz=\"" << base_to_target.translation()(0) << " " << base_to_target.translation()(1) << " " << base_to_target.translation()(2) << "\"\n";
-  std::cout << "rpy=\"" << rpy(2) << "(" << rpy(2) * 180/M_PI << " deg) " << rpy(1) << "(" << rpy(1) * 180/M_PI << " deg) " << rpy(0) << "(" << rpy(0) * 180/M_PI << " deg)\"\n";
-  std::cout << "qxyzw=\"" << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << "\"\n\n";
+  rct_ros_tools::printTransform(base_to_target, "Base", "Target", "BASE TO TARGET");
+  rct_ros_tools::printNewLine();
 
-  std::cout << "PNP\n" << r.base_to_target.matrix() << "\n";
-  std::cout << "--- URDF Format Base to Target ---\n";
-  rpy = r.base_to_target.rotation().eulerAngles(2, 1, 0);
-  q = Eigen::Quaterniond(r.base_to_target.rotation());
-  std::cout << "xyz=\"" << r.base_to_target.translation()(0) << " " << r.base_to_target.translation()(1) << " " << r.base_to_target.translation()(2) << "\"\n";
-  std::cout << "rpy=\"" << rpy(2) << "(" << rpy(2) * 180/M_PI << " deg) " << rpy(1) << "(" << rpy(1) * 180/M_PI << " deg) " << rpy(0) << "(" << rpy(0) * 180/M_PI << " deg)\"\n";
-  std::cout << "qxyzw=\"" << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << "\"\n\n";
+  rct_ros_tools::printTransform(r.base_to_target, "Base", "Target", "PNP");
+  rct_ros_tools::printNewLine();
 
-  Eigen::Affine3d delta = base_to_target.inverse() * r.base_to_target;
-  std::cout << "OTHER S: " << (r.base_to_target.translation() - base_to_target.translation()).norm() << "\n";
-  std::cout << "DELTA S: " << delta.translation().norm() << " at " << delta.translation().transpose() << "\n";
-  Eigen::AngleAxisd aa (delta.linear());
-  rpy = delta.rotation().eulerAngles(2, 1, 0);
-
-  std::cout << "DELTA A: " << (180.0 * aa.angle() / M_PI) << " and rpy=\"" << rpy(2) << "(" << rpy(2) * 180/M_PI << " deg) " << rpy(1) << "(" << rpy(1) * 180/M_PI << " deg) " << rpy(0) << "(" << rpy(0) * 180/M_PI << " deg)\"\n";
+  rct_ros_tools::printTransformDiff(base_to_target, r.base_to_target, "Base", "Target", "PNP Diff");
+  rct_ros_tools::printNewLine();
 
   reprojections.clear();
   Eigen::Affine3d result_camera_to_target = base_to_camera[0].inverse() * r.base_to_target;
@@ -248,9 +233,7 @@ int main(int argc, char** argv)
         corr_set.push_back(all_image_observations[c][i]);
       }
 
-      std::cout << "***************************\n";
-      std::cout << "**** REPROJECT IMAGE " << i << " ****\n";
-      std::cout << "***************************\n";
+      rct_ros_tools::printTitle("REPROJECT IMAGE " + std::to_string(i));
       reproject(maybe_data_set[0]->tool_poses[i], base_to_camera,
                 intr, target, maybe_data_set[0]->images[i], corr_set);
     }
