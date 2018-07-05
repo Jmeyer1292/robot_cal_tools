@@ -4,6 +4,7 @@
 #include "rct_ros_tools/print_utils.h"
 // To find 2D  observations from images
 #include <rct_image_tools/image_observation_finder.h>
+#include <rct_image_tools/image_utils.h>
 // The calibration function for 'moving camera' on robot wrist
 #include <rct_optimizations/extrinsic_camera_on_wrist.h>
 #include <rct_optimizations/experimental/pnp.h>
@@ -19,33 +20,16 @@ static void reproject(const Eigen::Affine3d& wrist_to_camera, const Eigen::Affin
                       const rct_image_tools::ModifiedCircleGridTarget& target, const cv::Mat& image,
                       const rct_optimizations::CorrespondenceSet& corr)
 {
-  std::vector<cv::Point2d> reprojections;
-
-  for (const auto& point_in_target : target.points)
-  {
-    Eigen::Vector3d in_base = (base_to_target * point_in_target);
-    Eigen::Vector3d in_wrist = base_to_wrist.inverse() * in_base;
-    Eigen::Vector3d in_camera =wrist_to_camera.inverse() * in_wrist;
-
-    double uv[2];
-    rct_optimizations::projectPoint(intr, in_camera.data(), uv);
-
-    reprojections.push_back(cv::Point2d(uv[0], uv[1]));
-  }
-
-  cv::Mat frame = image.clone();
-
-  for (const auto& pt : reprojections)
-  {
-    cv::circle(frame, pt, 3, cv::Scalar(0, 0, 255));
-  }
-
   // We want to compute the "positional error" as well
   // So first we compute the "camera to target" transform based on the calibration...
-  Eigen::Affine3d cam_to_target = wrist_to_camera.inverse() * base_to_wrist.inverse() * base_to_target;
+  Eigen::Affine3d camera_to_target = (base_to_wrist * wrist_to_camera).inverse() * base_to_target;
+  std::vector<cv::Point2d> reprojections = rct_image_tools::getReprojections(camera_to_target, intr, target.points);
+
+  cv::Mat frame = image.clone();
+  rct_image_tools::drawReprojections(reprojections, 3, cv::Scalar(0, 0, 255), frame);
 
   rct_optimizations::PnPProblem pb;
-  pb.camera_to_target_guess = cam_to_target;
+  pb.camera_to_target_guess = camera_to_target;
   pb.correspondences = corr;
   pb.intr = intr;
   rct_optimizations::PnPResult r = rct_optimizations::optimize(pb);
@@ -56,7 +40,7 @@ static void reproject(const Eigen::Affine3d& wrist_to_camera, const Eigen::Affin
   rct_ros_tools::printTransform(r.camera_to_target, "Camera", "Target", "PNP");
   rct_ros_tools::printNewLine();
 
-  rct_ros_tools::printTransformDiff(cam_to_target, r.camera_to_target, "Camera", "Target", "PNP DIFF");
+  rct_ros_tools::printTransformDiff(camera_to_target, r.camera_to_target, "Camera", "Target", "PNP DIFF");
   rct_ros_tools::printNewLine();
 
   cv::imshow("repr", frame);

@@ -10,6 +10,7 @@
 #include <opencv2/imgproc.hpp>
 
 #include <rct_image_tools/image_observation_finder.h>
+#include <rct_image_tools/image_utils.h>
 #include <rct_optimizations/experimental/multi_camera_pnp.h>
 #include <rct_optimizations/ceres_math_utilities.h>
 #include <rct_ros_tools/parameter_loaders.h>
@@ -25,23 +26,10 @@ static void reproject(const Eigen::Affine3d& base_to_target,
 {
 
   Eigen::Affine3d camera_to_target = base_to_camera[0].inverse() * base_to_target;
-  std::vector<cv::Point2d> reprojections;
-  for (const auto& point_in_target : target.points)
-  {
-    Eigen::Vector3d in_camera = camera_to_target * point_in_target;
-
-    double uv[2];
-    rct_optimizations::projectPoint(intr[0], in_camera.data(), uv);
-
-    reprojections.push_back(cv::Point2d(uv[0], uv[1]));
-  }
+  std::vector<cv::Point2d> reprojections = rct_image_tools::getReprojections(camera_to_target, intr[0], target.points);
 
   cv::Mat before_frame = image.clone();
-
-  for (const auto& pt : reprojections)
-  {
-    cv::circle(before_frame, pt, 3, cv::Scalar(0, 0, 255));
-  }
+  rct_image_tools::drawReprojections(reprojections, 3, cv::Scalar(0, 0, 255), before_frame);
 
   rct_optimizations::MultiCameraPnPProblem pb;
   pb.base_to_camera = base_to_camera;
@@ -65,24 +53,11 @@ static void reproject(const Eigen::Affine3d& base_to_target,
   rct_ros_tools::printTransformDiff(base_to_target, r.base_to_target, "Base", "Target", "PNP Diff");
   rct_ros_tools::printNewLine();
 
-  reprojections.clear();
   Eigen::Affine3d result_camera_to_target = base_to_camera[0].inverse() * r.base_to_target;
-  for (const auto& point_in_target : target.points)
-  {
-    Eigen::Vector3d in_camera = result_camera_to_target * point_in_target;
-
-    double uv[2];
-    rct_optimizations::projectPoint(intr[0], in_camera.data(), uv);
-
-    reprojections.push_back(cv::Point2d(uv[0], uv[1]));
-  }
+  reprojections = rct_image_tools::getReprojections(result_camera_to_target, intr[0], target.points);
 
   cv::Mat after_frame = image.clone();
-
-  for (const auto& pt : reprojections)
-  {
-    cv::circle(after_frame, pt, 3, cv::Scalar(0, 255, 0));
-  }
+  rct_image_tools::drawReprojections(reprojections, 3, cv::Scalar(0, 255, 0), after_frame);
 
   cv::imshow("repr_before", before_frame);
   cv::imshow("repr_after", after_frame);

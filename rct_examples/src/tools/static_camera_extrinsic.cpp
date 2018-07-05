@@ -4,6 +4,7 @@
 #include "rct_ros_tools/print_utils.h"
 // To find 2D  observations from images
 #include <rct_image_tools/image_observation_finder.h>
+#include <rct_image_tools/image_utils.h>
 // The calibration function for 'static camera' on robot wrist
 #include <rct_optimizations/extrinsic_static_camera.h>
 
@@ -19,25 +20,11 @@ static void reproject(const Eigen::Affine3d& wrist_to_target, const Eigen::Affin
                       const rct_image_tools::ModifiedCircleGridTarget& target, const cv::Mat& image,
                       const rct_optimizations::CorrespondenceSet& corr)
 {
-  std::vector<cv::Point2d> reprojections;
   Eigen::Affine3d camera_to_target = base_to_camera.inverse() * (base_to_wrist * wrist_to_target);
-
-  for (const auto& point_in_target : target.points)
-  {
-    Eigen::Vector3d in_camera = camera_to_target * point_in_target;
-
-    double uv[2];
-    rct_optimizations::projectPoint(intr, in_camera.data(), uv);
-
-    reprojections.push_back(cv::Point2d(uv[0], uv[1]));
-  }
+  std::vector<cv::Point2d> reprojections = rct_image_tools::getReprojections(camera_to_target, intr, target.points);
 
   cv::Mat frame = image.clone();
-
-  for (const auto& pt : reprojections)
-  {
-    cv::circle(frame, pt, 3, cv::Scalar(0, 0, 255));
-  }
+  rct_image_tools::drawReprojections(reprojections, 3, cv::Scalar(0, 0, 255), frame);
 
   // We want to compute the "positional error" as well
   // So first we compute the "camera to target" transform based on the calibration...
