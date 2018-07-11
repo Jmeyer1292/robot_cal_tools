@@ -1,5 +1,6 @@
 #include "rct_ros_tools/data_set.h"
 #include "rct_ros_tools/parameter_loaders.h"
+#include "rct_image_tools/image_utils.h"
 
 #include <yaml-cpp/yaml.h>
 #include <ros/console.h>
@@ -122,4 +123,76 @@ bool rct_ros_tools::saveToDirectory(const std::string& path, const rct_ros_tools
   writeDirectory(path + "/data.yaml", data);
 
   return true;
+}
+
+rct_ros_tools::ExtrinsicCorrespondenceDataSet::ExtrinsicCorrespondenceDataSet(const std::vector<rct_ros_tools::ExtrinsicDataSet> &extrinsic_data_set,
+                                                                              const rct_image_tools::ModifiedCircleGridObservationFinder &obs_finder,
+                                                                              bool debug)
+{
+  correspondences_.resize(extrinsic_data_set.size(), extrinsic_data_set[0].images.size());
+  mask_.resize(extrinsic_data_set.size(), extrinsic_data_set[0].images.size());
+  for (std::size_t c = 0; c < extrinsic_data_set.size(); ++c)
+  {
+    // We know it exists, so define a helpful alias
+    const rct_ros_tools::ExtrinsicDataSet& data_set = extrinsic_data_set[c];
+
+    // Finally, we need to process our images into correspondence sets: for each dot in the
+    // target this will be where that dot is in the target and where it was seen in the image.
+    // Repeat for each image. We also tell where the wrist was when the image was taken.
+    for (std::size_t i = 0; i < data_set.images.size(); ++i)
+    {
+      mask_(c, i) = 1;
+      // Try to find the circle grid in this image:
+      rct_optimizations::CorrespondenceSet obs_set = rct_image_tools::getCorrespondenceSet(obs_finder, data_set.images[i]);
+      if (obs_set.empty())
+      {
+        ROS_WARN_STREAM("Unable to find the circle grid in image: " << i);
+        mask_(c, i) = 0;
+      }
+
+      if (debug)
+      {
+        // Show the points we detected
+        std::vector<Eigen::Vector2d> observations(obs_set.size());
+        std::transform(obs_set.begin(), obs_set.end(), observations.begin(),
+                       [](const rct_optimizations::Correspondence2D3D& o) { return o.in_image; });
+
+        cv::imshow("points", obs_finder.drawObservations(data_set.images[i], observations));
+        cv::waitKey();
+      }
+
+      correspondences_(c, i) = obs_set;
+    }
+  }
+}
+
+std::size_t rct_ros_tools::ExtrinsicCorrespondenceDataSet::getCameraCount() const
+{
+  return correspondences_.rows();
+}
+
+std::size_t rct_ros_tools::ExtrinsicCorrespondenceDataSet::getImageCount() const
+{
+  return correspondences_.cols();
+}
+
+std::size_t rct_ros_tools::ExtrinsicCorrespondenceDataSet::getImageCameraCount(std::size_t image_index) const
+{
+  return mask_.col(image_index).sum();
+}
+
+std::size_t rct_ros_tools::ExtrinsicCorrespondenceDataSet::getCameraImageCount(std::size_t camera_index) const
+{
+  return mask_.row(camera_index).sum();
+}
+
+bool rct_ros_tools::ExtrinsicCorrespondenceDataSet::foundCorrespondence(std::size_t camera_index, std::size_t image_index) const
+{
+  return static_cast<bool>(mask_(camera_index, image_index));
+}
+
+const rct_optimizations::CorrespondenceSet&
+rct_ros_tools::ExtrinsicCorrespondenceDataSet::getCorrespondenceSet(std::size_t camera_index, std::size_t image_index) const
+{
+  return correspondences_(camera_index, image_index);
 }

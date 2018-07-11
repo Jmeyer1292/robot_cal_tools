@@ -76,7 +76,7 @@ int main(int argc, char** argv)
   rct_optimizations::ExtrinsicMultiStaticCameraMovingTargetProblem problem_def;
   std::vector<std::string> data_path;
   std::string target_path;
-  std::vector<boost::optional<rct_ros_tools::ExtrinsicDataSet> > maybe_data_set;
+  std::vector<rct_ros_tools::ExtrinsicDataSet> maybe_data_set;
 
   data_path.resize(num_of_cameras);
   maybe_data_set.resize(num_of_cameras);
@@ -96,12 +96,13 @@ int main(int argc, char** argv)
     }
 
     // Attempt to load the data set from the specified path
-    maybe_data_set[c] = rct_ros_tools::parseFromFile(data_path[c]);
-    if (!maybe_data_set[c])
+    boost::optional<rct_ros_tools::ExtrinsicDataSet> data_set = *rct_ros_tools::parseFromFile(data_path[c]);
+    if (!data_set)
     {
       ROS_ERROR_STREAM("Failed to parse data set from path = " << data_path[c]);
       return 2;
     }
+    maybe_data_set[c] = *data_set;
 
     // Load the camera intrinsics from the parameter server. Intr will get
     // reset if such a parameter was set
@@ -149,65 +150,21 @@ int main(int argc, char** argv)
   // Lets create a class that will search for the target in our raw images.
   rct_image_tools::ModifiedCircleGridObservationFinder obs_finder(target);
 
-  std::vector<std::vector<bool>> found_images;
-  std::vector<std::vector<rct_optimizations::CorrespondenceSet>> all_image_observations;
+  rct_ros_tools::ExtrinsicCorrespondenceDataSet corr_data_set(maybe_data_set, obs_finder, true);
 
-  found_images.resize(num_of_cameras);
-  all_image_observations.resize(num_of_cameras);
-  for (std::size_t c = 0; c < num_of_cameras; ++c)
+  // build problem
+  for (std::size_t c = 0; c < corr_data_set.getCameraCount(); ++c)
   {
-    // We know it exists, so define a helpful alias
-    const rct_ros_tools::ExtrinsicDataSet& data_set = *maybe_data_set[c];
-
-    // Finally, we need to process our images into correspondence sets: for each dot in the
-    // target this will be where that dot is in the target and where it was seen in the image.
-    // Repeat for each image. We also tell where the wrist was when the image was taken.
-    found_images[c].resize(data_set.images.size());
-    all_image_observations[c].resize(data_set.images.size());
-    for (std::size_t i = 0; i < data_set.images.size(); ++i)
+    for (std::size_t i = 0; i < corr_data_set.getImageCount(); ++i)
     {
-      // Try to find the circle grid in this image:
-      auto maybe_obs = obs_finder.findObservations(data_set.images[i]);
-      if (!maybe_obs)
+      if (corr_data_set.foundCorrespondence(c, i))
       {
-        ROS_WARN_STREAM("Unable to find the circle grid in image: " << i);
-        cv::imshow("points", data_set.images[i]);
-        cv::waitKey();
-        found_images[c][i] = false;
-        continue;
+        const rct_ros_tools::ExtrinsicDataSet& data_set = maybe_data_set[c];
+        problem_def.wrist_poses[c].push_back(data_set.tool_poses[i]);
+        problem_def.image_observations[c].push_back(corr_data_set.getCorrespondenceSet(c, i));
       }
-      else
-      {
-        // Show the points we detected
-        cv::imshow("points", obs_finder.drawObservations(data_set.images[i], *maybe_obs));
-        cv::waitKey();
-      }
-      // cache if target found
-      found_images[c][i] = true;
-
-      // So for each image we need to:
-      //// 1. Record the wrist position
-      problem_def.wrist_poses[c].push_back(data_set.tool_poses[i]);
-
-      //// Create the correspondence pairs
-      rct_optimizations::CorrespondenceSet obs_set;
-      assert(maybe_obs->size() == target.points.size());
-
-      // So for each dot:
-      for (std::size_t j = 0; j < maybe_obs->size(); ++j)
-      {
-        rct_optimizations::Correspondence2D3D pair;
-        pair.in_image = maybe_obs->at(j); // The obs finder and target define their points in the same order!
-        pair.in_target = target.points[j];
-
-        obs_set.push_back(pair);
-      }
-      //// And finally add that to the problem
-      all_image_observations[c][i] = obs_set;
-      problem_def.image_observations[c].push_back(obs_set);
     }
   }
-
 
   // Run optimization
   rct_optimizations::ExtrinsicMultiStaticCameraMovingTargetResult
@@ -236,7 +193,7 @@ int main(int argc, char** argv)
 
   rct_ros_tools::printTitle("REPROJECTION ERROR");
 
-  for (std::size_t i = 0; i < maybe_data_set[0]->images.size(); ++i)
+  for (std::size_t i = 0; i < maybe_data_set[0].images.size(); ++i)
   {
     std::vector<rct_optimizations::CorrespondenceSet> corr_set;
     std::vector<Eigen::Affine3d> base_to_camera;
@@ -248,19 +205,19 @@ int main(int argc, char** argv)
     base_to_camera.reserve(num_of_cameras);
     intr.reserve(num_of_cameras);
 
-    base_to_wrist = maybe_data_set[0]->tool_poses[i];
+    base_to_wrist = maybe_data_set[0].tool_poses[i];
 
     std::size_t cnt = 0;
     for (std::size_t c = 0; c < num_of_cameras; ++c)
     {
-      if (found_images[c][i])
+      if (corr_data_set.foundCorrespondence(c, i))
       {
         base_to_camera.push_back(opt_result.base_to_camera[c]);
         intr.push_back(problem_def.intr[c]);
-        corr_set.push_back(all_image_observations[c][i]);
+        corr_set.push_back(corr_data_set.getCorrespondenceSet(c, i));
         if (cnt == 0)
         {
-          image = maybe_data_set[c]->images[i];
+          image = maybe_data_set[c].images[i];
         }
 
         ++cnt;

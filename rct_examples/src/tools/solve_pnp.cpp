@@ -9,6 +9,7 @@
 #include <opencv2/calib3d/calib3d.hpp>
 
 #include <rct_image_tools/image_observation_finder.h>
+#include <rct_image_tools/image_utils.h>
 #include <rct_optimizations/experimental/pnp.h>
 #include <rct_ros_tools/parameter_loaders.h>
 #include <rct_ros_tools/print_utils.h>
@@ -103,17 +104,7 @@ int main(int argc, char** argv)
   rct_optimizations::PnPProblem params;
   params.intr = intr;
   params.camera_to_target_guess = guess;
-
-  rct_optimizations::CorrespondenceSet correspondences;
-  for (std::size_t i = 0; i < maybe_obs->size(); ++i)
-  {
-    rct_optimizations::Correspondence2D3D pair;
-    pair.in_image = (*maybe_obs)[i];
-    pair.in_target = target.points[i];
-    correspondences.push_back(pair);
-  }
-
-  params.correspondences = correspondences;
+  params.correspondences = rct_image_tools::getCorrespondenceSet(*maybe_obs, target.points);
 
   rct_optimizations::PnPResult pnp_result = rct_optimizations::optimize(params);
 

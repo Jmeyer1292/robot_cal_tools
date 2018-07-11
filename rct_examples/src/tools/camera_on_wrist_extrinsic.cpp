@@ -129,20 +129,8 @@ int main(int argc, char** argv)
     //// 1. Record the wrist position
     problem_def.wrist_poses.push_back(data_set.tool_poses[i]);
 
-    //// Create the correspondence pairs
-    rct_optimizations::CorrespondenceSet obs_set;
-    assert(maybe_obs->size() == target.points.size());
-
-    // So for each dot:
-    for (std::size_t j = 0; j < maybe_obs->size(); ++j)
-    {
-      rct_optimizations::Correspondence2D3D pair;
-      pair.in_image = maybe_obs->at(j); // The obs finder and target define their points in the same order!
-      pair.in_target = target.points[j];
-      obs_set.push_back(pair);
-    }
     //// And finally add that to the problem
-    problem_def.image_observations.push_back(obs_set);
+    problem_def.image_observations.push_back(rct_image_tools::getCorrespondenceSet(*maybe_obs, target.points));
   }
 
   // Now we have a defined problem, run optimization:

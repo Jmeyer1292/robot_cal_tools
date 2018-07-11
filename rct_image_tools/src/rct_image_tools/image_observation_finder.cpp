@@ -30,18 +30,21 @@ static cv::Mat renderObservations(const cv::Mat& input, const ObservationPoints&
   cv::Mat output_image;
   input.copyTo(output_image);
 
-  cv::Size pattern_size(target.cols, target.rows);
+  if (!observation_points.empty())
+  {
+    cv::Size pattern_size(target.cols, target.rows);
 
-  cv::Mat center_image = cv::Mat(observation_points);
-  cv::Mat center_converted;
-  center_image.convertTo(center_converted, CV_32F);
-  cv::drawChessboardCorners(output_image, pattern_size, center_converted, true);
+    cv::Mat center_image = cv::Mat(observation_points);
+    cv::Mat center_converted;
+    center_image.convertTo(center_converted, CV_32F);
+    cv::drawChessboardCorners(output_image, pattern_size, center_converted, true);
 
-  // Draw point labels // TODO
-  drawPointLabel("First Point", observation_points[0], CvScalar(0, 255, 0), output_image);
-  drawPointLabel("Origin", observation_points[target.rows * target.cols - target.cols], CvScalar(255, 0, 0),
-                 output_image);
-  drawPointLabel("Last Point", observation_points[observation_points.size() - 1], CvScalar(0, 0, 255), output_image);
+    // Draw point labels // TODO
+    drawPointLabel("First Point", observation_points[0], CvScalar(0, 255, 0), output_image);
+    drawPointLabel("Origin", observation_points[target.rows * target.cols - target.cols], CvScalar(255, 0, 0),
+                   output_image);
+    drawPointLabel("Last Point", observation_points[observation_points.size() - 1], CvScalar(0, 0, 255), output_image);
+  }
 
   return output_image;
 }

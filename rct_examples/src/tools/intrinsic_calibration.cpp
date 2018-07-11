@@ -1,4 +1,5 @@
 #include <rct_image_tools/image_observation_finder.h>
+#include <rct_image_tools/image_utils.h>
 #include <rct_optimizations/eigen_conversions.h>
 #include <rct_optimizations/experimental/camera_intrinsic.h>
 #include "rct_ros_tools/data_set.h"
@@ -118,19 +119,7 @@ int main(int argc, char** argv)
     cv::imshow("points", obs_finder.drawObservations(data_set.images[i], *maybe_obs));
     cv::waitKey();
 
-    rct_optimizations::CorrespondenceSet obs_set;
-
-    assert(maybe_obs->size() == target.points.size());
-    for (std::size_t j = 0; j < maybe_obs->size(); ++j)
-    {
-      rct_optimizations::Correspondence2D3D pair;
-      pair.in_image = maybe_obs->at(j);
-      pair.in_target = target.points[j];
-
-      obs_set.push_back(pair);
-    }
-
-    problem_def.image_observations.push_back(obs_set);
+    problem_def.image_observations.push_back(rct_image_tools::getCorrespondenceSet(*maybe_obs, target.points));
   }
 
   // Run optimization

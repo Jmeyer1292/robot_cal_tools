@@ -73,7 +73,7 @@ int main(int argc, char** argv)
   rct_optimizations::ExtrinsicMultiStaticCameraOnlyProblem problem_def;
   std::vector<std::string> data_path;
   std::string target_path;
-  std::vector<boost::optional<rct_ros_tools::ExtrinsicDataSet> > maybe_data_set;
+  std::vector<rct_ros_tools::ExtrinsicDataSet> maybe_data_set;
   bool fix_first_camera;
 
   data_path.resize(num_of_cameras);
@@ -93,12 +93,13 @@ int main(int argc, char** argv)
     }
 
     // Attempt to load the data set from the specified path
-    maybe_data_set[c] = rct_ros_tools::parseFromFile(data_path[c]);
-    if (!maybe_data_set[c])
+    boost::optional<rct_ros_tools::ExtrinsicDataSet> data_set = rct_ros_tools::parseFromFile(data_path[c]);
+    if (!data_set)
     {
       ROS_ERROR_STREAM("Failed to parse data set from path = " << data_path[c]);
       return 2;
     }
+    maybe_data_set[c] = *data_set;
 
     // Load the camera intrinsics from the parameter server. Intr will get
     // reset if such a parameter was set
@@ -140,63 +141,6 @@ int main(int argc, char** argv)
     ROS_WARN_STREAM("Unable to load target file from the 'target_path' parameter");
   }
 
-  // Lets create a class that will search for the target in our raw images.
-  rct_image_tools::ModifiedCircleGridObservationFinder obs_finder(target);
-
-  std::vector<bool> found_images;
-  std::vector<std::vector<rct_optimizations::CorrespondenceSet>> all_image_observations;
-
-  found_images.resize(maybe_data_set[0]->images.size());
-  all_image_observations.resize(num_of_cameras);
-  for (std::size_t c = 0; c < num_of_cameras; ++c)
-  {
-    // We know it exists, so define a helpful alias
-    const rct_ros_tools::ExtrinsicDataSet& data_set = *maybe_data_set[c];
-
-    // Finally, we need to process our images into correspondence sets: for each dot in the
-    // target this will be where that dot is in the target and where it was seen in the image.
-    // Repeat for each image. We also tell where the wrist was when the image was taken.
-    all_image_observations[c].resize(data_set.images.size());
-    for (std::size_t i = 0; i < data_set.images.size(); ++i)
-    {
-      if (c == 0)
-        found_images[i] = true;
-
-      // Try to find the circle grid in this image:
-      auto maybe_obs = obs_finder.findObservations(data_set.images[i]);
-      if (!maybe_obs)
-      {
-        ROS_WARN_STREAM("Unable to find the circle grid in image: " << i);
-        cv::imshow("points", data_set.images[i]);
-        cv::waitKey();
-        found_images[i] = false;
-        continue;
-      }
-      else
-      {
-        // Show the points we detected
-        cv::imshow("points", obs_finder.drawObservations(data_set.images[i], *maybe_obs));
-        cv::waitKey();
-      }
-
-      //// Create the correspondence pairs
-      rct_optimizations::CorrespondenceSet obs_set;
-      assert(maybe_obs->size() == target.points.size());
-
-      // So for each dot:
-      for (std::size_t j = 0; j < maybe_obs->size(); ++j)
-      {
-        rct_optimizations::Correspondence2D3D pair;
-        pair.in_image = maybe_obs->at(j); // The obs finder and target define their points in the same order!
-        pair.in_target = target.points[j];
-
-        obs_set.push_back(pair);
-      }
-      //// And finally add that to the problem
-      all_image_observations[c][i] = obs_set;
-    }
-  }
-
   Eigen::Affine3d wrist_to_target;
   if (!rct_ros_tools::loadPose(pnh, "wrist_to_target_guess", wrist_to_target))
   {
@@ -204,22 +148,27 @@ int main(int argc, char** argv)
     return 1;
   }
 
-  std::vector<cv::Mat> images;
-  for (std::size_t i = 0; i < found_images.size(); ++i)
+  // Lets create a class that will search for the target in our raw images.
+  rct_image_tools::ModifiedCircleGridObservationFinder obs_finder(target);
+
+  rct_ros_tools::ExtrinsicCorrespondenceDataSet corr_data_set(maybe_data_set, obs_finder, true);
+
+  // build problem
+  problem_def.fix_first_camera = fix_first_camera;
+  for (std::size_t i = 0; i < corr_data_set.getImageCount(); ++i)
   {
-    if (found_images[i])
+    // Currently requires that an image is found by all cameras but it maybe should
+    // only require that an image is seen by at least two cameras.
+    if (corr_data_set.getImageCameraCount(i) == corr_data_set.getCameraCount())
     {
-      images.push_back(maybe_data_set[0]->images[i]);
-      problem_def.base_to_target_guess.push_back(maybe_data_set[0]->tool_poses[i] * wrist_to_target);
-      problem_wrist_def.wrist_poses.push_back(maybe_data_set[0]->tool_poses[i]);
-      for (std::size_t c = 0; c < num_of_cameras; ++c)
+      problem_def.base_to_target_guess.push_back(maybe_data_set[0].tool_poses[i] * wrist_to_target);
+      problem_wrist_def.wrist_poses.push_back(maybe_data_set[0].tool_poses[i]);
+      for (std::size_t c = 0; c < corr_data_set.getCameraCount(); ++c)
       {
-        problem_def.image_observations[c].push_back(all_image_observations[c][i]);
+        problem_def.image_observations[c].push_back(corr_data_set.getCorrespondenceSet(c, i));
       }
     }
   }
-
-  problem_def.fix_first_camera = fix_first_camera;
 
   // Run optimization
   rct_ros_tools::printTitle("Running calibration for only cameras");
@@ -301,7 +250,7 @@ int main(int argc, char** argv)
 
     rct_ros_tools::printTitle("REPROJECT IMAGE " + std::to_string(i));
     reproject(base_to_target, base_to_camera,
-              intr, target, images[i], corr_set);
+              intr, target, maybe_data_set[0].images[i], corr_set);
   }
 
   return 0;

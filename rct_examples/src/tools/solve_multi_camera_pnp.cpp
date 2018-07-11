@@ -81,7 +81,7 @@ int main(int argc, char** argv)
   std::vector<rct_optimizations::CameraIntrinsics> intr;
   std::vector<std::string> data_path;
   std::string target_path;
-  std::vector<boost::optional<rct_ros_tools::ExtrinsicDataSet> > maybe_data_set;
+  std::vector<rct_ros_tools::ExtrinsicDataSet> maybe_data_set;
 
   data_path.resize(num_of_cameras);
   maybe_data_set.resize(num_of_cameras);
@@ -99,12 +99,13 @@ int main(int argc, char** argv)
     }
 
     // Attempt to load the data set from the specified path
-    maybe_data_set[c] = rct_ros_tools::parseFromFile(data_path[c]);
-    if (!maybe_data_set[c])
+    boost::optional<rct_ros_tools::ExtrinsicDataSet> data_set = rct_ros_tools::parseFromFile(data_path[c]);
+    if (!data_set)
     {
       ROS_ERROR_STREAM("Failed to parse data set from path = " << data_path[c]);
       return 2;
     }
+    maybe_data_set[c] = *data_set;
 
     // Load the camera intrinsics from the parameter server. Intr will get
     // reset if such a parameter was set
@@ -142,73 +143,22 @@ int main(int argc, char** argv)
 
   // Lets create a class that will search for the target in our raw images.
   rct_image_tools::ModifiedCircleGridObservationFinder obs_finder(target);
-  std::vector<bool> found_images;
-  std::vector<std::vector<rct_optimizations::CorrespondenceSet>> all_image_observations;
 
-  found_images.resize(maybe_data_set[0]->images.size());
-  all_image_observations.resize(num_of_cameras);
-  for (std::size_t c = 0; c < num_of_cameras; ++c)
+  rct_ros_tools::ExtrinsicCorrespondenceDataSet corr_data_set(maybe_data_set, obs_finder, true);
+
+  for (std::size_t i = 0; i < corr_data_set.getImageCount(); ++i)
   {
-    // We know it exists, so define a helpful alias
-    const rct_ros_tools::ExtrinsicDataSet& data_set = *maybe_data_set[c];
-
-    // Finally, we need to process our images into correspondence sets: for each dot in the
-    // target this will be where that dot is in the target and where it was seen in the image.
-    // Repeat for each image. We also tell where the wrist was when the image was taken.
-    all_image_observations[c].resize(data_set.images.size());
-    for (std::size_t i = 0; i < data_set.images.size(); ++i)
-    {
-      if (c == 0)
-        found_images[i] = true;
-
-      // Try to find the circle grid in this image:
-      auto maybe_obs = obs_finder.findObservations(data_set.images[i]);
-      if (!maybe_obs)
-      {
-        ROS_WARN_STREAM("Unable to find the circle grid in image: " << i);
-        cv::imshow("points", data_set.images[i]);
-        cv::waitKey();
-        found_images[i] = false;
-        continue;
-      }
-      else
-      {
-        // Show the points we detected
-        cv::imshow("points", obs_finder.drawObservations(data_set.images[i], *maybe_obs));
-        cv::waitKey();
-      }
-
-      //// Create the correspondence pairs
-      rct_optimizations::CorrespondenceSet obs_set;
-      assert(maybe_obs->size() == target.points.size());
-
-      // So for each dot:
-      for (std::size_t j = 0; j < maybe_obs->size(); ++j)
-      {
-        rct_optimizations::Correspondence2D3D pair;
-        pair.in_image = maybe_obs->at(j); // The obs finder and target define their points in the same order!
-        pair.in_target = target.points[j];
-
-        obs_set.push_back(pair);
-      }
-      //// And finally add that to the problem
-      all_image_observations[c][i] = obs_set;
-    }
-  }
-
-  for (std::size_t i = 0; i < found_images.size(); ++i)
-  {
-    if (found_images[i])
+    if (corr_data_set.getImageCameraCount(i) == corr_data_set.getCameraCount())
     {
       std::vector<rct_optimizations::CorrespondenceSet> corr_set;
       for (std::size_t c = 0; c < num_of_cameras; ++c)
       {
-        corr_set.push_back(all_image_observations[c][i]);
+        corr_set.push_back(corr_data_set.getCorrespondenceSet(c, i));
       }
 
       rct_ros_tools::printTitle("REPROJECT IMAGE " + std::to_string(i));
-      reproject(maybe_data_set[0]->tool_poses[i], base_to_camera,
-                intr, target, maybe_data_set[0]->images[i], corr_set);
+      reproject(maybe_data_set[0].tool_poses[i], base_to_camera,
+                intr, target, maybe_data_set[0].images[i], corr_set);
     }
   }
 }
