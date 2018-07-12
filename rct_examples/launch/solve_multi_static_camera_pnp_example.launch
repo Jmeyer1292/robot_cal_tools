@@ -1,0 +1,7 @@
+<launch>
+  <arg name="data_file"/>
+
+  <node pkg="rct_examples" type="solve_multi_camera_pnp_ex" name="solve_multi_camera_pnp_ex" output="screen">
+    <rosparam command="load" file="$(arg data_file)"/>
+  </node>
+</launch>

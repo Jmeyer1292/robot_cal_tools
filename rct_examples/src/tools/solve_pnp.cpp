@@ -9,8 +9,10 @@
 #include <opencv2/calib3d/calib3d.hpp>
 
 #include <rct_image_tools/image_observation_finder.h>
+#include <rct_image_tools/image_utils.h>
 #include <rct_optimizations/experimental/pnp.h>
 #include <rct_ros_tools/parameter_loaders.h>
+#include <rct_ros_tools/print_utils.h>
 
 static Eigen::Affine3d solveCVPnP(const rct_optimizations::CameraIntrinsics& intr,
                                   const rct_image_tools::ModifiedCircleGridTarget& target,
@@ -24,7 +26,8 @@ static Eigen::Affine3d solveCVPnP(const rct_optimizations::CameraIntrinsics& int
   cam_matrix.at<double>(0, 2) = intr.cx();
   cam_matrix.at<double>(1, 2) = intr.cy();
 
-  std::cout << "Camera matrix:\n" << cam_matrix << "\n";
+  rct_ros_tools::printCameraIntrinsics(intr.values, "Camera Intrinsics");
+  rct_ros_tools::printNewLine();
 
   std::vector<cv::Point2d> image_points;
   for (const auto o : obs)
@@ -37,19 +40,14 @@ static Eigen::Affine3d solveCVPnP(const rct_optimizations::CameraIntrinsics& int
   cv::Mat rvec (3, 1, cv::DataType<double>::type);
   cv::Mat tvec (3, 1, cv::DataType<double>::type);
   cv::solvePnP(target_points, image_points, cam_matrix, cv::noArray(), rvec, tvec);
-  std::cout << "rvec: " << rvec << "\n";
-  std::cout << "tvec: " << tvec << "\n";
-
-  Eigen::Affine3d result;
-  result.setIdentity();
-  result.translation() = Eigen::Vector3d(tvec.at<double>(0, 0), tvec.at<double>(1, 0), tvec.at<double>(2, 0));
 
   Eigen::Vector3d rr (Eigen::Vector3d(rvec.at<double>(0, 0), rvec.at<double>(1, 0), rvec.at<double>(2, 0)));
-  std::cout << "RR " << rr << "\n";
+  Eigen::Affine3d result(Eigen::AngleAxisd(rr.norm(), rr.normalized()));
+  result.translation() = Eigen::Vector3d(tvec.at<double>(0, 0), tvec.at<double>(1, 0), tvec.at<double>(2, 0));
 
-  Eigen::AngleAxisd rot (rr.norm(), rr.normalized());
+  rct_ros_tools::printTransform(result, "Camera", "Target", "OpenCV solvePNP");
+  rct_ros_tools::printNewLine();
 
-  result.linear() = rot.toRotationMatrix();
   return result;
 }
 
@@ -97,8 +95,7 @@ int main(int argc, char** argv)
   cv::waitKey();
 
   // Solve with OpenCV
-  Eigen::Affine3d cv_pose = solveCVPnP(intr, target, *maybe_obs);
-  std::cout << "CV_POSE\n" << cv_pose.matrix() << "\n";
+  solveCVPnP(intr, target, *maybe_obs);
 
   // Solve with some native RCT function (for learning)
   Eigen::Affine3d guess = Eigen::Affine3d::Identity();
@@ -107,20 +104,15 @@ int main(int argc, char** argv)
   rct_optimizations::PnPProblem params;
   params.intr = intr;
   params.camera_to_target_guess = guess;
-
-  rct_optimizations::CorrespondenceSet correspondences;
-  for (std::size_t i = 0; i < maybe_obs->size(); ++i)
-  {
-    rct_optimizations::Correspondence2D3D pair;
-    pair.in_image = (*maybe_obs)[i];
-    pair.in_target = target.points[i];
-    correspondences.push_back(pair);
-  }
-
-  params.correspondences = correspondences;
+  params.correspondences = rct_image_tools::getCorrespondenceSet(*maybe_obs, target.points);
 
   rct_optimizations::PnPResult pnp_result = rct_optimizations::optimize(params);
-  std::cout << "RCT_POSE\n" << pnp_result.camera_to_target.matrix() << "\n";
+
+  rct_ros_tools::printOptResults(pnp_result.converged, pnp_result.initial_cost_per_obs, pnp_result.final_cost_per_obs);
+  rct_ros_tools::printNewLine();
+
+  rct_ros_tools::printTransform(pnp_result.camera_to_target, "Camera", "Target", "RCT CAMERA TO TARGET");
+  rct_ros_tools::printNewLine();
 
   return 0;
 }

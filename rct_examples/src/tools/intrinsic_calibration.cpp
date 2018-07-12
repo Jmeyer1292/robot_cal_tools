@@ -1,8 +1,10 @@
 #include <rct_image_tools/image_observation_finder.h>
+#include <rct_image_tools/image_utils.h>
 #include <rct_optimizations/eigen_conversions.h>
 #include <rct_optimizations/experimental/camera_intrinsic.h>
 #include "rct_ros_tools/data_set.h"
 #include "rct_ros_tools/parameter_loaders.h"
+#include "rct_ros_tools/print_utils.h"
 
 #include <opencv2/highgui.hpp>
 #include <ros/ros.h>
@@ -42,9 +44,22 @@ void opencvCameraCalibration(const std::vector<rct_optimizations::Correspondence
   std::vector<cv::Mat> tvecs;
   cv::calibrateCamera(object_points, image_points, image_size, camera_matrix, dist_coeffs, rvecs, tvecs);
 
+  std::array<double, 4> intr_values;
+  intr_values[0] = camera_matrix.at<double>(0, 0);
+  intr_values[1] = camera_matrix.at<double>(1, 1);
+  intr_values[2] = camera_matrix.at<double>(0, 2);
+  intr_values[3] = camera_matrix.at<double>(2, 2);
+  rct_ros_tools::printCameraIntrinsics(intr_values, "OpenCV Intrinsics");
+  rct_ros_tools::printNewLine();
 
-  std::cout << "OpenCV Camera Matrix:\n" << camera_matrix << "\n";
-  std::cout << "OpenCV Camera Distortions:\n" << dist_coeffs << "\n";
+  std::array<double, 5> dist_values;
+  dist_values[0] = dist_coeffs.at<double>(0);
+  dist_values[1] = dist_coeffs.at<double>(1);
+  dist_values[2] = dist_coeffs.at<double>(2);
+  dist_values[3] = dist_coeffs.at<double>(3);
+  dist_values[4] = dist_coeffs.at<double>(4);
+  rct_ros_tools::printCameraDistortion(dist_values, "OpenCV Distortion");
+  rct_ros_tools::printNewLine();
 }
 
 int main(int argc, char** argv)
@@ -104,42 +119,29 @@ int main(int argc, char** argv)
     cv::imshow("points", obs_finder.drawObservations(data_set.images[i], *maybe_obs));
     cv::waitKey();
 
-    rct_optimizations::CorrespondenceSet obs_set;
-
-    assert(maybe_obs->size() == target.points.size());
-    for (std::size_t j = 0; j < maybe_obs->size(); ++j)
-    {
-      rct_optimizations::Correspondence2D3D pair;
-      pair.in_image = maybe_obs->at(j);
-      pair.in_target = target.points[j];
-
-      obs_set.push_back(pair);
-    }
-
-    problem_def.image_observations.push_back(obs_set);
+    problem_def.image_observations.push_back(rct_image_tools::getCorrespondenceSet(*maybe_obs, target.points));
   }
 
   // Run optimization
   auto opt_result = rct_optimizations::optimize(problem_def);
 
   // Report results
-  std::cout << "---Calibration Complete---\n";
-  std::cout << "Did converge?: " << opt_result.converged << "\n";
-  std::cout << "Initial cost?: " << opt_result.initial_cost_per_obs << "\n";
-  std::cout << "Final cost?: " << opt_result.final_cost_per_obs << "\n";
+  rct_ros_tools::printTitle("Calibration Complete");
+
+  rct_ros_tools::printOptResults(opt_result.converged, opt_result.initial_cost_per_obs, opt_result.final_cost_per_obs);
+  rct_ros_tools::printNewLine();
 
   auto new_intr = opt_result.intrinsics;
   auto new_dist = opt_result.distortions;
 
-  std::cout << "New Intr:\nfx = " << new_intr.fx() << "\tfy = " << new_intr.fy() << "\ncx = " << new_intr.cx()
-            << "\tcy = " << new_intr.cy() << "\n\n";
+  rct_ros_tools::printCameraIntrinsics(new_intr.values, "RCT Intrinsics");
+  rct_ros_tools::printNewLine();
 
-  std::cout << "Distortions:\n";
-  std::cout << new_dist[0] << " " << new_dist[1] << " " << new_dist[2] << " " << new_dist[3] << " "
-                           << new_dist[4] << "\n\n";
+  rct_ros_tools::printCameraDistortion(new_dist, "RCT Distortion");
+  rct_ros_tools::printNewLine();
 
   // Also try the OpenCV cameraCalibrate function
-  std::cout << "---OpenCV Calibration---\n";
+  rct_ros_tools::printTitle("OpenCV Calibration");
   opencvCameraCalibration(problem_def.image_observations, data_set.images.front().size(),
                           problem_def.intrinsics_guess);
   return 0;

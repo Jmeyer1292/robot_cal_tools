@@ -12,8 +12,8 @@
  * author: Levi Armstrong
  */
 
-#ifndef RCT_EXTRINSIC_MULTI_STATIC_CAMERA_H
-#define RCT_EXTRINSIC_MULTI_STATIC_CAMERA_H
+#ifndef RCT_EXTRINSIC_MULTI_STATIC_CAMERA_ONLY_H
+#define RCT_EXTRINSIC_MULTI_STATIC_CAMERA_ONLY_H
 
 #include "rct_optimizations/types.h"
 #include <Eigen/Dense>
@@ -22,33 +22,35 @@
 namespace rct_optimizations
 {
 
-struct ExtrinsicMultiStaticCameraMovingTargetProblem
+struct ExtrinsicMultiStaticCameraOnlyProblem
 {
+  /** @brief This is usefull in camera to camera calibration like stereo calibration and
+   * the transform between cameras is needed
+   */
+  bool fix_first_camera;
+
   /** @brief The basic camera intrinsic propeties: fx, fy, cx, cy used to reproject points;
       one for each camera */
   std::vector<CameraIntrinsics> intr;
 
-  /** @brief The transforms, "base to wrist", at which each observation set was taken. The outer
-   * vector is for each camera, the inner vector is the poses valid for that camera. This inner
-   * vector should match the inner vector of @e image_observations in size.
+  /** @brief The transforms, "base to target", at which each observation set was taken.
+   * The vector is the poses valid for each camera. This vector should match the inner
+   * vector of @e image_observations in size.
    */
-  std::vector<std::vector<Eigen::Affine3d>> wrist_poses;
+  std::vector<Eigen::Affine3d> base_to_target_guess;
 
-  /** @brief A sequence of observation sets corresponding to the image locations in @e wrist_poses.
+  /** @brief A sequence of observation sets corresponding to the image locations in @e base_to_target_guess.
    * Each observation set consists of a set of correspodences: a 3D position (e.g. a dot) in "target
    * frame" to the image location it was detected at (2D). The outer-most vector is for each camera,
    * the inner vector is the images valid for that camera.
    */
   std::vector<std::vector<CorrespondenceSet>> image_observations;
 
-  /** @brief Your best guess at the "wrist frame" to "target frame" transform */
-  Eigen::Affine3d wrist_to_target_guess;
-
   /** @brief Your best guess at the "base frame" to "camera frame" transform; one for each camera */
   std::vector<Eigen::Affine3d> base_to_camera_guess;
 };
 
-struct ExtrinsicMultiStaticCameraMovingTargetResult
+struct ExtrinsicMultiStaticCameraOnlyResult
 {
   /**
    * @brief Whether the underlying solver converged. If this is false, your calibration did not go well.
@@ -71,19 +73,15 @@ struct ExtrinsicMultiStaticCameraMovingTargetResult
    */
   double final_cost_per_obs;
 
-  /**
-   * @brief The final calibrated result of "wrist frame" to "target frame".
-   */
-  Eigen::Affine3d wrist_to_target;
+  /** @brief The final calibrated result of "base frame" to "target frame". */
+  std::vector<Eigen::Affine3d> base_to_target;
 
-  /**
-   * @brief The final calibrated result of "base frame" to "camera optical frame".
-   */
+  /** @brief The final calibrated result of "base frame" to "camera optical frame". */
   std::vector<Eigen::Affine3d> base_to_camera;
 };
 
-ExtrinsicMultiStaticCameraMovingTargetResult optimize(const ExtrinsicMultiStaticCameraMovingTargetProblem& params);
+ExtrinsicMultiStaticCameraOnlyResult optimize(const ExtrinsicMultiStaticCameraOnlyProblem& params);
 
 }
 
-#endif // RCT_EXTRINSIC_MULTI_STATIC_CAMERA_H
+#endif // RCT_EXTRINSIC_MULTI_STATIC_CAMERA_ONLY_H
