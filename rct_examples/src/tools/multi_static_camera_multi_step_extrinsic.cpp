@@ -116,20 +116,18 @@ int main(int argc, char** argv)
     // Load the camera intrinsics from the parameter server. Intr will get
     // reset if such a parameter was set
     param_name = param_base + "intrinsics";
-    problem_def.intr[c].fx() = 1411.0;
-    problem_def.intr[c].fy() = 1408.0;
-    problem_def.intr[c].cx() = 807.2;
-    problem_def.intr[c].cy() = 615.0;
     if (!rct_ros_tools::loadIntrinsics(pnh, param_name, problem_def.intr[c]))
     {
-      ROS_WARN("Unable to load camera intrinsics from the '%s' parameter struct", param_name.c_str());
+      ROS_ERROR("Unable to load camera intrinsics from the '%s' parameter struct", param_name.c_str());
+      return 2;
     }
 
-    param_name = param_base + "base_to_camera_guess";
     // Our 'base to camera guess': A camera off to the side, looking at a point centered in front of the robot
+    param_name = param_base + "base_to_camera_guess";
     if (!rct_ros_tools::loadPose(pnh, param_name, problem_def.base_to_camera_guess[c]))
     {
-      ROS_WARN("Unable to load guess for base to camera from the '%s' parameter struct", param_name.c_str());
+      ROS_ERROR("Unable to load guess for base to camera from the '%s' parameter struct", param_name.c_str());
+      return 2;
     }
   }
 
@@ -147,17 +145,18 @@ int main(int argc, char** argv)
 
   // Load target definition from parameter server. Target will get
   // reset if such a parameter was set.
-  rct_image_tools::ModifiedCircleGridTarget target(5, 5, 0.015);
+  rct_image_tools::ModifiedCircleGridTarget target;
   if (!rct_ros_tools::loadTarget(target_path, target))
   {
-    ROS_WARN_STREAM("Unable to load target file from the 'target_path' parameter");
+    ROS_ERROR_STREAM("Unable to load target file from the 'target_path' parameter");
+    return 2;
   }
 
   Eigen::Affine3d wrist_to_target;
   if (!rct_ros_tools::loadPose(pnh, "wrist_to_target_guess", wrist_to_target))
   {
-    ROS_WARN_STREAM("Unable to load guess for wrist to target from the 'wrist_to_target_guess' parameter struct");
-    return 1;
+    ROS_ERROR_STREAM("Unable to load guess for wrist to target from the 'wrist_to_target_guess' parameter struct");
+    return 2;
   }
 
   // Lets create a class that will search for the target in our raw images.
@@ -165,7 +164,7 @@ int main(int argc, char** argv)
 
   rct_ros_tools::ExtrinsicCorrespondenceDataSet corr_data_set(maybe_data_set, obs_finder, true);
 
-  // build problem
+  // Build both Problem #1
   problem_def.fix_first_camera = fix_first_camera;
   for (std::size_t i = 0; i < corr_data_set.getImageCount(); ++i)
   {
@@ -174,6 +173,7 @@ int main(int argc, char** argv)
     if (corr_data_set.getImageCameraCount(i) == corr_data_set.getCameraCount())
     {
       problem_def.base_to_target_guess.push_back(maybe_data_set[0].tool_poses[i] * wrist_to_target);
+      // Note that this loop also adds to problem #2
       problem_wrist_def.wrist_poses.push_back(maybe_data_set[0].tool_poses[i]);
       for (std::size_t c = 0; c < corr_data_set.getCameraCount(); ++c)
       {
@@ -182,16 +182,15 @@ int main(int argc, char** argv)
     }
   }
 
-  // Run optimization
+  // Run optimization #1
   rct_ros_tools::printTitle("Running calibration for only cameras");
-
-  rct_optimizations::ExtrinsicMultiStaticCameraOnlyResult
-      opt_result = rct_optimizations::optimize(problem_def);
+  rct_optimizations::ExtrinsicMultiStaticCameraOnlyResult opt_result = rct_optimizations::optimize(problem_def);
 
   // Report results
   rct_ros_tools::printOptResults(opt_result.converged, opt_result.initial_cost_per_obs, opt_result.final_cost_per_obs);
   rct_ros_tools::printNewLine();
 
+  // Report the camera translations after step 1
   for (std::size_t c = 0; c < num_of_cameras; ++c)
   {
     // Load the data set path from ROS param
@@ -206,9 +205,11 @@ int main(int argc, char** argv)
     rct_ros_tools::printNewLine();
   }
 
-  // Run optimization
+  // Run optimization #2
   rct_ros_tools::printTitle("Running calibration for wrist only using camera only results");
 
+  // Build problem #2: calibrated-camera-mesh to robot wrist
+  // The camera to camera positions are fixed but the whole mesh can move w.r.t the robot wrist
   problem_wrist_def.intr = problem_def.intr;
   problem_wrist_def.wrist_to_target_guess = wrist_to_target;
   problem_wrist_def.image_observations = problem_def.image_observations;
@@ -216,7 +217,7 @@ int main(int argc, char** argv)
   rct_optimizations::ExtrinsicMultiStaticCameraMovingTargetWristOnlyResult
       opt_wrist_only_result = rct_optimizations::optimize(problem_wrist_def);
 
-  // Report results
+  // Report results of #2
   rct_ros_tools::printOptResults(opt_wrist_only_result.converged, opt_wrist_only_result.initial_cost_per_obs, opt_wrist_only_result.final_cost_per_obs);
   rct_ros_tools::printNewLine();
 
@@ -224,6 +225,7 @@ int main(int argc, char** argv)
   rct_ros_tools::printTransform(t, "Wrist", "Target", "Wrist to Target");
   rct_ros_tools::printNewLine();
 
+  // Now print each cameras pose w.r.t the robot base
   for (std::size_t c = 0; c < num_of_cameras; ++c)
   {
     // Load the data set path from ROS param
@@ -240,6 +242,8 @@ int main(int argc, char** argv)
 
   rct_ros_tools::printTitle("REPROJECTION ERROR");
 
+  // Perform a reprojection step that uses the calibration position to
+  // re-draw where the camera things the points should have been.
   for (std::size_t i = 0; i < problem_wrist_def.wrist_poses.size(); ++i)
   {
     std::vector<rct_optimizations::CorrespondenceSet> corr_set;
