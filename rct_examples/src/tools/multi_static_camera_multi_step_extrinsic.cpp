@@ -1,3 +1,15 @@
+/*
+ * This tool attempts to calibrate a set of fixed cameras to a robot in two steps:
+ *  1. First, the cameras are calibrated to eachother without consideration of the robot's
+ *     wrist positions.
+ *  2. Second, the set of cameras is calibrated to the wrist of the robot. In this step, the
+ *     poses between cameras is fixed, but the whole set can move together.
+ *
+ * The idea is that the cameras are capable of locating a target with more accuracy than the robot
+ * is able to locate its own wrist. Thus it makes more sense to calibrate the cameras to eachother
+ * before "best-fitting" to the robot.
+ */
+
 // Utilities for loading data sets and calib parameters from YAML files via ROS
 #include "rct_ros_tools/data_set.h"
 #include "rct_ros_tools/parameter_loaders.h"
