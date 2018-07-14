@@ -1,9 +1,0 @@
-<launch>
-  <arg name="data_file"/>
-  <arg name="fix_first_camera" default="true"/>
-
-  <node pkg="rct_examples" type="multi_static_cam_multi_step_extr_cal_ex" name="multi_static_camera_multi_step_cal" output="screen">
-    <rosparam command="load" file="$(arg data_file)"/>
-    <param name="fix_first_camera" value="$(arg fix_first_camera)"/>
-  </node>
-</launch>

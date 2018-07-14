@@ -1,11 +1,8 @@
 // Utilities for loading data sets and calib parameters from YAML files via ROS
 #include "rct_ros_tools/data_set.h"
 #include "rct_ros_tools/parameter_loaders.h"
-#include "rct_ros_tools/print_utils.h"
-
 // To find 2D  observations from images
 #include <rct_image_tools/image_observation_finder.h>
-#include <rct_image_tools/image_utils.h>
 // The calibration function for 'static camera' on robot wrist
 #include <rct_optimizations/extrinsic_multi_static_camera.h>
 
@@ -25,10 +22,23 @@ static void reproject(const Eigen::Affine3d& base_to_target,
 {
 
   Eigen::Affine3d camera_to_target = base_to_camera[0].inverse() * base_to_target;
-  std::vector<cv::Point2d> reprojections = rct_image_tools::getReprojections(camera_to_target, intr[0], target.points);
+  std::vector<cv::Point2d> reprojections;
+  for (const auto& point_in_target : target.points)
+  {
+    Eigen::Vector3d in_camera = camera_to_target * point_in_target;
+
+    double uv[2];
+    rct_optimizations::projectPoint(intr[0], in_camera.data(), uv);
+
+    reprojections.push_back(cv::Point2d(uv[0], uv[1]));
+  }
 
   cv::Mat before_frame = image.clone();
-  rct_image_tools::drawReprojections(reprojections, 3, cv::Scalar(0, 0, 255), before_frame);
+
+  for (const auto& pt : reprojections)
+  {
+    cv::circle(before_frame, pt, 3, cv::Scalar(0, 0, 255));
+  }
 
   rct_optimizations::MultiCameraPnPProblem pb;
   pb.base_to_camera = base_to_camera;
@@ -38,22 +48,41 @@ static void reproject(const Eigen::Affine3d& base_to_target,
 
   rct_optimizations::MultiCameraPnPResult r = rct_optimizations::optimize(pb);
   // Report results
-  rct_ros_tools::printOptResults(r.converged, r.initial_cost_per_obs, r.final_cost_per_obs);
-  rct_ros_tools::printNewLine();
+  std::cout << "Did converge?: " << r.converged << "\n";
+  std::cout << "Initial cost?: " << r.initial_cost_per_obs << "\n";
+  std::cout << "Final cost?: " << r.final_cost_per_obs << "\n";
 
-  rct_ros_tools::printTransform(camera_to_target, "Camera 0", "Target", "CAMERA 0 TO TARGET");
-  rct_ros_tools::printNewLine();
+  // We want to compute the "positional error" as well
+  // So first we compute the "camera to target" transform based on the calibration...
+  std::cout << "CAMERA 0 TO TARGET\n\n" << camera_to_target.matrix() << "\n";
 
   Eigen::Affine3d result_camera_to_target = base_to_camera[0].inverse() * r.base_to_target;
-  rct_ros_tools::printTransform(result_camera_to_target, "Camera 0", "Target", "PNP");
-  rct_ros_tools::printNewLine();
+  std::cout << "PNP\n" << result_camera_to_target.matrix() << "\n";
 
-  rct_ros_tools::printTransformDiff(camera_to_target, result_camera_to_target, "Camera 0", "Target", "PNP DIFF");
-  rct_ros_tools::printNewLine();
+  Eigen::Affine3d delta = camera_to_target.inverse() * result_camera_to_target;
+  std::cout << "OTHER S: " << (result_camera_to_target.translation() - camera_to_target.translation()).norm() << "\n";
+  std::cout << "DELTA S: " << delta.translation().norm() << " at " << delta.translation().transpose() << "\n";
+  Eigen::AngleAxisd aa (delta.linear());
+  Eigen::Vector3d rpy = delta.rotation().eulerAngles(2, 1, 0);
+  std::cout << "DELTA A: " << (180.0 * aa.angle() / M_PI) << " and rpy=\"" << rpy(2) << "(" << rpy(2) * 180/M_PI << " deg) " << rpy(1) << "(" << rpy(1) * 180/M_PI << " deg) " << rpy(0) << "(" << rpy(0) * 180/M_PI << " deg)\"\n";
 
-  reprojections = rct_image_tools::getReprojections(result_camera_to_target, intr[0], target.points);
+  reprojections.clear();
+  for (const auto& point_in_target : target.points)
+  {
+    Eigen::Vector3d in_camera = result_camera_to_target * point_in_target;
+
+    double uv[2];
+    rct_optimizations::projectPoint(intr[0], in_camera.data(), uv);
+
+    reprojections.push_back(cv::Point2d(uv[0], uv[1]));
+  }
+
   cv::Mat after_frame = image.clone();
-  rct_image_tools::drawReprojections(reprojections, 3, cv::Scalar(0, 255, 0), after_frame);
+
+  for (const auto& pt : reprojections)
+  {
+    cv::circle(after_frame, pt, 3, cv::Scalar(0, 255, 0));
+  }
 
   cv::imshow("repr_before", before_frame);
   cv::imshow("repr_after", after_frame);
@@ -64,6 +93,8 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "multi_static_camera_extrinsic");
   ros::NodeHandle pnh("~");
+
+  sleep(10);
 
   int camera_count;
   if (!pnh.getParam("num_of_cameras", camera_count))
@@ -76,7 +107,7 @@ int main(int argc, char** argv)
   rct_optimizations::ExtrinsicMultiStaticCameraMovingTargetProblem problem_def;
   std::vector<std::string> data_path;
   std::string target_path;
-  std::vector<rct_ros_tools::ExtrinsicDataSet> maybe_data_set;
+  std::vector<boost::optional<rct_ros_tools::ExtrinsicDataSet> > maybe_data_set;
 
   data_path.resize(num_of_cameras);
   maybe_data_set.resize(num_of_cameras);
@@ -96,13 +127,12 @@ int main(int argc, char** argv)
     }
 
     // Attempt to load the data set from the specified path
-    boost::optional<rct_ros_tools::ExtrinsicDataSet> data_set = *rct_ros_tools::parseFromFile(data_path[c]);
-    if (!data_set)
+    maybe_data_set[c] = rct_ros_tools::parseFromFile(data_path[c]);
+    if (!maybe_data_set[c])
     {
       ROS_ERROR_STREAM("Failed to parse data set from path = " << data_path[c]);
       return 2;
     }
-    maybe_data_set[c] = *data_set;
 
     // Load the camera intrinsics from the parameter server. Intr will get
     // reset if such a parameter was set
@@ -150,50 +180,100 @@ int main(int argc, char** argv)
   // Lets create a class that will search for the target in our raw images.
   rct_image_tools::ModifiedCircleGridObservationFinder obs_finder(target);
 
-  rct_ros_tools::ExtrinsicCorrespondenceDataSet corr_data_set(maybe_data_set, obs_finder, true);
+  std::vector<std::vector<bool>> found_images;
+  std::vector<std::vector<rct_optimizations::CorrespondenceSet>> all_image_observations;
 
-  // build problem
-  for (std::size_t c = 0; c < corr_data_set.getCameraCount(); ++c)
+  found_images.resize(num_of_cameras);
+  all_image_observations.resize(num_of_cameras);
+  for (std::size_t c = 0; c < num_of_cameras; ++c)
   {
-    for (std::size_t i = 0; i < corr_data_set.getImageCount(); ++i)
+    // We know it exists, so define a helpful alias
+    const rct_ros_tools::ExtrinsicDataSet& data_set = *maybe_data_set[c];
+
+    // Finally, we need to process our images into correspondence sets: for each dot in the
+    // target this will be where that dot is in the target and where it was seen in the image.
+    // Repeat for each image. We also tell where the wrist was when the image was taken.
+    found_images[c].resize(data_set.images.size());
+    all_image_observations[c].resize(data_set.images.size());
+    for (std::size_t i = 0; i < data_set.images.size(); ++i)
     {
-      if (corr_data_set.foundCorrespondence(c, i))
+      // Try to find the circle grid in this image:
+      auto maybe_obs = obs_finder.findObservations(data_set.images[i]);
+      if (!maybe_obs)
       {
-        const rct_ros_tools::ExtrinsicDataSet& data_set = maybe_data_set[c];
-        problem_def.wrist_poses[c].push_back(data_set.tool_poses[i]);
-        problem_def.image_observations[c].push_back(corr_data_set.getCorrespondenceSet(c, i));
+        ROS_WARN_STREAM("Unable to find the circle grid in image: " << i);
+        cv::imshow("points", data_set.images[i]);
+        cv::waitKey();
+        found_images[c][i] = false;
+        continue;
       }
+      else
+      {
+        // Show the points we detected
+        cv::imshow("points", obs_finder.drawObservations(data_set.images[i], *maybe_obs));
+        cv::waitKey();
+      }
+      // cache if target found
+      found_images[c][i] = true;
+
+      // So for each image we need to:
+      //// 1. Record the wrist position
+      problem_def.wrist_poses[c].push_back(data_set.tool_poses[i]);
+
+      //// Create the correspondence pairs
+      rct_optimizations::CorrespondenceSet obs_set;
+      assert(maybe_obs->size() == target.points.size());
+
+      // So for each dot:
+      for (std::size_t j = 0; j < maybe_obs->size(); ++j)
+      {
+        rct_optimizations::Correspondence2D3D pair;
+        pair.in_image = maybe_obs->at(j); // The obs finder and target define their points in the same order!
+        pair.in_target = target.points[j];
+
+        obs_set.push_back(pair);
+      }
+      //// And finally add that to the problem
+      all_image_observations[c][i] = obs_set;
+      problem_def.image_observations[c].push_back(obs_set);
     }
   }
+
 
   // Run optimization
   rct_optimizations::ExtrinsicMultiStaticCameraMovingTargetResult
       opt_result = rct_optimizations::optimize(problem_def);
 
   // Report results
-  rct_ros_tools::printOptResults(opt_result.converged, opt_result.initial_cost_per_obs, opt_result.final_cost_per_obs);
-  rct_ros_tools::printNewLine();
+  std::cout << "Did converge?: " << opt_result.converged << "\n";
+  std::cout << "Initial cost?: " << opt_result.initial_cost_per_obs << "\n";
+  std::cout << "Final cost?: " << opt_result.final_cost_per_obs << "\n";
 
   Eigen::Affine3d t = opt_result.wrist_to_target;
-  rct_ros_tools::printTransform(t, "Wrist", "Target", "WRIST TO TARGET");
-  rct_ros_tools::printNewLine();
+
+  std::cout << "Wrist to Target:\n";
+  std::cout << t.matrix() << "\n";
 
   for (std::size_t c = 0; c < num_of_cameras; ++c)
   {
     // Load the data set path from ROS param
     std::string param_base = "camera_" + std::to_string(c);
-    t = opt_result.base_to_camera[c];
-    rct_ros_tools::printTransform(t, "Base", " Camera (" + param_base + ")", "BASE TO CAMERA (" + param_base + ")");
-    rct_ros_tools::printNewLine();
+    Eigen::Affine3d t = opt_result.base_to_camera[c];
 
-    t = opt_result.base_to_camera[0].inverse() * t;
-    rct_ros_tools::printTransform(t, "Camera 0", " Camera " + std::to_string(c), "CAMERA 0 TO CAMERA (" + param_base + ")");
-    rct_ros_tools::printNewLine();
+    std::cout << "Base to Camera (" + param_base + "):\n";
+    std::cout << t.matrix() << "\n";
+
+    std::cout << "--- URDF Format Base to Camera (" + param_base + ") ---\n";
+    Eigen::Vector3d rpy = t.rotation().eulerAngles(2, 1, 0);
+    std::cout << "xyz=\"" << t.translation()(0) << " " << t.translation()(1) << " " << t.translation()(2) << "\"\n";
+    std::cout << "rpy=\"" << rpy(2) << "(" << rpy(2) * 180/M_PI << " deg) " << rpy(1) << "(" << rpy(1) * 180/M_PI << " deg) " << rpy(0) << "(" << rpy(0) * 180/M_PI << " deg)\"\n";
   }
 
-  rct_ros_tools::printTitle("REPROJECTION ERROR");
+  std::cout << "**************************************************************\n";
+  std::cout << "********************* REPROJECTION ERROR *********************\n";
+  std::cout << "**************************************************************\n";
 
-  for (std::size_t i = 0; i < maybe_data_set[0].images.size(); ++i)
+  for (std::size_t i = 0; i < maybe_data_set[0]->images.size(); ++i)
   {
     std::vector<rct_optimizations::CorrespondenceSet> corr_set;
     std::vector<Eigen::Affine3d> base_to_camera;
@@ -205,19 +285,19 @@ int main(int argc, char** argv)
     base_to_camera.reserve(num_of_cameras);
     intr.reserve(num_of_cameras);
 
-    base_to_wrist = maybe_data_set[0].tool_poses[i];
+    base_to_wrist = maybe_data_set[0]->tool_poses[i];
 
     std::size_t cnt = 0;
     for (std::size_t c = 0; c < num_of_cameras; ++c)
     {
-      if (corr_data_set.foundCorrespondence(c, i))
+      if (found_images[c][i])
       {
         base_to_camera.push_back(opt_result.base_to_camera[c]);
         intr.push_back(problem_def.intr[c]);
-        corr_set.push_back(corr_data_set.getCorrespondenceSet(c, i));
+        corr_set.push_back(all_image_observations[c][i]);
         if (cnt == 0)
         {
-          image = maybe_data_set[c].images[i];
+          image = maybe_data_set[c]->images[i];
         }
 
         ++cnt;
@@ -230,7 +310,9 @@ int main(int argc, char** argv)
 
     if (cnt >= 2)
     {
-      rct_ros_tools::printTitle("REPROJECT IMAGE " + std::to_string(i));
+      std::cout << "***************************\n";
+      std::cout << "**** REPROJECT IMAGE " << i << " ****\n";
+      std::cout << "***************************\n";
       reproject(base_to_wrist * opt_result.wrist_to_target, base_to_camera,
                 intr, target, image, corr_set);
     }

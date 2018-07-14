@@ -27,8 +27,6 @@ public:
    */
   cv::Mat drawObservations(const cv::Mat& image, const std::vector<Eigen::Vector2d>& observations) const;
 
-  const ModifiedCircleGridTarget& target() const { return target_; }
-
 private:
   ModifiedCircleGridTarget target_;
 };

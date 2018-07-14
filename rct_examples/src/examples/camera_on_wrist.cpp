@@ -13,8 +13,6 @@
 // This include is used to load images and the associated wrist poses from the data/ directory
 // of this package. It's my only concession to the "self-contained rule".
 #include <rct_ros_tools/data_set.h>
-// This include provide useful print functions for outputing results to terminal
-#include <rct_ros_tools/print_utils.h>
 // This header brings in a tool for finding the target in a given image
 #include <rct_image_tools/image_observation_finder.h>
 // This header brings in he calibration function for 'moving camera' on robot wrist - what we
@@ -134,18 +132,25 @@ int extrinsicWristCameraCalibration()
   // Step 5: Do something with your results. Here I just print the results, but you might want to
   // update a data structure, save to a file, push to a mutable joint or mutable state publisher in
   // ROS. The options are many, and it's up to you. We just try to help solve the problem.
-  rct_ros_tools::printOptResults(opt_result.converged, opt_result.initial_cost_per_obs, opt_result.final_cost_per_obs);
-  rct_ros_tools::printNewLine();
+
+  std::cout << "Did converge?: " << opt_result.converged << "\n";
+  std::cout << "Initial cost?: " << opt_result.initial_cost_per_obs << " error (pixels per dot)\n";
+  std::cout << "Final cost?: " << opt_result.final_cost_per_obs << " error (pixels per dot)\n";
 
   // Note: Convergence and low cost does not mean a good calibration. See the calibration primer
   // readme on the main page of this repo.
   Eigen::Affine3d c = opt_result.wrist_to_camera;
-  rct_ros_tools::printTransform(c, "Wrist", "Camera", "WRIST TO CAMERA");
-  rct_ros_tools::printNewLine();
-
   Eigen::Affine3d t = opt_result.base_to_target;
-  rct_ros_tools::printTransform(t, "Base", "Target", "BASE TO TARGET");
-  rct_ros_tools::printNewLine();
+
+  std::cout << "Wrist To Camera:\n";
+  std::cout << c.matrix() << "\n";
+  std::cout << "Base to Target:\n";
+  std::cout << t.matrix() << "\n";
+
+  std::cout << "--- URDF Format Wrist to Camera---\n";
+  Eigen::Vector3d rpy = c.rotation().eulerAngles(2, 1, 0);
+  std::cout << "xyz=\"" << c.translation()(0) << " " << c.translation()(1) << " " << c.translation()(2) << "\"\n";
+  std::cout << "rpy=\"" << rpy(2) << " " << rpy(1) << " " << rpy(0) << "\"\n";
 
   return 0;
 }

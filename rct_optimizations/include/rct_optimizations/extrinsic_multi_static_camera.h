@@ -12,8 +12,8 @@
  * author: Levi Armstrong
  */
 
-#ifndef RCT_EXTRINSIC_MULTI_STATIC_CAMERA_H
-#define RCT_EXTRINSIC_MULTI_STATIC_CAMERA_H
+#ifndef RCT_EXTRINSIC_STATIC_CAMERA_H
+#define RCT_EXTRINSIC_STATIC_CAMERA_H
 
 #include "rct_optimizations/types.h"
 #include <Eigen/Dense>
@@ -86,4 +86,4 @@ ExtrinsicMultiStaticCameraMovingTargetResult optimize(const ExtrinsicMultiStatic
 
 }
 
-#endif // RCT_EXTRINSIC_MULTI_STATIC_CAMERA_H
+#endif // RCT_EXTRINSIC_STATIC_CAMERA_H
