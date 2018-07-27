@@ -9,11 +9,153 @@
 #include <opencv2/highgui.hpp>
 #include <ros/ros.h>
 
+namespace
+{
+
+template <typename T>
+struct CalibCameraIntrinsics
+{
+  const T* data;
+
+  CalibCameraIntrinsics(const T* data) : data(data) {}
+
+  const T& fx() const { return data[0]; }
+  const T& fy() const { return data[1]; }
+  const T& cx() const { return data[2]; }
+  const T& cy() const { return data[3]; }
+
+  const T& k1() const { return data[4]; }
+  const T& k2() const { return data[5]; }
+  const T& p1() const { return data[6]; }
+  const T& p2() const { return data[7]; }
+  const T& k3() const { return data[8]; }
+
+  constexpr static std::size_t size(){ return 9; }
+};
+
+template <typename T>
+struct MutableCalibCameraIntrinsics
+{
+  T* data;
+
+  MutableCalibCameraIntrinsics(T* data) : data(data) {}
+
+  const T& fx() const { return data[0]; }
+  const T& fy() const { return data[1]; }
+  const T& cx() const { return data[2]; }
+  const T& cy() const { return data[3]; }
+
+  const T& k1() const { return data[4]; }
+  const T& k2() const { return data[5]; }
+  const T& p1() const { return data[6]; }
+  const T& p2() const { return data[7]; }
+  const T& k3() const { return data[8]; }
+
+   T& fx()  { return data[0]; }
+   T& fy()  { return data[1]; }
+   T& cx()  { return data[2]; }
+   T& cy()  { return data[3]; }
+
+   T& k1()  { return data[4]; }
+   T& k2()  { return data[5]; }
+   T& p1()  { return data[6]; }
+   T& p2()  { return data[7]; }
+   T& k3()  { return data[8]; }
+
+  constexpr static std::size_t size(){ return 9; }
+};
+
+template <typename T>
+void projectPoints2(const T* const camera_intr, const T* const pt_in_camera, T* pt_in_image)
+{
+  T xp1 = pt_in_camera[0];
+  T yp1 = pt_in_camera[1];
+  T zp1 = pt_in_camera[2];
+
+  CalibCameraIntrinsics<T> intr (camera_intr);
+
+  // Scale into the image plane by distance away from camera
+  T xp;
+  T yp;
+  if (zp1 == T(0)) // Avoid dividing by zero.
+  {
+    xp = xp1;
+    yp = yp1;
+  }
+  else
+  {
+    xp = xp1 / zp1;
+    yp = yp1 / zp1;
+  }
+
+  // Temporary variables for distortion model.
+  T xp2 = xp * xp;    // x^2
+  T yp2 = yp * yp;    // y^2
+  T r2  = xp2 + yp2;  // r^2 radius squared
+  T r4  = r2 * r2;    // r^4
+  T r6  = r2 * r4;    // r^6
+
+  // Apply the distortion coefficients to refine pixel location
+  T xpp = xp
+    + intr.k1() * r2 * xp    // 2nd order term
+    + intr.k2() * r4 * xp    // 4th order term
+    + intr.k3() * r6 * xp    // 6th order term
+    + intr.p2() * (r2 + T(2.0) * xp2) // tangential
+    + intr.p1() * xp * yp * T(2.0); // other tangential term
+
+  T ypp = yp
+    + intr.k1() * r2 * yp    // 2nd order term
+    + intr.k2() * r4 * yp    // 4th order term
+    + intr.k3() * r6 * yp    // 6th order term
+    + intr.p1() * (r2 + T(2.0) * yp2) // tangential term
+    + intr.p2() * xp * yp * T(2.0); // other tangential term
+
+  // Perform projection using focal length and camera center into image plane
+  pt_in_image[0] = intr.fx() * xpp + intr.cx();
+  pt_in_image[1] = intr.fy() * ypp + intr.cy();
+}
+
+}
+
+static
+std::vector<cv::Point2d> getReprojections(const Eigen::Affine3d &camera_to_target,
+                                          const rct_optimizations::CameraIntrinsics &intr,
+                                          const std::array<double, 5>& dist,
+                                          const std::vector<Eigen::Vector3d> &target_points)
+{
+  std::array<double, 9> camera_data;
+  MutableCalibCameraIntrinsics<double> camera (camera_data.data());
+
+  camera.fx() = intr.fx();
+  camera.fy() = intr.fy();
+  camera.cx() = intr.cx();
+  camera.cy() = intr.cy();
+
+  camera.k1() = dist[0];
+  camera.k2() = dist[1];
+  camera.p1() = dist[2];
+  camera.p2() = dist[3];
+  camera.k3() = dist[4];
+
+  std::vector<cv::Point2d> reprojections;
+  for (const auto& point_in_target : target_points)
+  {
+    Eigen::Vector3d in_camera = camera_to_target * point_in_target;
+
+    double uv[2];
+    projectPoints2(camera_data.data(), in_camera.data(), uv);
+
+    reprojections.push_back(cv::Point2d(uv[0], uv[1]));
+  }
+  return reprojections;
+}
+
 // This cost has a custom file loader & format
 struct RailCalibrationScene
 {
   std::vector<double> rail_poses;
   std::vector<rct_optimizations::CorrespondenceSet> correspondences;
+  std::vector<cv::Mat> images;
 };
 
 struct RailCalibrationData
@@ -86,12 +228,14 @@ RailCalibrationData parseCalData(const std::string& base_path, const std::vector
         auto& scene = scenes[scene_id];
         scene.rail_poses.push_back(rail_pos);
         scene.correspondences.push_back(zip(*maybe, target.points));
+        scene.images.push_back(image);
       }
       else // make a new scene
       {
         RailCalibrationScene scene;
         scene.rail_poses.push_back(rail_pos);
         scene.correspondences.push_back(zip(*maybe, target.points));
+        scene.images.push_back(image);
         scenes[scene_id] = scene;
       }
     }
@@ -182,6 +326,33 @@ int main(int argc, char** argv)
   }
 
   std::cout << "Skew: " << result.skew_x << ", " << result.skew_y << "\n";
+
+  // Reproject
+  double aa[3] = {result.skew_x, result.skew_y, 0.0};
+  double axis1[3] = {0, 0, 1};
+  Eigen::Vector3d rail_axis;
+
+  ceres::AngleAxisRotatePoint(aa, axis1, rail_axis.data());
+
+  for (std::size_t i = 0; i < result.target_transforms.size(); ++i) // For each scene
+  {
+    const auto target_origin = result.target_transforms[i];
+    std::cout << "** SCENE " << i  << " **\n";
+    for (std::size_t j = 0; j < data.scenes[i].images.size(); ++j) // for each rail position
+    {
+      // Compute target in camera
+      const Eigen::Vector3d v = problem.rail_distances[i][j] * rail_axis;
+      auto target_in_camera = target_origin;
+      target_in_camera .translation() += v;
+
+      // Reproject and draw
+      auto pts = getReprojections(target_in_camera, result.intrinsics, result.distortions, target.points);
+      cv::Mat frame = data.scenes[i].images[j].clone();
+      rct_image_tools::drawReprojections(pts, 3, cv::Scalar(0, 0, 255), frame);
+      cv::imshow("repr", frame);
+      cv::waitKey();
+    }
+  }
 
   return 0;
 }
