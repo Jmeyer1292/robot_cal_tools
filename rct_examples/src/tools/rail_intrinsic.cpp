@@ -23,7 +23,28 @@ struct RailCalibrationData
 
 bool parseNameData(const std::string& name, int& scene_id, int& position_id)
 {
+  //  Only parses files of the following format: my_camera_000_000.jpg
+  std::string scene_str(name.begin() + 10, name.begin() + 13);
+  std::string pos_str(name.begin() + 14, name.begin() + 17);
+
+  scene_id = std::stoi(scene_str);
+  position_id = std::stoi(pos_str);
+
   return true;
+}
+
+rct_optimizations::CorrespondenceSet zip(const std::vector<Eigen::Vector2d>& image,
+                                         const std::vector<Eigen::Vector3d>& target)
+{
+  rct_optimizations::CorrespondenceSet set;
+  for (std::size_t i = 0; i < target.size(); ++i)
+  {
+    rct_optimizations::Correspondence2D3D c;
+    c.in_image = image[i];
+    c.in_target = target[i];
+    set.push_back(c);
+  }
+  return set;
 }
 
 RailCalibrationData parseCalData(const std::string& base_path, const std::vector<std::string>& images,
@@ -55,12 +76,38 @@ RailCalibrationData parseCalData(const std::string& base_path, const std::vector
     if (maybe)
     {
       cv::imshow("found", finder.drawObservations(image, *maybe));
+
+      const double rail_pos = -0.05 * static_cast<double>(position_id);
+
+      if (scenes.count(scene_id) != 0)
+      {
+        auto& scene = scenes[scene_id];
+        scene.rail_poses.push_back(rail_pos);
+        scene.correspondences.push_back(zip(*maybe, target.points));
+      }
+      else // make a new scene
+      {
+        RailCalibrationScene scene;
+        scene.rail_poses.push_back(rail_pos);
+        scene.correspondences.push_back(zip(*maybe, target.points));
+        scenes[scene_id] = scene;
+      }
     }
 
     cv::waitKey(0);
   }
 
-  return {};
+  // Assemble the images into a final set
+  RailCalibrationData data;
+  for (const auto& pair : scenes)
+  {
+    auto scene_id = pair.first;
+    auto& scene_data = pair.second;
+    data.scenes.push_back(scene_data);
+    ROS_INFO_STREAM("Found scene: " << scene_id);
+  }
+
+  return data;
 }
 
 int main(int argc, char** argv)
@@ -105,9 +152,9 @@ int main(int argc, char** argv)
     // set the target pose guess
     auto target_pose = Eigen::Affine3d::Identity();
     target_pose.translation() = Eigen::Vector3d(0, 0, 1.0);
-    target_pose.matrix().col(0).head<3>() = Eigen::Vector3d(1, 0, 0);
-    target_pose.matrix().col(0).head<3>() = Eigen::Vector3d(0, 1, 0);
-    target_pose.matrix().col(0).head<3>() = Eigen::Vector3d(0, 0, 1);
+    target_pose.matrix().col(0).head<3>() = Eigen::Vector3d(-1, 0, 0);
+    target_pose.matrix().col(1).head<3>() = Eigen::Vector3d(0, 1, 0);
+    target_pose.matrix().col(2).head<3>() = Eigen::Vector3d(0, 0, -1);
     problem.extrinsic_guesses.push_back(target_pose);
 
     problem.image_observations.push_back(scene.correspondences);
