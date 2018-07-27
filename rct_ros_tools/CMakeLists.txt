@@ -26,6 +26,7 @@ catkin_package(
     yaml-cpp
   CATKIN_DEPENDS
     roscpp
+    rct_image_tools
 )
 
 ###########

@@ -1,0 +1,20 @@
+<launch>
+  <node pkg="rct_examples" type="rail_intrinsic_ex" name="rail_intrinsic_ex" output="screen">
+    <rosparam>
+      target:
+        rows: 20
+        cols: 30
+        spacing: 0.0146 # (meters between dot centers)
+      intrinsics:
+        fx: 2000.0 # pixels
+        fy: 2000.0 # pixels
+        cx: 960.0
+        cy: 540.0
+      image_base: /home/jon/railCal8D_data/
+      images:
+        - my_camera_000_000.jpg
+        - my_camera_000_001.jpg
+        - my_camera_000_002.jpg
+    </rosparam>
+  </node>
+</launch>
