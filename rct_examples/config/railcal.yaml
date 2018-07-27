@@ -74,7 +74,7 @@ images:
  - my_camera_005_004.jpg
  - my_camera_005_008.jpg
  - my_camera_005_010.jpg
- - my_camera_005_011.jpg
+ # - my_camera_005_011.jpg
  - my_camera_005_012.jpg
  - my_camera_005_013.jpg
  - my_camera_005_014.jpg
@@ -86,7 +86,7 @@ images:
  - my_camera_006_011.jpg
  - my_camera_006_012.jpg
  - my_camera_006_013.jpg
- - my_camera_006_014.jpg
+ # - my_camera_006_014.jpg
  - my_camera_007_001.jpg
  - my_camera_007_002.jpg
  - my_camera_007_003.jpg
