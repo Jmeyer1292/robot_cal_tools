@@ -8,8 +8,8 @@
         cols: 30
         spacing: 0.0146 # (meters between dot centers)
       intrinsics:
-        fx: 2000.0 # pixels
-        fy: 2000.0 # pixels
+        fx: 2800.0 # pixels
+        fy: 2800.0 # pixels
         cx: 960.0
         cy: 540.0
     </rosparam>
