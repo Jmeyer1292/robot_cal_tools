@@ -71,6 +71,8 @@ RailCalibrationData parseCalData(const std::string& base_path, const std::vector
       continue;
     }
 
+    ROS_INFO_STREAM("Showing: " << f << " " << scene_id << " " << position_id);
+
     cv::imshow("in", image);
     auto maybe = finder.findObservations(image);
     if (maybe)
@@ -94,7 +96,7 @@ RailCalibrationData parseCalData(const std::string& base_path, const std::vector
       }
     }
 
-    cv::waitKey(0);
+    cv::waitKey(30);
   }
 
   // Assemble the images into a final set
@@ -151,7 +153,7 @@ int main(int argc, char** argv)
   {
     // set the target pose guess
     auto target_pose = Eigen::Affine3d::Identity();
-    target_pose.translation() = Eigen::Vector3d(0, 0, 1.0);
+    target_pose.translation() = Eigen::Vector3d(0, 0, 1.5);
     target_pose.matrix().col(0).head<3>() = Eigen::Vector3d(-1, 0, 0);
     target_pose.matrix().col(1).head<3>() = Eigen::Vector3d(0, 1, 0);
     target_pose.matrix().col(2).head<3>() = Eigen::Vector3d(0, 0, -1);

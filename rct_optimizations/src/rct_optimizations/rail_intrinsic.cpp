@@ -229,8 +229,10 @@ rct_optimizations::RailIntrinsicResult rct_optimizations::optimize(const RailInt
   // Solve
   ceres::Solver::Options options;
   options.max_num_iterations = 1000;
+  options.num_threads = 32;
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);
+  std::cout << summary.FullReport() << "\n";
 
   // Package results
   RailIntrinsicResult result;
