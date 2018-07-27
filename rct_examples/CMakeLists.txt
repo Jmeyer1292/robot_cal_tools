@@ -102,6 +102,15 @@ add_dependencies(${PROJECT_NAME}_multi_camera_pnp ${${PROJECT_NAME}_EXPORTED_TAR
 
 target_link_libraries(${PROJECT_NAME}_multi_camera_pnp ${catkin_LIBRARIES})
 
+# Rail Calibration Example
+add_executable(${PROJECT_NAME}_rail_intrinsic src/tools/rail_intrinsic.cpp)
+
+set_target_properties(${PROJECT_NAME}_rail_intrinsic PROPERTIES OUTPUT_NAME rail_intrinsic_ex PREFIX "")
+
+add_dependencies(${PROJECT_NAME}_rail_intrinsic ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(${PROJECT_NAME}_rail_intrinsic ${catkin_LIBRARIES})
+
 #############
 ## Testing ##
 #############
@@ -121,6 +130,7 @@ install(TARGETS
     ${PROJECT_NAME}_multi_static_camera
     ${PROJECT_NAME}_intr
     ${PROJECT_NAME}_pnp
+    ${PROJECT_NAME}_rail_intrinsic
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
