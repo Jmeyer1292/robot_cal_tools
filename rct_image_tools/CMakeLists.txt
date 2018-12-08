@@ -31,6 +31,7 @@ include_directories(
 # Declare a C++ library
 add_library(${PROJECT_NAME}
   src/${PROJECT_NAME}/image_observation_finder.cpp
+  src/${PROJECT_NAME}/aruco_finder.cpp
   src/${PROJECT_NAME}/circle_detector.cpp
   src/${PROJECT_NAME}/modified_circle_grid_target.cpp
 )
