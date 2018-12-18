@@ -70,7 +70,19 @@ public:
     cv_bridge::CvImagePtr cv_ptr;
     try
     {
-      cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+      if(msg->encoding == "mono16")
+      {
+        cv_bridge::CvImagePtr temp_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::MONO16);
+
+        cv::Mat img_conv;
+        cv::cvtColor(temp_ptr->image, img_conv, CV_GRAY2BGR);
+        img_conv.convertTo(img_conv, CV_8UC1);
+        cv_ptr = cv_bridge::CvImagePtr(new cv_bridge::CvImage(temp_ptr->header, sensor_msgs::image_encodings::BGR8, img_conv));
+      }
+      else
+      {
+        cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+      }
 
       auto obs = finder_.findObservations(cv_ptr->image);
       if (obs)
