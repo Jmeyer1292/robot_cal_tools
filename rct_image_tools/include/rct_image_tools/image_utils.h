@@ -4,6 +4,7 @@
 #include <Eigen/Dense>
 #include <rct_optimizations/ceres_math_utilities.h>
 #include <rct_image_tools/image_observation_finder.h>
+#include <vector>
 
 namespace rct_image_tools
 {
