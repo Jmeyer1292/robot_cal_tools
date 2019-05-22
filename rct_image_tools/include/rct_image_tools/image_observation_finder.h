@@ -2,6 +2,7 @@
 #define RCT_IMAGE_OBSERVATION_FINDER_H
 
 #include "rct_image_tools/modified_circle_grid_target.h"
+#include <vector>
 #include <boost/optional.hpp>
 #include <opencv2/core.hpp>
 #include <rct_optimizations/types.h>

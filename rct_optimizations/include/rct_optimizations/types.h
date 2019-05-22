@@ -2,6 +2,7 @@
 #define RCT_TYPES_H
 
 #include <array>
+#include <vector>
 #include <Eigen/Dense>
 
 namespace rct_optimizations
