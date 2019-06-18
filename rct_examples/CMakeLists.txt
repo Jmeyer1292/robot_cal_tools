@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 find_package(OpenCV REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 # This package only provides examples. It does not export any tools.
 catkin_package()
@@ -21,6 +22,7 @@ catkin_package()
 
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIRS}
 )
 
 #####################

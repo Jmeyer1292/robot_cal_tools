@@ -4,6 +4,7 @@ project(rct_image_tools)
 add_compile_options(-std=c++11 -Wall -Wextra)
 
 find_package(OpenCV REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
   rct_optimizations
 )
@@ -26,6 +27,7 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIRS}
 )
 
 # Declare a C++ library
