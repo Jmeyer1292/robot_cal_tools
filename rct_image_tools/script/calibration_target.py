@@ -28,11 +28,17 @@ class calTarget:
   fontSize = 12
   margins = (0.5*inch, 0.5*inch)
   
-  def __init__(self, gridCount, gridSpacing=None):
+  def __init__(self, gridCount, gridSpacing=None, invert=False):
     self.gridCount = gridCount;
     gridSpacing = 25 if gridSpacing is None else gridSpacing
     self.gridSpacing = gridSpacing*mm if hasattr(gridSpacing, "__len__") else (gridSpacing*mm, gridSpacing*mm)
-    
+    if invert:
+        self.colorBackground = black
+        self.colorForeground = white
+    else:
+        self.colorBackground = white
+        self.colorForeground = black
+
     ps = self.get_pageSize()
     self.drawing = Drawing(ps[0], ps[1])
     self.draw()
@@ -76,9 +82,9 @@ class checkerTarget(calTarget):
           self.drawing.add(rect)
 
 class dotTarget(calTarget):
-  def __init__(self, gridCount, gridSpacing=None, dotSize=10):
+  def __init__(self, gridCount, gridSpacing=None, invert=False, dotSize=10):
     self.dotSize = dotSize*mm
-    calTarget.__init__(self, gridCount, gridSpacing)
+    calTarget.__init__(self, gridCount, gridSpacing, invert=invert)
 
   def get_pageSize(self):
     return ((self.gridCount[0]-1)*self.gridSpacing[0]+self.dotSize+self.margins[0]*3,
@@ -90,13 +96,14 @@ class dotTarget(calTarget):
     return str
 
   def draw(self):
+    self.drawing.add(Rect(0, 0, self.get_pageSize()[0], self.get_pageSize()[1], fillColor=self.colorBackground, strokeWidth=0))  # fill background color
     off = (self.margins[0]+self.dotSize, self.margins[1]+self.dotSize)
-    self.drawing.add(Circle(off[0], off[1], self.dotSize, fillColor=black, strokeWidth=0))  # big corner dot
+    self.drawing.add(Circle(off[0], off[1], self.dotSize, fillColor=self.colorForeground, strokeColor=self.colorForeground, strokeWidth=0))  # big corner dot
     for c in range(0, self.gridCount[0]):
       for r in range(0, self.gridCount[1]):
         xy=(off[0]+c*self.gridSpacing[0], off[1]+r*self.gridSpacing[1])
-        self.drawing.add(Circle(xy[0], xy[1], self.dotSize/2, fillColor=black, strokeWidth=0))
-        self.drawing.add(Circle(xy[0], xy[1], .03*self.dotSize, fillColor=white, strokeWidth=0))
+        self.drawing.add(Circle(xy[0], xy[1], self.dotSize/2, fillColor=self.colorForeground, strokeColor=self.colorForeground, strokeWidth=0))
+        self.drawing.add(Circle(xy[0], xy[1], .03*self.dotSize, fillColor=self.colorBackground, strokeColor=self.colorBackground, strokeWidth=0))
 
 def parse_args():
   parser = argparse.ArgumentParser(description='Generate calibration target')
@@ -108,14 +115,15 @@ def parse_args():
   parser.add_argument('--dpi', type=int, default=300, help='dots per inch (pixel formats only)')
   parser.add_argument('--addFooter', action='store_true', help='add footer text')
   parser.add_argument('-o',dest='filename',type=str, default='calibrationTarget.pdf', help='output filename (supports .pdf, .png, .jpg, ...)')
+  parser.add_argument('--invert', type=bool, default=False, help='If true, draw white dots on black background. Otherwise draw black dots on white background.')
   return parser.parse_args()
 
 if __name__=="__main__":
   args = parse_args()
   if (args.type == 'checker'):
-    target = checkerTarget( (args.grid_X, args.grid_Y), gridSpacing=args.spacing)
+    target = checkerTarget( (args.grid_X, args.grid_Y), gridSpacing=args.spacing, invert=args.invert)
   elif (args.type == 'dot'):
-    target = dotTarget( (args.grid_X, args.grid_Y), gridSpacing=args.spacing, dotSize=args.dotSize)
+    target = dotTarget( (args.grid_X, args.grid_Y), gridSpacing=args.spacing, dotSize=args.dotSize, invert=args.invert)
     
   if(args.addFooter):
     target.addTextFooter()
