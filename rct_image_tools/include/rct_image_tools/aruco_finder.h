@@ -26,7 +26,7 @@ namespace rct_image_tools
 class ArucoGridBoardObservationFinder
 {
 public:
-  ArucoGridBoardObservationFinder(const cv::aruco::GridBoard& board);
+  ArucoGridBoardObservationFinder(const cv::Ptr<cv::aruco::GridBoard>& board);
 
   /**
    * @brief findObservations Detect marker corner coordinates in the provided image.
@@ -43,10 +43,10 @@ public:
    */
   cv::Mat drawObservations(const cv::Mat& image, const std::map<int, std::vector<Eigen::Vector2d>>& observations) const;
 
-  const cv::aruco::GridBoard& target() const { return board_; }
+  const cv::Ptr<cv::aruco::GridBoard>& target() const { return board_; }
 
 private:
-  cv::aruco::GridBoard board_;
+  cv::Ptr<cv::aruco::GridBoard> board_;
 };
 
 /**
@@ -60,7 +60,7 @@ private:
  * (e.g. clockwise from the "origin" corner).
  */
 std::map<int, std::vector<Eigen::Vector3d>>
-mapArucoIdsToObjPts(const cv::aruco::GridBoard& board);
+mapArucoIdsToObjPts(const cv::Ptr<cv::aruco::GridBoard>& board);
 
 }
 #endif // ARUCO_FINDER_H
