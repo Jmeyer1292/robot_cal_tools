@@ -322,7 +322,9 @@ bool CircleDetector::loadParams(const std::string& path, CircleDetector::Params&
     optionalLoad(n, "minRadiusDiff", p.minRadiusDiff);
 
     optionalLoad(n, "filterByColor", p.filterByColor);
-    optionalLoad(n, "circleColor", p.circleColor);
+    unsigned short circleColor;
+    if (optionalLoad(n, "circleColor", circleColor))
+      p.circleColor = circleColor;
 
     optionalLoad(n, "filterByArea", p.filterByArea);
     optionalLoad(n, "minArea", p.minArea);
