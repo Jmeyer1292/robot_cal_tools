@@ -293,9 +293,10 @@ bool optionalLoad(YAML::Node& n, const std::string& key, T& value)
     catch (const YAML::BadConversion& ex)
     {
       std::stringstream ss;
-      ss << "Key: " << key << " ";
+      ss << "(Key: " << key << "): ";
       YAML::RepresentationException ex_key =
           YAML::RepresentationException(YAML::Mark::null_mark(), std::string(ss.str() + ex.what()));
+      throw ex_key;
     }
 
     return true;
