@@ -13,7 +13,7 @@ struct IntrinsicEstimationProblem
   CameraIntrinsics intrinsics_guess;
 
   bool use_extrinsic_guesses;
-  std::vector<Eigen::Affine3d> extrinsic_guesses;
+  std::vector<Eigen::Isometry3d> extrinsic_guesses;
 };
 
 struct IntrinsicEstimationResult
@@ -25,7 +25,7 @@ struct IntrinsicEstimationResult
   CameraIntrinsics intrinsics;
   std::array<double, 5> distortions;
 
-  std::vector<Eigen::Affine3d> target_transforms;
+  std::vector<Eigen::Isometry3d> target_transforms;
 };
 
 IntrinsicEstimationResult optimize(const IntrinsicEstimationProblem& params);

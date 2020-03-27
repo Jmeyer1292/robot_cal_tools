@@ -13,8 +13,8 @@ bool loadTarget(const std::string& path, rct_image_tools::ModifiedCircleGridTarg
 
 bool loadIntrinsics(const ros::NodeHandle& nh, const std::string& key, rct_optimizations::CameraIntrinsics& intr);
 
-bool loadPose(const ros::NodeHandle& nh, const std::string& key, Eigen::Affine3d& pose);
-bool loadPose(const std::string& path, Eigen::Affine3d& pose);
+bool loadPose(const ros::NodeHandle& nh, const std::string& key, Eigen::Isometry3d& pose);
+bool loadPose(const std::string& path, Eigen::Isometry3d& pose);
 
 }
 

@@ -171,7 +171,7 @@ private:
 
 static rct_optimizations::Pose6d guessInitialPose()
 {
-  Eigen::Affine3d guess = Eigen::Affine3d::Identity();
+  Eigen::Isometry3d guess = Eigen::Isometry3d::Identity();
   guess = guess * Eigen::Translation3d(0,0,0.5) * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX());
   return rct_optimizations::poseEigenToCal(guess);
 }

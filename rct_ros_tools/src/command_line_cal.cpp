@@ -176,7 +176,7 @@ struct DataCollection
     {
       cv::Mat image = images[i];
       auto msg = poses[i];
-      Eigen::Affine3d pose;
+      Eigen::Isometry3d pose;
       tf::transformMsgToEigen(msg.transform, pose);
 
       data.images.push_back(image);

@@ -11,7 +11,7 @@ struct PnPProblem
   rct_optimizations::CameraIntrinsics intr;
   CorrespondenceSet correspondences;
 
-  Eigen::Affine3d camera_to_target_guess;
+  Eigen::Isometry3d camera_to_target_guess;
 };
 
 struct PnPResult
@@ -20,7 +20,7 @@ struct PnPResult
   double initial_cost_per_obs;
   double final_cost_per_obs;
 
-  Eigen::Affine3d camera_to_target;
+  Eigen::Isometry3d camera_to_target;
 };
 
 PnPResult optimize(const PnPProblem& params);

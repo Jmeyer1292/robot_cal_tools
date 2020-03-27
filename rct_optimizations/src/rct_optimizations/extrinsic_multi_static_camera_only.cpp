@@ -58,7 +58,7 @@ private:
 class ReprojectionFixedCameraCost
 {
 public:
-  ReprojectionFixedCameraCost(const Eigen::Vector2d& obs, const CameraIntrinsics& intr, const Eigen::Affine3d& base_to_camera, const Eigen::Vector3d& point_in_target)
+  ReprojectionFixedCameraCost(const Eigen::Vector2d& obs, const CameraIntrinsics& intr, const Eigen::Isometry3d& base_to_camera, const Eigen::Vector3d& point_in_target)
     : obs_(obs), intr_(intr), camera_to_base_(poseEigenToCal(base_to_camera.inverse())), target_pt_(point_in_target)
   {}
 

@@ -26,7 +26,7 @@ struct MultiCameraPnPProblem
 
   /** @brief The "base frame" to "camera frame" transform; one for each camera. Should have same
       length as @e intr. */
-  std::vector<Eigen::Affine3d> base_to_camera;
+  std::vector<Eigen::Isometry3d> base_to_camera;
 
   /** @brief A sequence of observation sets corresponding to the image locations.
    * Each observation set consists of a set of correspodences: a 3D position (e.g. a dot) in "target
@@ -35,7 +35,7 @@ struct MultiCameraPnPProblem
   std::vector<CorrespondenceSet> image_observations;
 
   /** @brief Your best guess for transforms, "base to target", for a given observation set taken.*/
-  Eigen::Affine3d base_to_target_guess;
+  Eigen::Isometry3d base_to_target_guess;
 };
 
 struct MultiCameraPnPResult
@@ -62,7 +62,7 @@ struct MultiCameraPnPResult
   double final_cost_per_obs;
 
   /** @brief The final location of the target. */
-  Eigen::Affine3d base_to_target;
+  Eigen::Isometry3d base_to_target;
 };
 
 MultiCameraPnPResult optimize(const MultiCameraPnPProblem& params);

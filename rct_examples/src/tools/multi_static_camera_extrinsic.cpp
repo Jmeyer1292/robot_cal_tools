@@ -16,15 +16,15 @@
 #include <rct_optimizations/ceres_math_utilities.h>
 #include <rct_optimizations/experimental/multi_camera_pnp.h>
 
-static void reproject(const Eigen::Affine3d& base_to_target,
-                      const std::vector<Eigen::Affine3d>& base_to_camera,
+static void reproject(const Eigen::Isometry3d& base_to_target,
+                      const std::vector<Eigen::Isometry3d>& base_to_camera,
                       const std::vector<rct_optimizations::CameraIntrinsics>& intr,
                       const rct_image_tools::ModifiedCircleGridTarget& target,
                       const cv::Mat& image,
                       const std::vector<rct_optimizations::CorrespondenceSet>& corr)
 {
 
-  Eigen::Affine3d camera_to_target = base_to_camera[0].inverse() * base_to_target;
+  Eigen::Isometry3d camera_to_target = base_to_camera[0].inverse() * base_to_target;
   std::vector<cv::Point2d> reprojections = rct_image_tools::getReprojections(camera_to_target, intr[0], target.points);
 
   cv::Mat before_frame = image.clone();
@@ -44,7 +44,7 @@ static void reproject(const Eigen::Affine3d& base_to_target,
   rct_ros_tools::printTransform(camera_to_target, "Camera 0", "Target", "CAMERA 0 TO TARGET");
   rct_ros_tools::printNewLine();
 
-  Eigen::Affine3d result_camera_to_target = base_to_camera[0].inverse() * r.base_to_target;
+  Eigen::Isometry3d result_camera_to_target = base_to_camera[0].inverse() * r.base_to_target;
   rct_ros_tools::printTransform(result_camera_to_target, "Camera 0", "Target", "PNP");
   rct_ros_tools::printNewLine();
 
@@ -174,7 +174,7 @@ int main(int argc, char** argv)
   rct_ros_tools::printOptResults(opt_result.converged, opt_result.initial_cost_per_obs, opt_result.final_cost_per_obs);
   rct_ros_tools::printNewLine();
 
-  Eigen::Affine3d t = opt_result.wrist_to_target;
+  Eigen::Isometry3d t = opt_result.wrist_to_target;
   rct_ros_tools::printTransform(t, "Wrist", "Target", "WRIST TO TARGET");
   rct_ros_tools::printNewLine();
 
@@ -196,8 +196,8 @@ int main(int argc, char** argv)
   for (std::size_t i = 0; i < maybe_data_set[0].images.size(); ++i)
   {
     std::vector<rct_optimizations::CorrespondenceSet> corr_set;
-    std::vector<Eigen::Affine3d> base_to_camera;
-    Eigen::Affine3d base_to_wrist;
+    std::vector<Eigen::Isometry3d> base_to_camera;
+    Eigen::Isometry3d base_to_wrist;
     std::vector<rct_optimizations::CameraIntrinsics> intr;
     cv::Mat image;
 

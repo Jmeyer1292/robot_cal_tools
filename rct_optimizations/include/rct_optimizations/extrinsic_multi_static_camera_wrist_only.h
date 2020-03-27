@@ -32,7 +32,7 @@ struct ExtrinsicMultiStaticCameraMovingTargetWristOnlyProblem
    * The vector is the poses valid for each camera. This vector should match the inner
    * vector of @e image_observations in size.
    */
-  std::vector<Eigen::Affine3d> wrist_poses;
+  std::vector<Eigen::Isometry3d> wrist_poses;
 
   /** @brief A sequence of observation sets corresponding to the image locations in @e wrist_poses.
    * Each observation set consists of a set of correspodences: a 3D position (e.g. a dot) in "target
@@ -42,13 +42,13 @@ struct ExtrinsicMultiStaticCameraMovingTargetWristOnlyProblem
   std::vector<std::vector<CorrespondenceSet>> image_observations;
 
   /** @brief Your best guess at the "wrist frame" to "target frame" transform */
-  Eigen::Affine3d wrist_to_target_guess;
+  Eigen::Isometry3d wrist_to_target_guess;
 
   /** @brief Your best guess at the "base frame" to "camera frame" transform; one for each camera.
    * Also it assumses the relationship between the cameras is correct and fixed, so it will
    * calibrating the set of cameras using a single transformation.
     */
-  std::vector<Eigen::Affine3d> base_to_camera_guess;
+  std::vector<Eigen::Isometry3d> base_to_camera_guess;
 };
 
 struct ExtrinsicMultiStaticCameraMovingTargetWristOnlyResult
@@ -77,12 +77,12 @@ struct ExtrinsicMultiStaticCameraMovingTargetWristOnlyResult
   /**
    * @brief The final calibrated result of "wrist frame" to "target frame".
    */
-  Eigen::Affine3d wrist_to_target;
+  Eigen::Isometry3d wrist_to_target;
 
   /**
    * @brief The final calibrated result of "base frame" to "camera optical frame".
    */
-  std::vector<Eigen::Affine3d> base_to_camera;
+  std::vector<Eigen::Isometry3d> base_to_camera;
 };
 
 ExtrinsicMultiStaticCameraMovingTargetWristOnlyResult optimize(const ExtrinsicMultiStaticCameraMovingTargetWristOnlyProblem& params);

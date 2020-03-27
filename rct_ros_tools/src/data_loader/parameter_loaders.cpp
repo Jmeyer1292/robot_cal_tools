@@ -61,12 +61,12 @@ bool rct_ros_tools::loadIntrinsics(const ros::NodeHandle& nh, const std::string&
 }
 
 bool rct_ros_tools::loadPose(const ros::NodeHandle& nh, const std::string& key,
-                            Eigen::Affine3d& pose)
+                            Eigen::Isometry3d& pose)
 {
   XmlRpc::XmlRpcValue xml;
   if (!nh.getParam(key, xml)) return false;
 
-  pose = Eigen::Affine3d::Identity();
+  pose = Eigen::Isometry3d::Identity();
   double x, y, z, qx, qy, qz, qw;
   if (!read(xml, "x", x)) return false;
   if (!read(xml, "y", y)) return false;
@@ -82,7 +82,7 @@ bool rct_ros_tools::loadPose(const ros::NodeHandle& nh, const std::string& key,
   return true;
 }
 
-bool rct_ros_tools::loadPose(const std::string& path, Eigen::Affine3d& pose)
+bool rct_ros_tools::loadPose(const std::string& path, Eigen::Isometry3d& pose)
 {
   YAML::Node n = YAML::LoadFile(path);
   Eigen::Vector3d position;
@@ -97,7 +97,7 @@ bool rct_ros_tools::loadPose(const std::string& path, Eigen::Affine3d& pose)
   qy = n["qy"].as<double>();
   qz = n["qz"].as<double>();
 
-  pose = Eigen::Affine3d::Identity();
+  pose = Eigen::Isometry3d::Identity();
   pose.translation() = position;
   pose.linear() = Eigen::Quaterniond(qw, qx, qy, qz).toRotationMatrix();
   return true;

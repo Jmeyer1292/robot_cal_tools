@@ -17,15 +17,15 @@
 #include <rct_ros_tools/data_set.h>
 #include <rct_ros_tools/print_utils.h>
 
-static void reproject(const Eigen::Affine3d& base_to_target,
-                      const std::vector<Eigen::Affine3d>& base_to_camera,
+static void reproject(const Eigen::Isometry3d& base_to_target,
+                      const std::vector<Eigen::Isometry3d>& base_to_camera,
                       const std::vector<rct_optimizations::CameraIntrinsics>& intr,
                       const rct_image_tools::ModifiedCircleGridTarget& target,
                       const cv::Mat& image,
                       const std::vector<rct_optimizations::CorrespondenceSet>& corr)
 {
 
-  Eigen::Affine3d camera_to_target = base_to_camera[0].inverse() * base_to_target;
+  Eigen::Isometry3d camera_to_target = base_to_camera[0].inverse() * base_to_target;
   std::vector<cv::Point2d> reprojections = rct_image_tools::getReprojections(camera_to_target, intr[0], target.points);
 
   cv::Mat before_frame = image.clone();
@@ -53,7 +53,7 @@ static void reproject(const Eigen::Affine3d& base_to_target,
   rct_ros_tools::printTransformDiff(base_to_target, r.base_to_target, "Base", "Target", "PNP Diff");
   rct_ros_tools::printNewLine();
 
-  Eigen::Affine3d result_camera_to_target = base_to_camera[0].inverse() * r.base_to_target;
+  Eigen::Isometry3d result_camera_to_target = base_to_camera[0].inverse() * r.base_to_target;
   reprojections = rct_image_tools::getReprojections(result_camera_to_target, intr[0], target.points);
 
   cv::Mat after_frame = image.clone();
@@ -77,7 +77,7 @@ int main(int argc, char** argv)
   }
   std::size_t num_of_cameras = camera_count;
 
-  std::vector<Eigen::Affine3d> base_to_camera;
+  std::vector<Eigen::Isometry3d> base_to_camera;
   std::vector<rct_optimizations::CameraIntrinsics> intr;
   std::vector<std::string> data_path;
   std::string target_path;

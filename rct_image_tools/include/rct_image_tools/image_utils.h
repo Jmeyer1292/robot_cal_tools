@@ -17,7 +17,7 @@ namespace rct_image_tools
  * @return A vector of uv values in the image frame
  */
 inline
-std::vector<cv::Point2d> getReprojections(const Eigen::Affine3d &camera_to_target,
+std::vector<cv::Point2d> getReprojections(const Eigen::Isometry3d &camera_to_target,
                                           const rct_optimizations::CameraIntrinsics &intr,
                                           const std::vector<Eigen::Vector3d> &target_points)
 {

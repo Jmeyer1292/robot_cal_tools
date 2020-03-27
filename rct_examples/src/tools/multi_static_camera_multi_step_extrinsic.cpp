@@ -16,15 +16,15 @@
 #include <rct_optimizations/ceres_math_utilities.h>
 #include <rct_optimizations/experimental/multi_camera_pnp.h>
 
-static void reproject(const Eigen::Affine3d& base_to_target,
-                      const std::vector<Eigen::Affine3d>& base_to_camera,
+static void reproject(const Eigen::Isometry3d& base_to_target,
+                      const std::vector<Eigen::Isometry3d>& base_to_camera,
                       const std::vector<rct_optimizations::CameraIntrinsics>& intr,
                       const rct_image_tools::ModifiedCircleGridTarget& target,
                       const cv::Mat& image,
                       const std::vector<rct_optimizations::CorrespondenceSet>& corr)
 {
 
-  Eigen::Affine3d camera_to_target = base_to_camera[0].inverse() * base_to_target;
+  Eigen::Isometry3d camera_to_target = base_to_camera[0].inverse() * base_to_target;
   std::vector<cv::Point2d> reprojections = rct_image_tools::getReprojections(camera_to_target, intr[0], target.points);
 
   cv::Mat before_frame = image.clone();
@@ -43,7 +43,7 @@ static void reproject(const Eigen::Affine3d& base_to_target,
   rct_ros_tools::printTransform(camera_to_target, "Camera 0", "Target", "CAMERA 0 TO TARGET");
   rct_ros_tools::printNewLine();
 
-  Eigen::Affine3d result_camera_to_target = base_to_camera[0].inverse() * r.base_to_target;
+  Eigen::Isometry3d result_camera_to_target = base_to_camera[0].inverse() * r.base_to_target;
   rct_ros_tools::printTransformDiff(camera_to_target, result_camera_to_target, "Camera 0", "Target", "PNP");
   rct_ros_tools::printNewLine();
 
@@ -141,7 +141,7 @@ int main(int argc, char** argv)
     ROS_WARN_STREAM("Unable to load target file from the 'target_path' parameter");
   }
 
-  Eigen::Affine3d wrist_to_target;
+  Eigen::Isometry3d wrist_to_target;
   if (!rct_ros_tools::loadPose(pnh, "wrist_to_target_guess", wrist_to_target))
   {
     ROS_WARN_STREAM("Unable to load guess for wrist to target from the 'wrist_to_target_guess' parameter struct");
@@ -185,7 +185,7 @@ int main(int argc, char** argv)
     // Load the data set path from ROS param
     std::string param_base = "camera_" + std::to_string(c);
 
-    Eigen::Affine3d t = opt_result.base_to_camera[c];
+    Eigen::Isometry3d t = opt_result.base_to_camera[c];
     rct_ros_tools::printTransform(t, "Base", "Camera (" + param_base + ")", "Base To Camera (" + param_base + ")");
     rct_ros_tools::printNewLine();
 
@@ -208,7 +208,7 @@ int main(int argc, char** argv)
   rct_ros_tools::printOptResults(opt_wrist_only_result.converged, opt_wrist_only_result.initial_cost_per_obs, opt_wrist_only_result.final_cost_per_obs);
   rct_ros_tools::printNewLine();
 
-  Eigen::Affine3d t = opt_wrist_only_result.wrist_to_target;
+  Eigen::Isometry3d t = opt_wrist_only_result.wrist_to_target;
   rct_ros_tools::printTransform(t, "Wrist", "Target", "Wrist to Target");
   rct_ros_tools::printNewLine();
 
@@ -231,8 +231,8 @@ int main(int argc, char** argv)
   for (std::size_t i = 0; i < problem_wrist_def.wrist_poses.size(); ++i)
   {
     std::vector<rct_optimizations::CorrespondenceSet> corr_set;
-    std::vector<Eigen::Affine3d> base_to_camera;
-    Eigen::Affine3d base_to_target;
+    std::vector<Eigen::Isometry3d> base_to_camera;
+    Eigen::Isometry3d base_to_target;
     std::vector<rct_optimizations::CameraIntrinsics> intr;
 
     corr_set.reserve(num_of_cameras);

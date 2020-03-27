@@ -27,7 +27,7 @@ public:
    * @param wrist_pose
    * @param point_in_target
    */
-  ObservationCost(const Eigen::Vector3d& obs, const Eigen::Affine3d& wrist_to_base,
+  ObservationCost(const Eigen::Vector3d& obs, const Eigen::Isometry3d& wrist_to_base,
                   const Eigen::Vector3d& point_in_target)
       : obs_(obs), wrist_pose_(poseEigenToCal(wrist_to_base)), target_pt_(point_in_target)
   {}

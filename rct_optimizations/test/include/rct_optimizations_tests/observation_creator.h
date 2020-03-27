@@ -9,7 +9,7 @@ namespace test
 {
 
 // Given a virtual camera position, produce the expected 2D observations
-bool project(const Eigen::Affine3d& camera_pose, const Eigen::Affine3d& target_pose,
+bool project(const Eigen::Isometry3d& camera_pose, const Eigen::Isometry3d& target_pose,
              const Camera& camera, const Target& target, std::vector<Eigen::Vector2d>& out_observations);
 
 /**
@@ -18,7 +18,7 @@ bool project(const Eigen::Affine3d& camera_pose, const Eigen::Affine3d& target_p
  * @param eye A point that the camera is looking at
  * @param up The upvector in world-space
  */
-Eigen::Affine3d lookat(const Eigen::Vector3d& origin, const Eigen::Vector3d& eye, const Eigen::Vector3d& up);
+Eigen::Isometry3d lookat(const Eigen::Vector3d& origin, const Eigen::Vector3d& eye, const Eigen::Vector3d& up);
 
 }
 }

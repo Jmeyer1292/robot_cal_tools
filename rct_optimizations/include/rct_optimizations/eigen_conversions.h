@@ -7,9 +7,9 @@
 namespace rct_optimizations
 {
 
-Pose6d poseEigenToCal(const Eigen::Affine3d& pose);
+Pose6d poseEigenToCal(const Eigen::Isometry3d& pose);
 
-Eigen::Affine3d poseCalToEigen(const Pose6d& pose);
+Eigen::Isometry3d poseCalToEigen(const Pose6d& pose);
 
 }
 

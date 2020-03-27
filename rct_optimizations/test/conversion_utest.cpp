@@ -4,7 +4,7 @@
 // Test the conversion of a pose from Eigen to internal calibration format and back
 TEST(EigenConversions, there_and_back_identity)
 {
-  const auto e_pose = Eigen::Affine3d::Identity();
+  const auto e_pose = Eigen::Isometry3d::Identity();
   const auto cal_pose = rct_optimizations::poseEigenToCal(e_pose);
   const auto recovered_e_pose = rct_optimizations::poseCalToEigen(cal_pose);
 
@@ -15,7 +15,7 @@ TEST(EigenConversions, there_and_back_identity)
 // Test the conversion of a pose from Eigen to internal calibration format and back
 TEST(EigenConversions, there_and_back)
 {
-  auto e_pose = Eigen::Affine3d::Identity();
+  auto e_pose = Eigen::Isometry3d::Identity();
   e_pose = e_pose * Eigen::Translation3d(0.5, 0.75, 1.0) * Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY());
   const auto cal_pose = rct_optimizations::poseEigenToCal(e_pose);
   const auto recovered_e_pose = rct_optimizations::poseCalToEigen(cal_pose);

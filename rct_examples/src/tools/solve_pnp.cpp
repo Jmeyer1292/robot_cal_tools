@@ -14,7 +14,7 @@
 #include <rct_ros_tools/parameter_loaders.h>
 #include <rct_ros_tools/print_utils.h>
 
-static Eigen::Affine3d solveCVPnP(const rct_optimizations::CameraIntrinsics& intr,
+static Eigen::Isometry3d solveCVPnP(const rct_optimizations::CameraIntrinsics& intr,
                                   const rct_image_tools::ModifiedCircleGridTarget& target,
                                   const std::vector<Eigen::Vector2d>& obs)
 {
@@ -42,7 +42,7 @@ static Eigen::Affine3d solveCVPnP(const rct_optimizations::CameraIntrinsics& int
   cv::solvePnP(target_points, image_points, cam_matrix, cv::noArray(), rvec, tvec);
 
   Eigen::Vector3d rr (Eigen::Vector3d(rvec.at<double>(0, 0), rvec.at<double>(1, 0), rvec.at<double>(2, 0)));
-  Eigen::Affine3d result(Eigen::AngleAxisd(rr.norm(), rr.normalized()));
+  Eigen::Isometry3d result(Eigen::AngleAxisd(rr.norm(), rr.normalized()));
   result.translation() = Eigen::Vector3d(tvec.at<double>(0, 0), tvec.at<double>(1, 0), tvec.at<double>(2, 0));
 
   rct_ros_tools::printTransform(result, "Camera", "Target", "OpenCV solvePNP");
@@ -98,7 +98,7 @@ int main(int argc, char** argv)
   solveCVPnP(intr, target, *maybe_obs);
 
   // Solve with some native RCT function (for learning)
-  Eigen::Affine3d guess = Eigen::Affine3d::Identity();
+  Eigen::Isometry3d guess = Eigen::Isometry3d::Identity();
   guess = guess * Eigen::Translation3d(0,0,0.1) * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX());
 
   rct_optimizations::PnPProblem params;

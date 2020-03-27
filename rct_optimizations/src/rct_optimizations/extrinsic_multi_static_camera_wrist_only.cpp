@@ -14,8 +14,8 @@ namespace
 class ReprojectionCost
 {
 public:
-  ReprojectionCost(const Eigen::Vector2d& obs, const CameraIntrinsics& intr, const Eigen::Affine3d& base_to_wrist,
-                   const Eigen::Affine3d& base_to_camera, const Eigen::Vector3d& point_in_target)
+  ReprojectionCost(const Eigen::Vector2d& obs, const CameraIntrinsics& intr, const Eigen::Isometry3d& base_to_wrist,
+                   const Eigen::Isometry3d& base_to_camera, const Eigen::Vector3d& point_in_target)
     : obs_(obs), intr_(intr), wrist_pose_(poseEigenToCal(base_to_wrist)), camera_to_base_orig_(poseEigenToCal(base_to_camera.inverse())), target_pt_(point_in_target)
   {}
 
@@ -70,7 +70,7 @@ rct_optimizations::optimize(const rct_optimizations::ExtrinsicMultiStaticCameraM
 {
   Pose6d internal_wrist_to_target = poseEigenToCal(params.wrist_to_target_guess);
 
-  Pose6d internal_camera_to_base_correction = poseEigenToCal(Eigen::Affine3d::Identity());
+  Pose6d internal_camera_to_base_correction = poseEigenToCal(Eigen::Isometry3d::Identity());
 
   ceres::Problem problem;
 
@@ -109,7 +109,7 @@ rct_optimizations::optimize(const rct_optimizations::ExtrinsicMultiStaticCameraM
   result.base_to_camera.resize(params.base_to_camera_guess.size());
   result.converged = summary.termination_type == ceres::CONVERGENCE;
 
-  Eigen::Affine3d base_to_camera_correction = poseCalToEigen(internal_camera_to_base_correction).inverse();
+  Eigen::Isometry3d base_to_camera_correction = poseCalToEigen(internal_camera_to_base_correction).inverse();
   for (std::size_t i = 0; i < params.base_to_camera_guess.size(); ++i)
     result.base_to_camera[i] = base_to_camera_correction * params.base_to_camera_guess[i];
 

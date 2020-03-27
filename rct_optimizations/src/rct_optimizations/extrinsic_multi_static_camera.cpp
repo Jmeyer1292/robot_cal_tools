@@ -14,7 +14,7 @@ namespace
 class ReprojectionCost
 {
 public:
-  ReprojectionCost(const Eigen::Vector2d& obs, const CameraIntrinsics& intr, const Eigen::Affine3d& base_to_wrist,
+  ReprojectionCost(const Eigen::Vector2d& obs, const CameraIntrinsics& intr, const Eigen::Isometry3d& base_to_wrist,
                    const Eigen::Vector3d& point_in_target)
     : obs_(obs), intr_(intr), wrist_pose_(poseEigenToCal(base_to_wrist)), target_pt_(point_in_target)
   {}
