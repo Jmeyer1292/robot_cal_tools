@@ -35,8 +35,6 @@ add_library(${PROJECT_NAME}
   src/${PROJECT_NAME}/extrinsic_multi_static_camera.cpp
   src/${PROJECT_NAME}/extrinsic_multi_static_camera_only.cpp
   src/${PROJECT_NAME}/extrinsic_multi_static_camera_wrist_only.cpp
-  # Optimizations (Single camer and Robot Calibration)
-  src/${PROJECT_NAME}/extrinsic_static_3d_camera_robot_calibration.cpp
   # Optimizations (3D sensor)
   src/${PROJECT_NAME}/extrinsic_3d_camera_on_wrist.cpp
   # Optimizations (Experimental) - Intrinsic
