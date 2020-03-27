@@ -35,6 +35,8 @@ add_library(${PROJECT_NAME}
   src/${PROJECT_NAME}/extrinsic_multi_static_camera.cpp
   src/${PROJECT_NAME}/extrinsic_multi_static_camera_only.cpp
   src/${PROJECT_NAME}/extrinsic_multi_static_camera_wrist_only.cpp
+  # Optimizations (Single camer and Robot Calibration)
+  src/${PROJECT_NAME}/extrinsic_static_3d_camera_robot_calibration.cpp
   # Optimizations (3D sensor)
   src/${PROJECT_NAME}/extrinsic_3d_camera_on_wrist.cpp
   # Optimizations (Experimental) - Intrinsic
@@ -65,11 +67,18 @@ if(CATKIN_ENABLE_TESTING)
   catkin_add_gtest(${PROJECT_NAME}_conversion_tests test/conversion_utest.cpp)
   target_link_libraries(${PROJECT_NAME}_conversion_tests ${PROJECT_NAME}_test_support)
 
+  catkin_add_gtest(${PROJECT_NAME}_ceres_math_utilities_tests test/ceres_math_utilities_utest.cpp)
+  target_link_libraries(${PROJECT_NAME}_ceres_math_utilities_tests ${PROJECT_NAME}_test_support)
+
   catkin_add_gtest(${PROJECT_NAME}_extrinsic_multi_static_camera_tests test/extrinsic_multi_static_camera_utest.cpp)
   target_link_libraries(${PROJECT_NAME}_extrinsic_multi_static_camera_tests ${PROJECT_NAME}_test_support)
 
   catkin_add_gtest(${PROJECT_NAME}_extrinsic_camera_on_wrist_tests test/extrinsic_camera_on_wrist_utest.cpp)
   target_link_libraries(${PROJECT_NAME}_extrinsic_camera_on_wrist_tests ${PROJECT_NAME}_test_support)
+
+  catkin_add_gtest(${PROJECT_NAME}_extrinsic_static_camera_robot_calibration_tests test/extrinsic_static_3d_camera_robot_calibration_utest.cpp)
+  target_link_libraries(${PROJECT_NAME}_extrinsic_static_camera_robot_calibration_tests ${PROJECT_NAME}_test_support)
+
 endif()
 
 #############
