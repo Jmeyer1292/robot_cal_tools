@@ -1,0 +1,25 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  industrial_ci:
+    strategy:
+      fail-fast: false
+      matrix:
+        env:
+          - {OS_NAME: ubuntu,
+             OS_CODE_NAME: bionic,
+             ROS_DISTRO: melodic,
+             ROS_REPO: main,
+             BADGE: bionic}
+          - {OS_NAME: ubuntu,
+             OS_CODE_NAME: xenial,
+             ROS_DISTRO: kinetic,
+             ROS_REPO: main,
+             BADGE: xenial}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: 'ros-industrial/industrial_ci@master'
+        env: ${{matrix.env}}
