@@ -13,8 +13,8 @@ static void printResults(const rct_optimizations::ExtrinsicCameraOnWristResult& 
   std::cout << "Initial cost?: " << r.initial_cost_per_obs << "\n";
   std::cout << "Final cost?: " << r.final_cost_per_obs << "\n";
 
-  Eigen::Affine3d c = r.wrist_to_camera;
-  Eigen::Affine3d t = r.base_to_target;
+  Eigen::Isometry3d c = r.wrist_to_camera;
+  Eigen::Isometry3d t = r.base_to_target;
 
   std::cout << "Wrist to Camera:\n";
   std::cout << c.matrix() << "\n";
@@ -36,10 +36,10 @@ void run_test(InitialConditions condition)
   auto grid = rct_optimizations::test::makeTarget(5, 7, 0.025);
 
   // Define the "true" conditions
-  auto true_base_to_target = Eigen::Affine3d::Identity();
+  auto true_base_to_target = Eigen::Isometry3d::Identity();
   true_base_to_target.translation() = Eigen::Vector3d(1.0, 0, 0);
 
-  auto true_wrist_to_camera = Eigen::Affine3d::Identity();
+  auto true_wrist_to_camera = Eigen::Isometry3d::Identity();
   true_wrist_to_camera.translation() = Eigen::Vector3d(0.05, 0, 0.1);
   true_wrist_to_camera.linear() <<  0,  0,  1,
                                    -1,  0,  0,
@@ -47,17 +47,17 @@ void run_test(InitialConditions condition)
 
   // Create some number of "test" images...
   //    We'll take pictures in a grid above the origin of the target
-  std::vector<Eigen::Affine3d> wrist_poses;
+  std::vector<Eigen::Isometry3d> wrist_poses;
   std::vector<rct_optimizations::CorrespondenceSet> correspondences;
   for (int i = -5; i < 5; ++i)
   {
     for (int j = -5; j < 5; ++j)
     {
       Eigen::Vector3d center_point = true_base_to_target.translation() + Eigen::Vector3d(i * 0.025, j * 0.025, 1.0);
-      Eigen::Affine3d camera_pose = rct_optimizations::test::lookat(center_point,
+      Eigen::Isometry3d camera_pose = rct_optimizations::test::lookat(center_point,
                                                                     true_base_to_target.translation(),
                                                                     Eigen::Vector3d(1, 0, 0));
-      Eigen::Affine3d wrist_pose = camera_pose * true_wrist_to_camera.inverse();
+      Eigen::Isometry3d wrist_pose = camera_pose * true_wrist_to_camera.inverse();
 
       // Attempt to generate points
       std::vector<Eigen::Vector2d> image_obs;

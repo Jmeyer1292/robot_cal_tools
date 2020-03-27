@@ -15,12 +15,12 @@
 #include <rct_optimizations/ceres_math_utilities.h>
 #include <rct_optimizations/experimental/pnp.h>
 
-static void reproject(const Eigen::Affine3d& wrist_to_target, const Eigen::Affine3d& base_to_camera,
-                      const Eigen::Affine3d& base_to_wrist, const rct_optimizations::CameraIntrinsics& intr,
+static void reproject(const Eigen::Isometry3d& wrist_to_target, const Eigen::Isometry3d& base_to_camera,
+                      const Eigen::Isometry3d& base_to_wrist, const rct_optimizations::CameraIntrinsics& intr,
                       const rct_image_tools::ModifiedCircleGridTarget& target, const cv::Mat& image,
                       const rct_optimizations::CorrespondenceSet& corr)
 {
-  Eigen::Affine3d camera_to_target = base_to_camera.inverse() * (base_to_wrist * wrist_to_target);
+  Eigen::Isometry3d camera_to_target = base_to_camera.inverse() * (base_to_wrist * wrist_to_target);
   std::vector<cv::Point2d> reprojections = rct_image_tools::getReprojections(camera_to_target, intr, target.points);
 
   cv::Mat frame = image.clone();
@@ -144,11 +144,11 @@ int main(int argc, char** argv)
   rct_ros_tools::printOptResults(opt_result.converged, opt_result.initial_cost_per_obs, opt_result.final_cost_per_obs);
   rct_ros_tools::printNewLine();
 
-  Eigen::Affine3d c = opt_result.base_to_camera;
+  Eigen::Isometry3d c = opt_result.base_to_camera;
   rct_ros_tools::printTransform(c, "Base", "Camera", "BASE TO CAMERA");
   rct_ros_tools::printNewLine();
 
-  Eigen::Affine3d t = opt_result.wrist_to_target;
+  Eigen::Isometry3d t = opt_result.wrist_to_target;
   rct_ros_tools::printTransform(t, "Base", "Camera", "BASE TO CAMERA");
   rct_ros_tools::printNewLine();
 

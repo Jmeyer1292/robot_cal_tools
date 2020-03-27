@@ -1,6 +1,6 @@
 #include "rct_optimizations/eigen_conversions.h"
 
-rct_optimizations::Pose6d rct_optimizations::poseEigenToCal(const Eigen::Affine3d& pose)
+rct_optimizations::Pose6d rct_optimizations::poseEigenToCal(const Eigen::Isometry3d& pose)
 {
   Pose6d p;
   p.x() = pose.translation().x();
@@ -16,9 +16,9 @@ rct_optimizations::Pose6d rct_optimizations::poseEigenToCal(const Eigen::Affine3
   return p;
 }
 
-Eigen::Affine3d rct_optimizations::poseCalToEigen(const rct_optimizations::Pose6d& pose)
+Eigen::Isometry3d rct_optimizations::poseCalToEigen(const rct_optimizations::Pose6d& pose)
 {
-  Eigen::Affine3d p = Eigen::Affine3d::Identity();
+  Eigen::Isometry3d p = Eigen::Isometry3d::Identity();
   p.translation().x() = pose.x();
   p.translation().y() = pose.y();
   p.translation().z() = pose.z();

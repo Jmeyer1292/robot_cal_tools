@@ -26,11 +26,11 @@ namespace rct_optimizations
 
 struct Extrinsic3DCameraOnWristProblem
 {
-  std::vector<Eigen::Affine3d> wrist_poses;
+  std::vector<Eigen::Isometry3d> wrist_poses;
   std::vector<Correspondence3DSet> observations;
 
-  Eigen::Affine3d base_to_target_guess;
-  Eigen::Affine3d wrist_to_camera_guess;
+  Eigen::Isometry3d base_to_target_guess;
+  Eigen::Isometry3d wrist_to_camera_guess;
 };
 
 struct Extrinsic3DCameraOnWristResult
@@ -39,8 +39,8 @@ struct Extrinsic3DCameraOnWristResult
   double initial_cost_per_obs;
   double final_cost_per_obs;
 
-  Eigen::Affine3d base_to_target;
-  Eigen::Affine3d wrist_to_camera;
+  Eigen::Isometry3d base_to_target;
+  Eigen::Isometry3d wrist_to_camera;
 };
 
 Extrinsic3DCameraOnWristResult optimize(const Extrinsic3DCameraOnWristProblem& params);

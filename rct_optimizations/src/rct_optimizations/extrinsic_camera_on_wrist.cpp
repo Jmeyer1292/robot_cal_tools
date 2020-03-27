@@ -26,7 +26,7 @@ public:
    * @param wrist_pose
    * @param point_in_target
    */
-  ReprojectionCost(const Eigen::Vector2d& obs, const CameraIntrinsics& intr, const Eigen::Affine3d& wrist_to_base,
+  ReprojectionCost(const Eigen::Vector2d& obs, const CameraIntrinsics& intr, const Eigen::Isometry3d& wrist_to_base,
                    const Eigen::Vector3d& point_in_target)
       : obs_(obs), intr_(intr), wrist_pose_(poseEigenToCal(wrist_to_base)), target_pt_(point_in_target)
   {

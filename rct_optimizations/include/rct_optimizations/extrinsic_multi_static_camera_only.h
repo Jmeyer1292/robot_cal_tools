@@ -37,7 +37,7 @@ struct ExtrinsicMultiStaticCameraOnlyProblem
    * The vector is the poses valid for each camera. This vector should match the inner
    * vector of @e image_observations in size.
    */
-  std::vector<Eigen::Affine3d> base_to_target_guess;
+  std::vector<Eigen::Isometry3d> base_to_target_guess;
 
   /** @brief A sequence of observation sets corresponding to the image locations in @e base_to_target_guess.
    * Each observation set consists of a set of correspodences: a 3D position (e.g. a dot) in "target
@@ -47,7 +47,7 @@ struct ExtrinsicMultiStaticCameraOnlyProblem
   std::vector<std::vector<CorrespondenceSet>> image_observations;
 
   /** @brief Your best guess at the "base frame" to "camera frame" transform; one for each camera */
-  std::vector<Eigen::Affine3d> base_to_camera_guess;
+  std::vector<Eigen::Isometry3d> base_to_camera_guess;
 };
 
 struct ExtrinsicMultiStaticCameraOnlyResult
@@ -74,10 +74,10 @@ struct ExtrinsicMultiStaticCameraOnlyResult
   double final_cost_per_obs;
 
   /** @brief The final calibrated result of "base frame" to "target frame". */
-  std::vector<Eigen::Affine3d> base_to_target;
+  std::vector<Eigen::Isometry3d> base_to_target;
 
   /** @brief The final calibrated result of "base frame" to "camera optical frame". */
-  std::vector<Eigen::Affine3d> base_to_camera;
+  std::vector<Eigen::Isometry3d> base_to_camera;
 };
 
 ExtrinsicMultiStaticCameraOnlyResult optimize(const ExtrinsicMultiStaticCameraOnlyProblem& params);

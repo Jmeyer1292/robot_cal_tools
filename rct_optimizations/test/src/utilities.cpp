@@ -56,7 +56,7 @@ rct_optimizations::CorrespondenceSet rct_optimizations::test::zip(const rct_opti
   return out;
 }
 
-Eigen::Affine3d rct_optimizations::test::perturbPose(const Eigen::Affine3d& pose, double spatial_noise, double angle_noise)
+Eigen::Isometry3d rct_optimizations::test::perturbPose(const Eigen::Isometry3d& pose, double spatial_noise, double angle_noise)
 {
   std::random_device dev;
   std::default_random_engine eng (dev());
@@ -71,7 +71,7 @@ Eigen::Affine3d rct_optimizations::test::perturbPose(const Eigen::Affine3d& pose
 
   double angle = angle_dist(eng);
 
-  Eigen::Affine3d new_pose = pose * Eigen::Translation3d(translation) * Eigen::AngleAxisd(angle, rot_axis);
+  Eigen::Isometry3d new_pose = pose * Eigen::Translation3d(translation) * Eigen::AngleAxisd(angle, rot_axis);
 
   return new_pose;
 }

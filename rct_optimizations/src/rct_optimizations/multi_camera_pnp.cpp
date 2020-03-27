@@ -15,7 +15,7 @@ class ReprojectionCost
 public:
   ReprojectionCost(const Eigen::Vector2d& obs,
                    const CameraIntrinsics& intr,
-                   const Eigen::Affine3d& camera_to_base,
+                   const Eigen::Isometry3d& camera_to_base,
                    const Eigen::Vector3d& point_in_target)
     : obs_(obs),
       intr_(intr),

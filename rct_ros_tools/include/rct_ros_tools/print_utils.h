@@ -86,7 +86,7 @@ void printTitle(const std::string& title, int width = 80)
 }
 
 inline
-void printTransform(const Eigen::Affine3d &transform, const std::string &parent_frame, const std::string &child_frame, const std::string &description)
+void printTransform(const Eigen::Isometry3d &transform, const std::string &parent_frame, const std::string &child_frame, const std::string &description)
 {
   std::cout << description << ":" << std::endl << transform.matrix() << std::endl << std::endl;
   std::cout << "--- URDF Format " << parent_frame << " to " << child_frame << " ---" << std::endl;
@@ -98,9 +98,9 @@ void printTransform(const Eigen::Affine3d &transform, const std::string &parent_
 }
 
 inline
-void printTransformDiff(const Eigen::Affine3d &transform1, const Eigen::Affine3d &transform2, const std::string &parent_frame, const std::string &child_frame, const std::string &description)
+void printTransformDiff(const Eigen::Isometry3d &transform1, const Eigen::Isometry3d &transform2, const std::string &parent_frame, const std::string &child_frame, const std::string &description)
 {
-  Eigen::Affine3d delta = transform1.inverse() * transform2;
+  Eigen::Isometry3d delta = transform1.inverse() * transform2;
   Eigen::AngleAxisd aa (delta.linear());
   Eigen::Vector3d rpy = delta.rotation().eulerAngles(2, 1, 0);
 

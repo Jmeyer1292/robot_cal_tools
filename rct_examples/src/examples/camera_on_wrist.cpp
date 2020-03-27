@@ -78,7 +78,7 @@ int extrinsicWristCameraCalibration()
   }
   // Now that its loaded let's create some aliases to make this nicer
   const std::vector<cv::Mat>& image_set = maybe_data_set->images;
-  const std::vector<Eigen::Affine3d>& wrist_poses = maybe_data_set->tool_poses;
+  const std::vector<Eigen::Isometry3d>& wrist_poses = maybe_data_set->tool_poses;
 
   // Step 3.2: We need to conver the images of calibration targets into sets of correspondences.
   // In our case, each dot on the target becomes a correspondence: A pair of positions, one for
@@ -139,11 +139,11 @@ int extrinsicWristCameraCalibration()
 
   // Note: Convergence and low cost does not mean a good calibration. See the calibration primer
   // readme on the main page of this repo.
-  Eigen::Affine3d c = opt_result.wrist_to_camera;
+  Eigen::Isometry3d c = opt_result.wrist_to_camera;
   rct_ros_tools::printTransform(c, "Wrist", "Camera", "WRIST TO CAMERA");
   rct_ros_tools::printNewLine();
 
-  Eigen::Affine3d t = opt_result.base_to_target;
+  Eigen::Isometry3d t = opt_result.base_to_target;
   rct_ros_tools::printTransform(t, "Base", "Target", "BASE TO TARGET");
   rct_ros_tools::printNewLine();
 

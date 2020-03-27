@@ -59,7 +59,7 @@ struct ExtrinsicCameraOnWristProblem
    * @brief The transforms, "base to wrist", at which each observation set was taken. Should be
    * same size as @e image_observations.
    */
-  std::vector<Eigen::Affine3d> wrist_poses;
+  std::vector<Eigen::Isometry3d> wrist_poses;
 
   /**
    * @brief A sequence of observation sets corresponding to the image locations in @e wrist_poses.
@@ -72,12 +72,12 @@ struct ExtrinsicCameraOnWristProblem
    * @brief Your best guess at the transform from "base frame" to "target frame". Should be static
    * as the robot moves.
    */
-  Eigen::Affine3d base_to_target_guess;
+  Eigen::Isometry3d base_to_target_guess;
 
   /**
    * @brief Your best guess at teh transform from "wrist frame" to the camera optical frame.
    */
-  Eigen::Affine3d wrist_to_camera_guess;
+  Eigen::Isometry3d wrist_to_camera_guess;
 };
 
 struct ExtrinsicCameraOnWristResult
@@ -106,12 +106,12 @@ struct ExtrinsicCameraOnWristResult
   /**
    * @brief The final calibrated result of "base frame" to "target frame".
    */
-  Eigen::Affine3d base_to_target;
+  Eigen::Isometry3d base_to_target;
 
   /**
    * @brief The final calibrated result of "wrist frame" to camera optical frame.
    */
-  Eigen::Affine3d wrist_to_camera;
+  Eigen::Isometry3d wrist_to_camera;
 };
 
 ExtrinsicCameraOnWristResult optimize(const ExtrinsicCameraOnWristProblem& params);
