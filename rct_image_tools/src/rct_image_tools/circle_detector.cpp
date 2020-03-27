@@ -46,10 +46,11 @@ the use of this software, even if advised of the possibility of such damage.
 // Slight Modification of OpenCV function to use ellipse fitting rather than
 // center of mass of contour to provide the location of the circle.
 
-#include "circle_detector.h"
+#include "rct_image_tools/circle_detector.h"
 
 #include <algorithm>
 #include <iterator>
+#include <yaml-cpp/yaml.h>
 
 namespace rct_image_tools
 {
@@ -278,6 +279,77 @@ void CircleDetectorImpl::detect(cv::InputArray _image, std::vector<cv::KeyPoint>
 cv::Ptr<CircleDetector> CircleDetector::create(const CircleDetector::Params& params)
 {
   return cv::makePtr<CircleDetectorImpl>(params);
+}
+
+template <typename T>
+bool optionalLoad(YAML::Node& n, const std::string& key, T& value)
+{
+  if (n[key])
+  {
+    try
+    {
+      value = n[key].as<T>();
+    }
+    catch (const YAML::BadConversion& ex)
+    {
+      std::stringstream ss;
+      ss << "(Key: " << key << "): ";
+      YAML::RepresentationException ex_key =
+          YAML::RepresentationException(YAML::Mark::null_mark(), std::string(ss.str() + ex.what()));
+      throw ex_key;
+    }
+
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+
+bool CircleDetector::loadParams(const std::string& path, CircleDetector::Params& params)
+{
+  YAML::Node n = YAML::LoadFile(path);
+
+  CircleDetector::Params p;
+
+  try
+  {
+    optionalLoad(n, "thresholdStep", p.thresholdStep);
+    optionalLoad(n, "minThreshold", p.minThreshold);
+    optionalLoad(n, "maxThreshold", p.maxThreshold);
+    optionalLoad(n, "minRepeatability", p.minRepeatability);
+    optionalLoad(n, "minDistBetweenCircles", p.minDistBetweenCircles);
+    optionalLoad(n, "minRadiusDiff", p.minRadiusDiff);
+
+    optionalLoad(n, "filterByColor", p.filterByColor);
+    unsigned short circleColor;
+    if (optionalLoad(n, "circleColor", circleColor))
+      p.circleColor = circleColor;
+
+    optionalLoad(n, "filterByArea", p.filterByArea);
+    optionalLoad(n, "minArea", p.minArea);
+    optionalLoad(n, "maxArea", p.maxArea);
+
+    optionalLoad(n, "filterByCircularity", p.filterByCircularity);
+    optionalLoad(n, "minCircularity", p.minCircularity);
+    optionalLoad(n, "maxCircularity", p.maxCircularity);
+
+    optionalLoad(n, "filterByInertia", p.filterByInertia);
+    optionalLoad(n, "minInertiaRatio", p.minInertiaRatio);
+    optionalLoad(n, "maxInertiaRatio", p.maxInertiaRatio);
+
+    optionalLoad(n, "filterByConvexity", p.filterByConvexity);
+    optionalLoad(n, "minConvexity", p.minConvexity);
+    optionalLoad(n, "maxConvexity", p.maxConvexity);
+  }
+  catch (const YAML::Exception& ex)
+  {
+    throw std::runtime_error(std::string("CircleDetector::loadParams failed to load: ") + ex.what());
+  }
+
+  params = p;
+  return true;
 }
 
 } // namespace cv

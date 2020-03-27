@@ -1,5 +1,5 @@
 #include "rct_image_tools/image_observation_finder.h"
-#include "circle_detector.h"
+#include "rct_image_tools/circle_detector.h"
 #include <opencv2/calib3d.hpp>
 
 using ObservationPoints = std::vector<cv::Point2d>;
@@ -300,11 +300,15 @@ static bool extractKeyPoints(const ObservationPoints& centers, ObservationPoints
 
 template <typename PARAMS, typename DETECTOR_PTR, typename DETECTOR>
 static bool extractModifiedCircleGrid(const cv::Mat& image, const rct_image_tools::ModifiedCircleGridTarget& target,
-                                      ObservationPoints& observation_points)
+                                      ObservationPoints& observation_points, const PARAMS* set_params = nullptr)
 {
   PARAMS detector_params;
+  cv::Ptr<DETECTOR_PTR> detector_ptr;
+  if (set_params)
+    detector_ptr = DETECTOR::create(*set_params);
+  else
 
-  cv::Ptr<DETECTOR_PTR> detector_ptr = DETECTOR::create(detector_params);
+    detector_ptr = DETECTOR::create(detector_params);
 
   bool flipped = false;
 
@@ -325,7 +329,6 @@ static bool extractModifiedCircleGrid(const cv::Mat& image, const rct_image_tool
   }
   else // Try flipped pattern size
   {
-
     bool flipped_pattern_found = cv::findCirclesGrid(
         image, pattern_size_flipped, centers, cv::CALIB_CB_SYMMETRIC_GRID | cv::CALIB_CB_CLUSTERING, detector_ptr);
     if (flipped_pattern_found && (centers.size() == rows * cols))
@@ -354,10 +357,17 @@ rct_image_tools::ModifiedCircleGridObservationFinder::ModifiedCircleGridObservat
 boost::optional<std::vector<Eigen::Vector2d>>
 rct_image_tools::ModifiedCircleGridObservationFinder::findObservations(const cv::Mat& image) const
 {
+  return findObservations(image, nullptr);
+}
+
+boost::optional<std::vector<Eigen::Vector2d>> rct_image_tools::ModifiedCircleGridObservationFinder::findObservations(
+    const cv::Mat& image, const CircleDetectorParams* params) const
+{
   // Call modified circle finder
   ObservationPoints points;
 
-  if (!extractModifiedCircleGrid<CircleDetector::Params, CircleDetector, CircleDetector>(image, target_, points))
+  if (!extractModifiedCircleGrid<CircleDetector::Params, CircleDetector, CircleDetector>(image, target_, points,
+                                                                                         params))
   {
     // If we fail to detect the grid, then return an empty optional
     return {};
