@@ -92,6 +92,27 @@ static bool extractKeyPoints(const ObservationPoints& centers, ObservationPoints
     }
   }
 
+  // OpenCV creates duplicate centers sometimes.  https://github.com/opencv/opencv/issues/4775
+  // Make sure every center has a matching keypoint.  It may be sufficient just to check centers for duplicates.
+  ObservationPoints centers_tmp = centers;
+  for (auto&& keypoint : keypoints)
+  {
+    auto it = std::find_if(centers_tmp.begin(), centers_tmp.end(),
+                           [&](const cv::Point2f& pt) { return (pt.x == keypoint.pt.x && pt.y == keypoint.pt.y); });
+
+    if (it != centers_tmp.end())
+    {
+      centers_tmp.erase(it);
+    }
+  }
+
+  if (!centers_tmp.empty())
+  {
+    // ROS_ERROR_STREAM("Centers and keypoints didn't match.  It's probably this: "
+    //               "https://github.com/opencv/opencv/issues/4775");
+    return false;
+  }
+
   // If a flipped pattern is found, flip the rows/columns
   std::size_t temp_rows = flipped ? cols : rows;
   std::size_t temp_cols = flipped ? rows : cols;
