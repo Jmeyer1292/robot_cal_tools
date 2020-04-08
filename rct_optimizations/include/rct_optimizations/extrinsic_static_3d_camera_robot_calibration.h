@@ -48,6 +48,9 @@ struct ExtrinsicStatic3DCameraRobotCalibrationProblem
 
   /** @brief Do not add an error matrix to the last joint. */
   bool exclude_last_joint {true};
+
+  /** @brief Once converged, compute the covariance of the extrinsic pose*/
+  bool do_compute_pose_covariance_{true};
 };
 
 struct ExtrinsicStatic3DCameraRobotCalibrationResult
@@ -346,74 +349,139 @@ private:
 }
 
 
+template <int num_vars>
+void printDiagCovariance(FILE *fp, double* cov, std::string msg)
+{
+  fprintf(fp, "%s\n", msg.c_str());
+  for(int i=0;i<6;i++)
+    {
+      double sigma_i = sqrt(fabs(cov[i*num_vars+i]));
+      for(int j=0;j<num_vars;j++)
+	{
+	  double sigma_j = sqrt(fabs(cov[j*num_vars+j]));
+	  double value;
+	  if(i==j)
+	    {
+	      value = sigma_i;
+	    }
+	  else // i!=j
+	    {
+	      if(sigma_i==0) sigma_i = 1;
+	      if(sigma_j==0) sigma_j = 1;
+	      value = cov[i * num_vars + j]/(sigma_i*sigma_j);
+	    }// end i!= j
+	  fprintf(fp, "%16.5f ", value);
+	}  // end of j loop
+      fprintf(fp, "\n");
+    }  // end of i loop
+}
+
+template <int num_vars1, int num_vars2>
+void printOffDiagCovariance(FILE *fp, double* cov_d1d1, double* cov_d2d2, double* cov_d1d2, std::string msg)
+{
+  fprintf(fp, "%s\n", msg.c_str());
+  for(int i=0;i<num_vars1;i++)
+    {
+      double sigma_i = sqrt(fabs(cov_d1d1[i*num_vars1+i]));
+      for(int j=0;j<num_vars2;j++)
+	{
+	  double sigma_j = sqrt(fabs(cov_d2d2[j*num_vars2+j]));
+	  double value;
+	  if(sigma_i==0) sigma_i = 1;
+	  if(sigma_j==0) sigma_j = 1;
+	  value = cov_d1d2[i * num_vars1 + j]/(sigma_i*sigma_j);
+	  fprintf(fp, "%16.5f ", value);
+	}  // end of j loop
+      fprintf(fp, "\n");
+    }  // end of i loop 
+}// end printOffDiagCovariance
+
 bool computePoseCovariance(std::string& covariance_file_name, ceres::Problem &P, Pose6d &Pose)
 {
   typedef double* P_BLOCK;
-  FILE* fp;
-  if ((fp = fopen(covariance_file_name.c_str(), "w")) != NULL)
-    {
-      ceres::Covariance::Options covariance_options;
-      covariance_options.algorithm_type = ceres::DENSE_SVD;
-      covariance_options.min_reciprocal_condition_number =1.0/50;
-      covariance_options.null_space_rank = 1;
-      ceres::Covariance covariance(covariance_options);
-      
-      P_BLOCK pose_pb  = Pose.values.data();
-      
-      std::vector<std::pair<const double*, const double*> > covariance_pairs;
-      covariance_pairs.push_back(std::make_pair(pose_pb, pose_pb));
-      
-      if(covariance.Compute(covariance_pairs, &P))
-	{
-	  fprintf(fp, "covariance blocks:\n");
-	  double cov[6*6];
-	  if(covariance.GetCovarianceBlock(pose_pb, pose_pb, cov)){
-	    fprintf(fp, "cov is 6x6\n");
-	    for(int i=0;i<6;i++)
-	      {
-		double sigma_i = sqrt(fabs(cov[i*6+i]));
-		for(int j=0;j<6;j++)
-		  {
-		    double sigma_j = sqrt(fabs(cov[j*6+j]));
-		    double value;
-		    if(i==j)
-		      {
-			value = sigma_i;
-		      }
-		    else // i!=j
-		      {
-			if(sigma_i==0) sigma_i = 1;
-			if(sigma_j==0) sigma_j = 1;
-			value = cov[i * 6 + j]/(sigma_i*sigma_j);
-		      }// end i!= j
-		    fprintf(fp, "%16.5f ", value);
-		  }  // end of j loop
-		fprintf(fp, "\n");
-	      }  // end of i loop
-	  }// end if can get covariance
-	}// end if covariance computes
-      else
-	{
-	  fprintf(fp,"could not compute pose covariance, probably rank deficient Jacobian\n");
-	}
-    }// end if file opens
-  printf("could not open covariance file %s", covariance_file_name.c_str());
-  return (false);
-}  // end computePoseCovariance()
 
-bool computePose2PoseCovariance(std::string& covariance_file_name, ceres::Problem &P, Pose6d &Pose1, Pose6d &Pose2)
-{
-  typedef double* P_BLOCK;
+  ceres::Covariance::Options covariance_options;
+  covariance_options.algorithm_type = ceres::DENSE_SVD;
+  covariance_options.min_reciprocal_condition_number =1.0/50;
+  covariance_options.null_space_rank = 2;
+  ceres::Covariance covariance(covariance_options);
+      
+  P_BLOCK pose_pb  = Pose.values.data();
+      
+  std::vector<std::pair<const double*, const double*> > covariance_pairs;
+  covariance_pairs.push_back(std::make_pair(pose_pb, pose_pb));
+  
+  if(!covariance.Compute(covariance_pairs, &P))
+    {
+      printf("Could not compute covariance in computePoseCovariance()\n");
+      return false;
+    }
+
+  double cov[6*6];
+  if(!covariance.GetCovarianceBlock(pose_pb, pose_pb, cov))
+    {
+      printf("get covariance failed in computePoseCovariance()\n");
+      return false;
+      
+    }
+
   FILE* fp;
   if ((fp = fopen(covariance_file_name.c_str(), "w")) == NULL)
     {
       printf("Could not Open file %s", covariance_file_name.c_str());
       return(false);
     }
+
+  printDiagCovariance<6>(fp, cov, "Pose Covariance:");
+
+  return (true);
+
+}  // end computePoseCovariance()
+
+template <int num_vars>
+bool computeDVCovariance(std::string& covariance_file_name, ceres::Problem &P, double *dptr)
+{
   ceres::Covariance::Options covariance_options;
   covariance_options.algorithm_type = ceres::DENSE_SVD;
   covariance_options.min_reciprocal_condition_number =1.0/50;
-  covariance_options.null_space_rank = 1;
+  covariance_options.null_space_rank = 2;
+  ceres::Covariance covariance(covariance_options);
+      
+  std::vector<std::pair<const double*, const double*> > covariance_pairs;
+  covariance_pairs.push_back(std::make_pair(dptr, dptr));
+  
+  if(!covariance.Compute(covariance_pairs, &P))
+    {
+      printf("Could not compute covariance in computeDVCovariance()\n");
+      return false;
+    }
+
+  double cov[num_vars*num_vars];
+  if(!covariance.GetCovarianceBlock(dptr, dptr, cov))
+    {
+      printf("GetCovarianceBlock failed in computeDVCovariance\n");
+      return false;
+    }
+
+  FILE* fp;
+  if ((fp = fopen(covariance_file_name.c_str(), "w")) == NULL)
+    {
+      printf("Could not Open file %s", covariance_file_name.c_str());
+      return(false);
+    }
+
+  printDiagCovariance<num_vars>(fp, cov, "DV covariance:");
+
+  return (true);
+}  // end computePoseCovariance()
+
+bool computePose2PoseCovariance(std::string& covariance_file_name, ceres::Problem &P, Pose6d &Pose1, Pose6d &Pose2)
+{
+  typedef double* P_BLOCK;
+  ceres::Covariance::Options covariance_options;
+  covariance_options.algorithm_type = ceres::DENSE_SVD;
+  covariance_options.min_reciprocal_condition_number =1.0/50;
+  covariance_options.null_space_rank = 2;
 
   ceres::Covariance covariance(covariance_options);
   
@@ -425,83 +493,32 @@ bool computePose2PoseCovariance(std::string& covariance_file_name, ceres::Proble
   covariance_pairs.push_back(std::make_pair(pose2_pb, pose2_pb));
   covariance_pairs.push_back(std::make_pair(pose1_pb, pose2_pb));	    
   
-  if(covariance.Compute(covariance_pairs, &P))
+  if(!covariance.Compute(covariance_pairs, &P))
     {
-      fprintf(fp, "covariance blocks:\n");
-      double cov_p1p1[6*6], cov_p2p2[6*6], cov_p1p2[6*6];
-      if(covariance.GetCovarianceBlock(pose1_pb, pose1_pb, cov_p1p1) &&
-	 covariance.GetCovarianceBlock(pose2_pb, pose2_pb, cov_p2p2) &&
-	 covariance.GetCovarianceBlock(pose1_pb, pose2_pb, cov_p1p2))
-	{
-	  // pose 1 covariance
-	  fprintf(fp, "cov_p1p1 is 6x6\n");
-	  for(int i=0;i<6;i++)
-	    {
-	      double sigma_i = sqrt(fabs(cov_p1p1[i*6+i]));
-	      for(int j=0;j<6;j++)
-		{
-		  double sigma_j = sqrt(fabs(cov_p1p1[j*6+j]));
-		  double value;
-		  if(i==j)
-		    {
-		      value = sigma_i;
-		    }
-		  else // i!=j
-		    {
-		      if(sigma_i==0) sigma_i = 1;
-		      if(sigma_j==0) sigma_j = 1;
-		      value = cov_p1p1[i * 6 + j]/(sigma_i*sigma_j);
-		    } // end i!=j
-		  fprintf(fp, "%16.5f ", value);
-		}  // end of j loop
-	      fprintf(fp, "\n");
-	    }  // end of i loop
-	}// end if get covariance succeeds 
-
-      // pose 2 covariance	    
-      fprintf(fp, "cov_p2p2 is 6x6\n");
-      for(int i=0;i<6;i++){
-	double sigma_i = sqrt(fabs(cov_p2p2[i*6+i]));
-	for(int j=0;j<6;j++)
-	  {
-	    double sigma_j = sqrt(fabs(cov_p2p2[j*6+j]));
-	    double value;
-	    if(i==j)
-	      {
-		value = sigma_i;
-	      }
-	    else // i!=j
-	      {
-		if(sigma_i==0) sigma_i = 1;
-		if(sigma_j==0) sigma_j = 1;
-		value = cov_p2p2[i * 6 + j]/(sigma_i*sigma_j);
-	      } //end i!=j
-	    fprintf(fp, "%16.5f ", value);
-	  }  // end of j loop
-	fprintf(fp, "\n");
-      }  // end of i loop end of pose2 covariance
-      // pose to pose covariance
-      fprintf(fp, "cov_p1p2 is 6x6\n");
-      for(int i=0;i<6;i++)
-	{
-	  double sigma_i = sqrt(fabs(cov_p1p1[i*6+i]));
-	  for(int j=0;j<6;j++)
-	    {
-	      double sigma_j = sqrt(fabs(cov_p2p2[j*6+j]));
-	      double value;
-	      if(sigma_i==0) sigma_i = 1;
-	      if(sigma_j==0) sigma_j = 1;
-	      value = cov_p1p2[i * 6 + j]/(sigma_i*sigma_j);
-	      fprintf(fp, "%16.5f ", value);
-	    }  // end of j loop
-	  fprintf(fp, "\n");
-	}  // end of i loop end of pose2pose covariance
-    }// end if all covariance is computed
-  else
-    {
-      fprintf(fp,"could not compute pose to pose covariance, probably rank deficient Jacobian\n");
+      printf("could not compute covariance in computePose2PoseCovariance()\n");
+      return(false);
     }
 
+
+  double cov_p1p1[6*6], cov_p2p2[6*6], cov_p1p2[6*6];
+  if(!(covariance.GetCovarianceBlock(pose1_pb, pose1_pb, cov_p1p1) &&
+       covariance.GetCovarianceBlock(pose2_pb, pose2_pb, cov_p2p2) &&
+       covariance.GetCovarianceBlock(pose1_pb, pose2_pb, cov_p1p2)))
+    {
+      printf("GetCovarianceBlock failed in computePose2PoseCovariance()\n");
+      return false;
+    }
+
+  FILE* fp;
+  if ((fp = fopen(covariance_file_name.c_str(), "w")) == NULL)
+    {
+      printf("Could not Open file %s", covariance_file_name.c_str());
+      return(false);
+    }
+
+  printDiagCovariance<6>(fp, cov_p1p1, "Pose1 covariance:");
+  printDiagCovariance<6>(fp, cov_p2p2, "Pose2 covariance:");
+  printOffDiagCovariance<6, 6>(fp, cov_p1p1, cov_p2p2, cov_p1p2, "Pose1Pose2 covariance:");
   return (true);
 }  // end computeCovariance()
 
@@ -509,16 +526,10 @@ template <int num_vars>
 bool computePose2DVCovariance(std::string& covariance_file_name, ceres::Problem &P, Pose6d &Pose1, double* dptr)
 {
   typedef double* P_BLOCK;
-  FILE* fp;
-  if ((fp = fopen(covariance_file_name.c_str(), "w")) == NULL)
-    {
-      printf("Could not Open file %s", covariance_file_name.c_str());
-      return(false);
-    }
   ceres::Covariance::Options covariance_options;
   covariance_options.algorithm_type = ceres::DENSE_SVD;
   covariance_options.min_reciprocal_condition_number =1.0/50;
-  covariance_options.null_space_rank = 1;
+  covariance_options.null_space_rank = 2;
   ceres::Covariance covariance(covariance_options);
   
   P_BLOCK pose1_pb  = Pose1.values.data();
@@ -527,84 +538,77 @@ bool computePose2DVCovariance(std::string& covariance_file_name, ceres::Problem 
   covariance_pairs.push_back(std::make_pair(pose1_pb, pose1_pb));
   covariance_pairs.push_back(std::make_pair(dptr, dptr));
   covariance_pairs.push_back(std::make_pair(pose1_pb, dptr));	    
-  
-  if(covariance.Compute(covariance_pairs, &P))
-    {
-      fprintf(fp, "covariance blocks:\n");
-      double cov_p1p1[6*6], cov_dvdv[num_vars*num_vars], cov_p1dv[6*num_vars];
-      if(covariance.GetCovarianceBlock(pose1_pb, pose1_pb, cov_p1p1) &&
-	 covariance.GetCovarianceBlock(dptr, dptr, cov_dvdv) &&
-	 covariance.GetCovarianceBlock(pose1_pb, dptr, cov_p1dv))
-	{
-	  // pose 1 covariance
-	  fprintf(fp, "cov_p1p1 is 6x6\n");
-	  for(int i=0;i<6;i++)
-	    {
-	      double sigma_i = sqrt(fabs(cov_p1p1[i*6+i]));
-	      for(int j=0;j<6;j++)
-		{
-		  double sigma_j = sqrt(fabs(cov_p1p1[j*6+j]));
-		  double value;
-		  if(i==j)
-		    {
-		      value = sigma_i;
-		    }
-		  else // i!=j
-		    {
-		      if(sigma_i==0) sigma_i = 1;
-		      if(sigma_j==0) sigma_j = 1;
-		      value = cov_p1p1[i * 6 + j]/(sigma_i*sigma_j);
-		    } // end i!=j
-		  fprintf(fp, "%16.5f ", value);
-		}  // end of j loop
-	      fprintf(fp, "\n");
-	    }  // end of i loop
-	}// end if get covariance succeeds 
 
-      // pose 2 covariance	    
-      fprintf(fp, "cov_p2p2 is %dx%d\n",num_vars,num_vars);
-      for(int i=0;i<num_vars;i++){
-	double sigma_i = sqrt(fabs(cov_dvdv[i*num_vars+i]));
-	for(int j=0;j<num_vars;j++)
-	  {
-	    double sigma_j = sqrt(fabs(cov_dvdv[j*num_vars+j]));
-	    double value;
-	    if(i==j)
-	      {
-		value = sigma_i;
-	      }
-	    else // i!=j
-	      {
-		if(sigma_i==0) sigma_i = 1;
-		if(sigma_j==0) sigma_j = 1;
-		value = cov_dvdv[i * num_vars + j]/(sigma_i*sigma_j);
-	      } //end i!=j
-	    fprintf(fp, "%16.5f ", value);
-	  }  // end of j loop
-	fprintf(fp, "\n");
-      }  // end of i loop end of pose2 covariance
-      // pose to pose covariance
-      fprintf(fp, "cov_p1p2 is 6x%d\n",num_vars);
-      for(int i=0;i<6;i++)
-	{
-	  double sigma_i = sqrt(fabs(cov_p1p1[i*6+i]));
-	  for(int j=0;j<num_vars;j++)
-	    {
-	      double sigma_j = sqrt(fabs(cov_dvdv[j*num_vars+j]));
-	      double value;
-	      if(sigma_i==0) sigma_i = 1;
-	      if(sigma_j==0) sigma_j = 1;
-	      value = cov_p1dv[i * 6 + j]/(sigma_i*sigma_j);
-	      fprintf(fp, "%16.5f ", value);
-	    }  // end of j loop
-	  fprintf(fp, "\n");
-	}  // end of i loop end of pose2pose covariance
-    }// end if all covariance is computed
-  else
+  if(!covariance.Compute(covariance_pairs, &P))
     {
-      fprintf(fp,"could not compute pose to double vector covariance, probably rank deficient Jacobian\n");
+      printf("Could not compute covariance in computePose2DVCovariance()\n");
+      return false;
+    }
+  
+
+  double cov_p1p1[6*6], cov_dvdv[num_vars*num_vars], cov_p1dv[6*num_vars];
+  if(!(covariance.GetCovarianceBlock(pose1_pb, pose1_pb, cov_p1p1) &&
+       covariance.GetCovarianceBlock(dptr, dptr, cov_dvdv) &&
+       covariance.GetCovarianceBlock(pose1_pb, dptr, cov_p1dv)))
+    {
+      printf("GetCovarianceBlock failed in computePose2DVCovariance\n");
+      return false;
     }
 
+  FILE* fp;
+  if ((fp = fopen(covariance_file_name.c_str(), "w")) == NULL)
+    {
+      printf("Could not Open file %s", covariance_file_name.c_str());
+      return(false);
+    }
+
+  printDiagCovariance<6>(fp, cov_p1p1, "Pose1 covariance:");
+  printDiagCovariance<num_vars>(fp, cov_dvdv, "DV covariance:");
+  printOffDiagCovariance<6, 6>(fp, cov_p1p1, cov_dvdv, cov_p1dv, "Pose to DV covariance:");
+
+  return (true);
+}  // end computePose2DVCovariance()
+
+
+template <int num_vars1, int num_vars2>
+bool computeDV2DVCovariance(std::string& covariance_file_name, ceres::Problem &P, double* dptr1, double* dptr2)
+{
+  ceres::Covariance::Options covariance_options;
+  covariance_options.algorithm_type = ceres::DENSE_SVD;
+  covariance_options.min_reciprocal_condition_number =1.0/50;
+  covariance_options.null_space_rank = 2;
+  ceres::Covariance covariance(covariance_options);
+  
+  std::vector<std::pair<const double*, const double*> > covariance_pairs;
+  covariance_pairs.push_back(std::make_pair(dptr1, dptr1));
+  covariance_pairs.push_back(std::make_pair(dptr2, dptr2));
+  covariance_pairs.push_back(std::make_pair(dptr1, dptr2));	    
+  
+  if(!covariance.Compute(covariance_pairs, &P))
+    {
+      printf("Compute covarariance failed in computeDV2DVCovaraince()\n");
+      return false;
+    }
+
+  double cov_d1d1[num_vars1*num_vars2], cov_d2d2[num_vars2*num_vars2], cov_d1d2[num_vars1*num_vars2];
+  if(!(covariance.GetCovarianceBlock(dptr1, dptr1, cov_d1d1) &&
+       covariance.GetCovarianceBlock(dptr2, dptr2, cov_d2d2) &&
+       covariance.GetCovarianceBlock(dptr1, dptr2, cov_d1d2)))
+    {
+      printf("GetCovarianceBlock failed in computeDV2DVCovariance()\n");
+      return false;
+    }
+
+  FILE* fp;
+  if ((fp = fopen(covariance_file_name.c_str(), "w")) == NULL)
+    {
+      printf("Could not Open file %s", covariance_file_name.c_str());
+      return(false);
+    }
+
+  printDiagCovariance<num_vars1>(fp, cov_d1d1, "DV1 covariance:");
+  printDiagCovariance<num_vars2>(fp, cov_d2d2, "DV2 covariance:");
+  printOffDiagCovariance<num_vars1, num_vars2>(fp, cov_d1d1, cov_d2d2, cov_d1d2, "DV1 to DV2 covariance:");
   return (true);
 }  // end computePose2DVCovariance()
 
@@ -654,7 +658,8 @@ ExtrinsicStatic3DCameraRobotCalibrationResult optimize(const ExtrinsicStatic3DCa
       auto* cost_fn = new detail::ObservationCost(img_obs,
                                                   params.base_to_camera_guess,
                                                   robot_chain_transforms,
-                                                  point_in_target);
+                                                  point_in_target
+						  );
 
       // An error matrix is not added to the last joint because it would compete with the target error matrix
       if (params.exclude_last_joint)
@@ -695,9 +700,11 @@ ExtrinsicStatic3DCameraRobotCalibrationResult optimize(const ExtrinsicStatic3DCa
       result.robot_joint_delta[i] = poseCalToEigen(p);
     }
   }
-  std::string f1("test1.txt"), f2("test2.txt");
-  computePoseCovariance(f1, problem, internal_wrist_to_target);
-  computePose2DVCovariance<6>(f2,problem, internal_wrist_to_target, robot_pose_deltas.data());
+  if(params.do_compute_pose_covariance_)
+    {
+      std::string f1("test1.txt"), f2("test2.txt");
+      computePoseCovariance(f1, problem, internal_wrist_to_target);
+    }
 
   if (camera_fixed)
     result.base_to_camera = params.base_to_camera_guess;

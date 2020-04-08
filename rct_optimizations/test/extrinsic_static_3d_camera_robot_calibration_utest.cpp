@@ -247,6 +247,7 @@ TEST(ExtrinsicStatic3DCameraRobotCalibration, single_camera)
   addObservations(target_points, base_to_camera, wrist_to_target, problem_def);
 
   // Run optimization
+  problem_def.do_compute_pose_covariance_ = true;
   rct_optimizations::ExtrinsicStatic3DCameraRobotCalibrationResult opt_result = rct_optimizations::optimize<6>(problem_def);
   printResults(opt_result);
 
