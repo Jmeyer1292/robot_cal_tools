@@ -7,7 +7,9 @@
 
 namespace rct_optimizations
 {
-
+/**
+ * @brief Structure representing camera intrinsic parameters for a pin-hole model camera
+ */
 struct CameraIntrinsics
 {
   std::array<double, 4> values;
@@ -23,6 +25,9 @@ struct CameraIntrinsics
   const double& cy() const { return values[3]; }
 };
 
+/**
+ * @brief Representation of an isometry homogeneous transform for better integration with Ceres
+ */
 struct Pose6d
 {
   Pose6d() = default;
@@ -44,46 +49,76 @@ struct Pose6d
   const double& z() const { return values[5]; }
 };
 
-// Useful typedefs shared by calibrations
-struct Correspondence2D3D
+/**
+ * @brief A pair of corresponding features in a N-dimensional sensor "image" and 3D target
+ */
+template<Eigen::Index OBS_DIMENSION>
+struct Correspondence
 {
-  Correspondence2D3D()
+  using Set = std::vector<Correspondence<OBS_DIMENSION>>;
+  Correspondence()
     : in_target(Eigen::Vector3d::Zero())
-    , in_image(Eigen::Vector2d::Zero())
+    , in_image(Eigen::Matrix<double, OBS_DIMENSION, 1>::Zero())
   {
   }
 
-  Correspondence2D3D(const Eigen::Vector3d& in_target_,
-                     const Eigen::Vector2d& in_image_)
+  Correspondence(const Eigen::Vector3d& in_target_,
+                 const Eigen::Matrix<double, OBS_DIMENSION, 1>& in_image_)
     : in_target(in_target_)
     , in_image(in_image_)
   {
   }
 
+  /** @brief XYZ location of the feature relative to the target origin (meters) */
   Eigen::Vector3d in_target;
-  Eigen::Vector2d in_image;
-};
-using CorrespondenceSet = std::vector<Correspondence2D3D>;
 
-struct Correspondence3D3D
+  /** @brief N-dimensional location of the feature relative to the sensor */
+  Eigen::Matrix<double, OBS_DIMENSION, 1> in_image;
+};
+/** @brief Typedef for correspondence between 2D feature in image coordinates and 3D feature in target coordinates */
+using Correspondence2D3D = Correspondence<2>;
+/** @brief Typedef for correspondence between 3D feature in sensor coordinates and 3D feature in target coordinates */
+using Correspondence3D3D = Correspondence<3>;
+
+// Deprecated typedefs
+using CorrespondenceSet = Correspondence2D3D::Set;
+using Correspondence3DSet = Correspondence3D3D::Set;
+
+/**
+ * @brief A set of data representing a single observation of a calibration target.
+ * This consists of the feature correspondences as well as the transforms to the "mount" frames of the camera and target.
+ * For a moving camera or target, the "mount" pose would likely be the transform from the robot base to the robot tool flange.
+ * For a stationary camera or target, this "mount" pose would simply be identity.
+ * Keep in mind that the optimization itself determines the final calibrated transforms from these "mount" frames to the camera and target.
+ */
+template<Eigen::Index OBS_DIMENSION>
+struct Observation
 {
-  Correspondence3D3D()
-    : in_target(Eigen::Vector3d::Zero())
-    , in_image(Eigen::Vector3d::Zero())
+  using Set = std::vector<Observation<OBS_DIMENSION>>;
+  Observation()
+    : base_to_camera_mount(Eigen::Isometry3d::Identity())
+    , base_to_target_mount(Eigen::Isometry3d::Identity())
   {
   }
 
-  Correspondence3D3D(const Eigen::Vector3d& in_target_,
-                     const Eigen::Vector3d& in_image_)
-    : in_target(in_target_)
-    , in_image(in_image_)
+  Observation(const Eigen::Isometry3d& base_to_camera_mount_,
+              const Eigen::Isometry3d& base_to_target_mount_)
+    : base_to_camera_mount(base_to_camera_mount_)
+    , base_to_target_mount(base_to_target_mount_)
   {
   }
 
-  Eigen::Vector3d in_target;
-  Eigen::Vector3d in_image;
+  /** @brief A set of feature correspondences between the sensor output and target */
+  typename Correspondence<OBS_DIMENSION>::Set correspondence_set;
+  /** @brief The transform from a common root frame to the frame to which the camera is mounted. */
+  Eigen::Isometry3d base_to_camera_mount;
+  /** @brief The transform from a common root frame to the frame to which the target is mounted. */
+  Eigen::Isometry3d base_to_target_mount;
 };
-using Correspondence3DSet = std::vector<Correspondence3D3D>;
+/** @brief Typedef for observations of 2D image to 3D target correspondences */
+using Observation2D3D = Observation<2>;
+/** @brief Typedef for observations of 3D sensor to 3D target correspondences */
+using Observation3D3D = Observation<3>;
 
 } // namespace rct_optimizations
 
