@@ -2,7 +2,7 @@
 #define RCT_OPTIMIZATIONS_TESTS_UTILITIES_H
 
 #include <rct_optimizations/types.h>
-#include <rct_optimizations/experimental/dh_robot.h>
+#include <rct_optimizations/dh_chain.h>
 
 namespace rct_optimizations
 {
@@ -69,7 +69,7 @@ Eigen::Isometry3d perturbPose(const Eigen::Isometry3d &pose,
                               double angle_noise);
 
 
-inline DHRobot createABBIRB2400()
+inline DHChain createABBIRB2400()
 {
   std::vector<DHTransform::Ptr> joints;
   joints.reserve(6);
@@ -89,10 +89,10 @@ inline DHRobot createABBIRB2400()
   joints.push_back(std::make_unique<DHTransform>(t5, DHJointType::REVOLUTE));
   joints.push_back(std::make_unique<DHTransform>(t6, DHJointType::REVOLUTE));
 
-  return DHRobot(std::move(joints));
+  return DHChain(std::move(joints));
 }
 
-inline DHRobot createABBIRB2400WithNoise()
+inline DHChain createABBIRB2400WithNoise()
 {
   std::vector<DHTransform::Ptr> joints;
   joints.reserve(6);
@@ -115,7 +115,7 @@ inline DHRobot createABBIRB2400WithNoise()
   joints.push_back(std::make_unique<GaussianNoiseDHTransform>(t5, DHJointType::REVOLUTE, mean, std_dev));
   joints.push_back(std::make_unique<GaussianNoiseDHTransform>(t6, DHJointType::REVOLUTE, mean, std_dev));
 
-  return DHRobot(std::move(joints));
+  return DHChain(std::move(joints));
 }
 
 } // namespace test
