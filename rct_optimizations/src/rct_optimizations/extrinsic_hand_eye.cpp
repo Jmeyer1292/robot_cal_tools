@@ -216,11 +216,11 @@ ExtrinsicHandEyeResult optimize(const ExtrinsicHandEyeProblem2D3D& params)
       // Define
       const auto& img_obs = correspondence.in_image;
       const auto& point_in_target = correspondence.in_target;
-      const auto wrist_to_base = observation.base_to_camera_mount.inverse();
+      const auto wrist_to_base = observation.to_camera_mount.inverse();
 
       // Allocate Ceres data structures - ownership is taken by the ceres
       // Problem data structure
-      auto* cost_fn = new ObservationCost2D3D(img_obs, wrist_to_base, observation.base_to_target_mount, point_in_target, params.intr);
+      auto* cost_fn = new ObservationCost2D3D(img_obs, wrist_to_base, observation.to_target_mount, point_in_target, params.intr);
 
       auto* cost_block = new ceres::AutoDiffCostFunction<ObservationCost2D3D, 2, 6, 6>(cost_fn);
 
@@ -259,11 +259,11 @@ ExtrinsicHandEyeResult optimize(const ExtrinsicHandEyeProblem3D3D& params)
       // Define
       const auto& img_obs = correspondence.in_image;
       const auto& point_in_target = correspondence.in_target;
-      const auto wrist_to_base = observation.base_to_camera_mount.inverse();
+      const auto wrist_to_base = observation.to_camera_mount.inverse();
 
       // Allocate Ceres data structures - ownership is taken by the ceres
       // Problem data structure
-      auto* cost_fn = new ObservationCost3D3D(img_obs, wrist_to_base, observation.base_to_target_mount, point_in_target);
+      auto* cost_fn = new ObservationCost3D3D(img_obs, wrist_to_base, observation.to_target_mount, point_in_target);
 
       auto* cost_block = new ceres::AutoDiffCostFunction<ObservationCost3D3D, 3, 6, 6>(cost_fn);
 

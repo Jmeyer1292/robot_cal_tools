@@ -89,6 +89,10 @@ using Correspondence3DSet = Correspondence3D3D::Set;
  * This consists of the feature correspondences as well as the transforms to the "mount" frames of the camera and target.
  * For a moving camera or target, the "mount" pose would likely be the transform from the robot base to the robot tool flange.
  * For a stationary camera or target, this "mount" pose would simply be identity.
+ *
+ * Note that @ref to_camera_mount and @ref to_target_mount do not necessarily need to be relative the the same coordinate system because
+ * certain calibration problems might optimize a 6D transform in between the root frame of @ref to_camera mount and the root frame of @ref to_target_mount
+ *
  * Keep in mind that the optimization itself determines the final calibrated transforms from these "mount" frames to the camera and target.
  */
 template<Eigen::Index OBS_DIMENSION>
@@ -96,24 +100,24 @@ struct Observation
 {
   using Set = std::vector<Observation<OBS_DIMENSION>>;
   Observation()
-    : base_to_camera_mount(Eigen::Isometry3d::Identity())
-    , base_to_target_mount(Eigen::Isometry3d::Identity())
+    : to_camera_mount(Eigen::Isometry3d::Identity())
+    , to_target_mount(Eigen::Isometry3d::Identity())
   {
   }
 
-  Observation(const Eigen::Isometry3d& base_to_camera_mount_,
-              const Eigen::Isometry3d& base_to_target_mount_)
-    : base_to_camera_mount(base_to_camera_mount_)
-    , base_to_target_mount(base_to_target_mount_)
+  Observation(const Eigen::Isometry3d& to_camera_mount_,
+              const Eigen::Isometry3d& to_target_mount_)
+    : to_camera_mount(to_camera_mount_)
+    , to_target_mount(to_target_mount_)
   {
   }
 
   /** @brief A set of feature correspondences between the sensor output and target */
   typename Correspondence<OBS_DIMENSION>::Set correspondence_set;
-  /** @brief The transform from a common root frame to the frame to which the camera is mounted. */
-  Eigen::Isometry3d base_to_camera_mount;
-  /** @brief The transform from a common root frame to the frame to which the target is mounted. */
-  Eigen::Isometry3d base_to_target_mount;
+  /** @brief The transform to the frame to which the camera is mounted. */
+  Eigen::Isometry3d to_camera_mount;
+  /** @brief The transform to the frame to which the target is mounted. */
+  Eigen::Isometry3d to_target_mount;
 };
 /** @brief Typedef for observations of 2D image to 3D target correspondences */
 using Observation2D3D = Observation<2>;

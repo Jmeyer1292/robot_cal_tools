@@ -67,7 +67,7 @@ void run_test(InitialConditions condition)
       {
         Observation3D3D obs;
         obs.correspondence_set = getCorrespondences(camera_pose, true_base_to_target, grid);
-        obs.base_to_camera_mount = wrist_pose;
+        obs.to_camera_mount = wrist_pose;
         problem.observations.push_back(obs);
       }
       catch (const std::exception& ex)
