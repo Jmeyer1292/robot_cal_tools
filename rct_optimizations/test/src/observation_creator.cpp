@@ -17,13 +17,13 @@ namespace rct_optimizations
 {
 namespace test
 {
-CorrespondenceSet getCorrespondences(const Eigen::Isometry3d &camera_pose,
-                                     const Eigen::Isometry3d &target_pose,
-                                     const Camera &camera,
-                                     const Target &target,
-                                     const bool require_all)
+Correspondence2D3D::Set getCorrespondences(const Eigen::Isometry3d &camera_pose,
+                                           const Eigen::Isometry3d &target_pose,
+                                           const Camera &camera,
+                                           const Target &target,
+                                           const bool require_all)
 {
-  CorrespondenceSet correspondences;
+  Correspondence2D3D::Set correspondences;
   correspondences.reserve(target.points.size());
 
   Eigen::Isometry3d camera_to_target = camera_pose.inverse() * target_pose;
@@ -52,11 +52,11 @@ CorrespondenceSet getCorrespondences(const Eigen::Isometry3d &camera_pose,
 }
 
 
-Correspondence3DSet getCorrespondences(const Eigen::Isometry3d &camera_pose,
-                                       const Eigen::Isometry3d &target_pose,
-                                       const Target &target) noexcept
+Correspondence3D3D::Set getCorrespondences(const Eigen::Isometry3d &camera_pose,
+                                           const Eigen::Isometry3d &target_pose,
+                                           const Target &target) noexcept
 {
-  Correspondence3DSet correspondences;
+  Correspondence3D3D::Set correspondences;
   correspondences.reserve(target.points.size());
 
   Eigen::Isometry3d camera_to_target = camera_pose.inverse() * target_pose;
