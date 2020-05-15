@@ -26,6 +26,8 @@ struct IntrinsicEstimationResult
   std::array<double, 5> distortions;
 
   std::vector<Eigen::Isometry3d> target_transforms;
+
+  Eigen::MatrixXd covariance_intr;
 };
 
 IntrinsicEstimationResult optimize(const IntrinsicEstimationProblem& params);

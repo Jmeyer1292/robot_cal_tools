@@ -40,10 +40,18 @@ rct_gtest_discover_tests(${PROJECT_NAME}_extrinsic_hand_eye_dh_chain_tests)
 add_dependencies(${PROJECT_NAME}_extrinsic_hand_eye_dh_chain_tests ${PROJECT_NAME})
 add_dependencies(run_tests ${PROJECT_NAME}_extrinsic_hand_eye_dh_chain_tests)
 
+
+add_executable(${PROJECT_NAME}_covariance_tests covariance_utest.cpp)
+target_link_libraries(${PROJECT_NAME}_covariance_tests PRIVATE ${PROJECT_NAME} GTest::GTest GTest::Main)
+rct_gtest_discover_tests(${PROJECT_NAME}_covariance_tests)
+add_dependencies(${PROJECT_NAME}_covariance_tests ${PROJECT_NAME})
+add_dependencies(run_tests ${PROJECT_NAME}_covariance_tests)
+
 # Install the test executables so they can be run independently later if needed
 install(
   TARGETS
     ${PROJECT_NAME}_conversion_tests
+    ${PROJECT_NAME}_covariance_tests
     ${PROJECT_NAME}_extrinsic_multi_static_camera_tests
     ${PROJECT_NAME}_extrinsic_hand_eye_tests
     ${PROJECT_NAME}_dh_parameter_tests

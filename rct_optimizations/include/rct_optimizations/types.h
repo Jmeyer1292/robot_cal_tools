@@ -124,6 +124,20 @@ using Observation2D3D = Observation<2, 3>;
 /** @brief Typedef for observations of 3D sensor to 3D target correspondences */
 using Observation3D3D = Observation<3, 3>;
 
+
+struct OptimizationException : public std::runtime_error
+{
+public:
+  OptimizationException(const std::string& what) : std::runtime_error(what) {}
+};
+
+
+struct CovarianceException : public std::runtime_error
+{
+public:
+  CovarianceException(const std::string& what) : std::runtime_error(what) {}
+};
+
 } // namespace rct_optimizations
 
 #endif

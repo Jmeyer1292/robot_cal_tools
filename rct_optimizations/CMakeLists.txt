@@ -7,6 +7,9 @@ find_package(Ceres REQUIRED)
 add_library(${PROJECT_NAME} SHARED
   # Utilities
   src/${PROJECT_NAME}/eigen_conversions.cpp
+  src/${PROJECT_NAME}/covariance_analysis.cpp
+  # Optimizations (Simple)
+  src/${PROJECT_NAME}/circle_fit.cpp
   # Optimizations (multiple cameras)
   src/${PROJECT_NAME}/extrinsic_multi_static_camera.cpp
   src/${PROJECT_NAME}/extrinsic_multi_static_camera_only.cpp
