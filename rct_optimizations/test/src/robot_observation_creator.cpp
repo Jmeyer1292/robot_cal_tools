@@ -17,13 +17,13 @@ Observation3D3D::Set create(DHRobot to_camera_chain,
   for (std::size_t i = 0; i < n; ++i)
   {
     Observation3D3D obs;
-    obs.base_to_camera_mount = to_camera_chain.createUniformlyRandomPose();
-    obs.base_to_target_mount = to_target_chain.createUniformlyRandomPose();
+    obs.to_camera_mount = to_camera_chain.createUniformlyRandomPose();
+    obs.to_target_mount = to_target_chain.createUniformlyRandomPose();
 
     // Get the target transform in the same base frame as the camera
-    Eigen::Isometry3d camera_base_to_target = camera_base_to_target_base * obs.base_to_camera_mount;
+    Eigen::Isometry3d camera_base_to_target = camera_base_to_target_base * obs.to_camera_mount;
 
-    obs.correspondence_set = getCorrespondences(obs.base_to_camera_mount,
+    obs.correspondence_set = getCorrespondences(obs.to_camera_mount,
                                                 camera_base_to_target,
                                                 target);
     observations.push_back(obs);
@@ -48,13 +48,13 @@ Observation2D3D::Set create(DHRobot to_camera_chain,
   while (correspondences < n * target.points.size() && attempts < max_attempts)
   {
     Observation2D3D obs;
-    obs.base_to_camera_mount = to_camera_chain.createUniformlyRandomPose();
-    obs.base_to_target_mount = to_target_chain.createUniformlyRandomPose();
+    obs.to_camera_mount = to_camera_chain.createUniformlyRandomPose();
+    obs.to_target_mount = to_target_chain.createUniformlyRandomPose();
 
     // Get the transform to the target in the same root frame as the transform to the camera
-    Eigen::Isometry3d camera_base_to_target = camera_base_to_target_base * obs.base_to_target_mount;
+    Eigen::Isometry3d camera_base_to_target = camera_base_to_target_base * obs.to_target_mount;
 
-    obs.correspondence_set = getCorrespondences(obs.base_to_camera_mount,
+    obs.correspondence_set = getCorrespondences(obs.to_camera_mount,
                                                 camera_base_to_target,
                                                 camera,
                                                 target,
