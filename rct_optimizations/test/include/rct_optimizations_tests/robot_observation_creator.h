@@ -1,7 +1,7 @@
 #ifndef ROBOT_OBSERVATION_CREATOR_H
 #define ROBOT_OBSERVATION_CREATOR_H
 
-#include <rct_optimizations/experimental/dh_robot.h>
+#include <rct_optimizations/dh_chain.h>
 #include <rct_optimizations/types.h>
 #include <rct_optimizations_tests/utilities.h>
 
@@ -20,8 +20,10 @@ namespace test
  * @param n - Number of samples
  * @return A vector of 3D-3D observations
  */
-Observation3D3D::Set create(DHRobot to_camera_chain,
-                            DHRobot to_target_chain,
+Observation3D3D::Set create(const DHChain& to_camera_chain,
+                            const DHChain& to_target_chain,
+                            const Eigen::Isometry3d& true_mount_to_camera,
+                            const Eigen::Isometry3d& true_mount_to_target,
                             const Eigen::Isometry3d &camera_base_to_target_base,
                             const Target &target,
                             const std::size_t n);
@@ -35,8 +37,10 @@ Observation3D3D::Set create(DHRobot to_camera_chain,
  * @param n
  * @return
  */
-Observation2D3D::Set create(DHRobot to_camera_chain,
-                            DHRobot to_target_chain,
+Observation2D3D::Set create(const DHChain& to_camera_chain,
+                            const DHChain& to_target_chain,
+                            const Eigen::Isometry3d& true_mount_to_camera,
+                            const Eigen::Isometry3d& true_mount_to_target,
                             const Eigen::Isometry3d &camera_base_to_target_base,
                             const Target &target,
                             const Camera &camera,

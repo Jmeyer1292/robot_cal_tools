@@ -5,8 +5,10 @@ namespace rct_optimizations
 {
 namespace test
 {
-Observation3D3D::Set create(DHRobot to_camera_chain,
-                            DHRobot to_target_chain,
+Observation3D3D::Set create(const DHChain& to_camera_chain,
+                            const DHChain& to_target_chain,
+                            const Eigen::Isometry3d& true_mount_to_camera,
+                            const Eigen::Isometry3d& true_mount_to_target,
                             const Eigen::Isometry3d &camera_base_to_target_base,
                             const Target &target,
                             const std::size_t n)
@@ -20,11 +22,8 @@ Observation3D3D::Set create(DHRobot to_camera_chain,
     obs.to_camera_mount = to_camera_chain.createUniformlyRandomPose();
     obs.to_target_mount = to_target_chain.createUniformlyRandomPose();
 
-    // Get the target transform in the same base frame as the camera
-    Eigen::Isometry3d camera_base_to_target = camera_base_to_target_base * obs.to_camera_mount;
-
-    obs.correspondence_set = getCorrespondences(obs.to_camera_mount,
-                                                camera_base_to_target,
+    obs.correspondence_set = getCorrespondences(obs.to_camera_mount * true_mount_to_camera,
+                                                camera_base_to_target_base * obs.to_target_mount * true_mount_to_target,
                                                 target);
     observations.push_back(obs);
   }
@@ -32,8 +31,10 @@ Observation3D3D::Set create(DHRobot to_camera_chain,
   return observations;
 }
 
-Observation2D3D::Set create(DHRobot to_camera_chain,
-                            DHRobot to_target_chain,
+Observation2D3D::Set create(const DHChain& to_camera_chain,
+                            const DHChain& to_target_chain,
+                            const Eigen::Isometry3d& true_mount_to_camera,
+                            const Eigen::Isometry3d& true_mount_to_target,
                             const Eigen::Isometry3d &camera_base_to_target_base,
                             const Target &target,
                             const Camera &camera,
@@ -44,26 +45,44 @@ Observation2D3D::Set create(DHRobot to_camera_chain,
 
   std::size_t correspondences = 0;
   std::size_t attempts = 0;
-  const std::size_t max_attempts = 1e6;
+  const std::size_t max_attempts = 10000;
   while (correspondences < n * target.points.size() && attempts < max_attempts)
   {
     Observation2D3D obs;
     obs.to_camera_mount = to_camera_chain.createUniformlyRandomPose();
     obs.to_target_mount = to_target_chain.createUniformlyRandomPose();
 
-    // Get the transform to the target in the same root frame as the transform to the camera
-    Eigen::Isometry3d camera_base_to_target = camera_base_to_target_base * obs.to_target_mount;
+    const Eigen::Isometry3d base_to_camera = obs.to_camera_mount * true_mount_to_camera;
+    const Eigen::Isometry3d base_to_target = camera_base_to_target_base * obs.to_target_mount
+                                             * true_mount_to_target;
 
-    obs.correspondence_set = getCorrespondences(obs.to_camera_mount,
-                                                camera_base_to_target,
-                                                camera,
-                                                target,
-                                                false);
-    if (obs.correspondence_set.size() > 0)
+    const Eigen::Vector3d &camera_z = base_to_camera.matrix().col(2).head<3>();
+    const Eigen::Vector3d &target_z = base_to_target.matrix().col(2).head<3>();
+
+    // Make sure the camera and target normals are not pointing in the same direction
+    double dp = camera_z.dot(target_z);
+    if (dp < -0.2)
     {
-      observations.push_back(obs);
-      correspondences += obs.correspondence_set.size();
+      try
+      {
+        obs.correspondence_set = getCorrespondences(base_to_camera,
+                                                    base_to_target,
+                                                    camera,
+                                                    target,
+                                                    true);
+      }
+      catch (const std::exception &)
+      {
+        continue;
+      }
+
+      if (obs.correspondence_set.size() > 0)
+      {
+        observations.push_back(obs);
+        correspondences += obs.correspondence_set.size();
+      }
     }
+
     ++attempts;
   }
 
