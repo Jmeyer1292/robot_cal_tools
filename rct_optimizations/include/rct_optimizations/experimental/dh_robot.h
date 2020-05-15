@@ -46,7 +46,7 @@ struct DHTransform
    * @param joint_value
    * @return
    */
-  virtual Eigen::Isometry3d createRelativeTransform(const double joint_value)
+  virtual Eigen::Isometry3d createRelativeTransform(const double joint_value) const
   {
     Eigen::Isometry3d transform(Eigen::Isometry3d::Identity());
 
@@ -97,10 +97,10 @@ struct DHTransform
  */
 struct GaussianNoiseDHTransform : public DHTransform
 {
-  GaussianNoiseDHTransform(DHJointType type_, double mean, double std_dev)
+  GaussianNoiseDHTransform(DHJointType type_, double mean_, double std_dev_)
     : DHTransform(type_)
-    , gen(rd())
-    , dist(mean, std_dev)
+    , mean(mean_)
+    , std_dev(std_dev_)
   {
   }
 
@@ -109,22 +109,24 @@ struct GaussianNoiseDHTransform : public DHTransform
                            double theta_,
                            double r_,
                            double alpha_,
-                           double mean,
-                           double std_dev)
+                           double mean_,
+                           double std_dev_)
     : DHTransform(type_, d_, theta_, r_, alpha_)
-    , gen(rd())
-    , dist(mean, std_dev)
+    , mean(mean_)
+    , std_dev(std_dev_)
   {
   }
 
-  virtual Eigen::Isometry3d createRelativeTransform(const double joint) override
+  virtual Eigen::Isometry3d createRelativeTransform(const double joint) const override
   {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::normal_distribution<double> dist(mean, std_dev);
     return DHTransform::createRelativeTransform(joint + dist(gen));
   }
 
-  std::random_device rd;                  /** @brief Random device */
-  std::mt19937 gen;                       /** @brief Random number generation engine */
-  std::normal_distribution<double> dist;  /** @brief Gaussian distribution number generator */
+  double mean;
+  double std_dev;
 };
 
 /**
@@ -145,7 +147,7 @@ public:
    * @return
    * @throws Exception if the size of joint values is larger than the number of DH transforms in the robot
    */
-  Eigen::Isometry3d getFK(const std::vector<double> &joint_values)
+  Eigen::Isometry3d getFK(const std::vector<double> &joint_values) const
   {
     Eigen::Isometry3d transform(Eigen::Isometry3d::Identity());
     for (std::size_t i = 0; i < joint_values.size(); ++i)
@@ -161,12 +163,12 @@ public:
    * @param n_joints
    * @return
    */
-  Eigen::Isometry3d getFK(const double *joint_values, const std::size_t n_joints)
+  Eigen::Isometry3d getFK(const double *joint_values, const std::size_t n_joints) const
   {
     return getFK(std::vector<double>(joint_values, joint_values + n_joints));
   }
 
-  Eigen::Isometry3d createUniformlyRandomPose()
+  Eigen::Isometry3d createUniformlyRandomPose() const
   {
     std::vector<double> joints;
     joints.reserve(transforms_.size());
