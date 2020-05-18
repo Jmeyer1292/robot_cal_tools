@@ -6,7 +6,11 @@
 #include <rct_optimizations_tests/utilities.h>
 #include <rct_optimizations_tests/observation_creator.h>
 
-static void printResults(const rct_optimizations::ExtrinsicCameraOnWristResult& r)
+using namespace rct_optimizations;
+
+namespace
+{
+static void printResults(const ExtrinsicCameraOnWristResult& r)
 {
   // Report results
   std::cout << "Did converge?: " << r.converged << "\n";
@@ -22,18 +26,18 @@ static void printResults(const rct_optimizations::ExtrinsicCameraOnWristResult& 
   std::cout << t.matrix() << "\n";
 }
 
-namespace {
-
-enum class InitialConditions {
+enum class InitialConditions
+{
   PERFECT, IDENTITY_TARGET, RANDOM_AROUND_ANSWER
 };
 
-}
+} // namespace anonymous
 
 void run_test(InitialConditions condition)
 {
-  auto camera = rct_optimizations::test::makeKinectCamera();
-  auto grid = rct_optimizations::test::makeTarget(5, 7, 0.025);
+
+  auto camera = test::makeKinectCamera();
+  test::Target grid(5, 7, 0.025);
 
   // Define the "true" conditions
   auto true_base_to_target = Eigen::Isometry3d::Identity();
@@ -48,33 +52,37 @@ void run_test(InitialConditions condition)
   // Create some number of "test" images...
   //    We'll take pictures in a grid above the origin of the target
   std::vector<Eigen::Isometry3d> wrist_poses;
-  std::vector<rct_optimizations::CorrespondenceSet> correspondences;
+  std::vector<CorrespondenceSet> correspondences;
   for (int i = -5; i < 5; ++i)
   {
     for (int j = -5; j < 5; ++j)
     {
       Eigen::Vector3d center_point = true_base_to_target.translation() + Eigen::Vector3d(i * 0.025, j * 0.025, 1.0);
-      Eigen::Isometry3d camera_pose = rct_optimizations::test::lookat(center_point,
-                                                                    true_base_to_target.translation(),
-                                                                    Eigen::Vector3d(1, 0, 0));
+      Eigen::Isometry3d camera_pose = test::lookAt(center_point,
+                                                   true_base_to_target.translation(),
+                                                   Eigen::Vector3d(1, 0, 0));
       Eigen::Isometry3d wrist_pose = camera_pose * true_wrist_to_camera.inverse();
 
       // Attempt to generate points
-      std::vector<Eigen::Vector2d> image_obs;
-      if (!rct_optimizations::test::project(camera_pose, true_base_to_target, camera, grid, image_obs))
+      try
       {
-        continue; // Failed to observe target
+        CorrespondenceSet corr = getCorrespondences(camera_pose,
+                                                    true_base_to_target,
+                                                    camera,
+                                                    grid,
+                                                    true);
+        correspondences.push_back(corr);
+        wrist_poses.push_back(wrist_pose);
       }
-
-      auto corr = rct_optimizations::test::zip(grid, image_obs);
-
-      wrist_poses.push_back(wrist_pose);
-      correspondences.push_back(corr);
+      catch (const std::exception& ex)
+      {
+        continue;
+      }
     }
   }
 
   // Fill out the calibration
-  rct_optimizations::ExtrinsicCameraOnWristProblem problem;
+  ExtrinsicCameraOnWristProblem problem;
   problem.intr = camera.intr;
   problem.wrist_poses = wrist_poses;
   problem.image_observations = correspondences;
@@ -93,16 +101,14 @@ void run_test(InitialConditions condition)
   {
     const double spatial_noise = 0.25; // +/- 0.25 meters
     const double angular_noise = 45. * M_PI / 180.0; // +/- 45 degrees
-    problem.base_to_target_guess =
-        rct_optimizations::test::perturbPose(true_base_to_target, spatial_noise, angular_noise);
-    problem.wrist_to_camera_guess =
-        rct_optimizations::test::perturbPose(true_wrist_to_camera, spatial_noise, angular_noise);
+    problem.base_to_target_guess = test::perturbPose(true_base_to_target, spatial_noise, angular_noise);
+    problem.wrist_to_camera_guess = test::perturbPose(true_wrist_to_camera, spatial_noise, angular_noise);
     std::cout << "initial base to target:\n" << problem.base_to_target_guess.matrix() << "\n";
     std::cout << "initial wrist to camera:\n" << problem.wrist_to_camera_guess.matrix() << "\n";
   }
 
   // Run the optimization
-  auto result = rct_optimizations::optimize(problem);
+  auto result = optimize(problem);
 
   // Make sure it converged to the correct answer
   EXPECT_TRUE(result.converged);

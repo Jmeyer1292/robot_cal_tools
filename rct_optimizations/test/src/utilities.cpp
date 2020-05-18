@@ -1,23 +1,11 @@
 #include "rct_optimizations_tests/utilities.h"
 #include <random>
 
-static void makePoints(int rows, int cols, double spacing, std::vector<Eigen::Vector3d>& points)
+namespace rct_optimizations
 {
-  points.reserve(rows * cols);
-
-  for (int i = 1; i < (rows + 1); i++)
-  {
-    double y = (rows - i) * spacing;
-    for (int j = 0; j < cols; j++)
-    {
-      double x = j * spacing;
-      Eigen::Vector3d point(x, y, 0.0);
-      points.push_back(point);
-    }
-  }
-}
-
-rct_optimizations::test::Camera rct_optimizations::test::makeKinectCamera()
+namespace test
+{
+Camera makeKinectCamera()
 {
   CameraIntrinsics intr;
   intr.fx() = 550.0;
@@ -33,30 +21,7 @@ rct_optimizations::test::Camera rct_optimizations::test::makeKinectCamera()
   return camera;
 }
 
-rct_optimizations::test::Target rct_optimizations::test::makeTarget(int rows, int cols, double spacing)
-{
-  Target target;
-  makePoints(rows, cols, spacing, target.points);
-  return target;
-}
-
-rct_optimizations::CorrespondenceSet rct_optimizations::test::zip(const rct_optimizations::test::Target& target,
-                                                                  const std::vector<Eigen::Vector2d>& image_obs)
-{
-  if (target.points.size() != image_obs.size()) throw std::invalid_argument("target points != image obs points");
-
-  CorrespondenceSet out;
-  for (std::size_t i = 0; i < target.points.size(); ++i)
-  {
-    Correspondence2D3D c;
-    c.in_image = image_obs[i];
-    c.in_target = target.points[i];
-    out.push_back(c);
-  }
-  return out;
-}
-
-Eigen::Isometry3d rct_optimizations::test::perturbPose(const Eigen::Isometry3d& pose, double spatial_noise, double angle_noise)
+Eigen::Isometry3d perturbPose(const Eigen::Isometry3d& pose, double spatial_noise, double angle_noise)
 {
   std::random_device dev;
   std::default_random_engine eng (dev());
@@ -75,3 +40,9 @@ Eigen::Isometry3d rct_optimizations::test::perturbPose(const Eigen::Isometry3d& 
 
   return new_pose;
 }
+
+} // namespace test
+} // namespace rct_optimizations
+
+
+

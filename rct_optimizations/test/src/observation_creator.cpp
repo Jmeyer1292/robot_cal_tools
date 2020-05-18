@@ -13,38 +13,68 @@ static bool projectAndTest(const Eigen::Vector3d& pt_in_camera, const rct_optimi
   else return true;
 }
 
-bool rct_optimizations::test::project(const Eigen::Isometry3d& camera_pose, const Eigen::Isometry3d& target_pose,
-                                      const test::Camera& camera, const test::Target& target,
-                                      std::vector<Eigen::Vector2d>& out_observations)
+namespace rct_optimizations
 {
-  Eigen::Isometry3d to_camera = camera_pose.inverse() * target_pose;
+namespace test
+{
+CorrespondenceSet getCorrespondences(const Eigen::Isometry3d &camera_pose,
+                                     const Eigen::Isometry3d &target_pose,
+                                     const Camera &camera,
+                                     const Target &target,
+                                     const bool require_all)
+{
+  CorrespondenceSet correspondences;
+  correspondences.reserve(target.points.size());
 
-  std::vector<Eigen::Vector2d> obs;
+  Eigen::Isometry3d camera_to_target = camera_pose.inverse() * target_pose;
+
   // Loop over points
-  for (const auto& point : target.points)
+  for (const auto &point : target.points)
   {
-    Eigen::Vector3d pt_in_camera = to_camera * point;
+    Correspondence2D3D corr;
+    corr.in_target = point;
 
-    if (pt_in_camera.z() < 0.0) // behind the camera
+    // Calculate the target coordinates in the camera frame
+    Eigen::Vector3d pt_in_camera = camera_to_target * point;
+
+    // Reject points behind the camera or outside the image
+    if (pt_in_camera.z() > 0.0 && projectAndTest(pt_in_camera, camera, corr.in_image))
     {
-      return false;
+      correspondences.push_back(corr);
     }
-
-    Eigen::Vector2d in_image;
-    if (!projectAndTest(pt_in_camera, camera, in_image)) // If this fails, the point is outside image
+    else if (require_all)
     {
-      return false;
+      throw std::runtime_error("Target point was not observed");
     }
-
-    // Point is good
-    obs.push_back(in_image);
   }
 
-  out_observations = obs;
-  return true;
+  return correspondences;
 }
 
-Eigen::Isometry3d rct_optimizations::test::lookat(const Eigen::Vector3d& origin, const Eigen::Vector3d& eye, const Eigen::Vector3d& up)
+
+Correspondence3DSet getCorrespondences(const Eigen::Isometry3d &camera_pose,
+                                       const Eigen::Isometry3d &target_pose,
+                                       const Target &target) noexcept
+{
+  Correspondence3DSet correspondences;
+  correspondences.reserve(target.points.size());
+
+  Eigen::Isometry3d camera_to_target = camera_pose.inverse() * target_pose;
+
+  for (const auto &pt : target.points)
+  {
+    Correspondence3D3D corr;
+    corr.in_target = pt;
+    corr.in_image = camera_to_target * pt;
+    correspondences.push_back(corr);
+  }
+
+  return correspondences;
+}
+
+Eigen::Isometry3d lookAt(const Eigen::Vector3d &origin,
+                         const Eigen::Vector3d &eye,
+                         const Eigen::Vector3d &up) noexcept
 {
   Eigen::Vector3d z = (eye - origin).normalized();
   Eigen::Vector3d x = z.cross(up).normalized();
@@ -57,3 +87,7 @@ Eigen::Isometry3d rct_optimizations::test::lookat(const Eigen::Vector3d& origin,
   p.matrix().col(2).head<3>() = z;
   return p;
 }
+
+} // namespace test
+} // namespace rct_optimizations
+

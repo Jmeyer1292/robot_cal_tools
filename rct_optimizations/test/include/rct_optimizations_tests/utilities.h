@@ -9,8 +9,9 @@ namespace rct_optimizations
 namespace test
 {
 
-// a test pin-hole camera that has intrinsics, but also image size data needed for generating
-// simulated information
+/**
+ * @brief a test pin-hole camera that has intrinsics, but also image size data needed for generating simulated information
+ */
 struct Camera
 {
   CameraIntrinsics intr;
@@ -18,21 +19,48 @@ struct Camera
   int height;
 };
 
-// Create a test camera set with kinect-like parameters
+/**
+ * @brief Create a test camera set with kinect-like parameters
+ * @return
+ */
 Camera makeKinectCamera();
 
-// A sample grid target for test purposes
+/**
+ * @brief A sample grid target for test purposes
+ */
 struct Target
 {
+  Target() = default;
+
+  Target(const unsigned rows, const unsigned cols, const double spacing)
+  {
+    points.reserve(rows * cols);
+
+    for (unsigned i = 1; i < (rows + 1); i++)
+    {
+      double y = (rows - i) * spacing;
+      for (unsigned j = 0; j < cols; j++)
+      {
+        double x = j * spacing;
+        Eigen::Vector3d point(x, y, 0.0);
+        points.push_back(point);
+      }
+    }
+  }
+
   std::vector<Eigen::Vector3d> points;
 };
 
-Target makeTarget(int rows, int cols, double spacing);
-
-// Helper
-CorrespondenceSet zip(const Target& target, const std::vector<Eigen::Vector2d>& image_obs);
-
-Eigen::Isometry3d perturbPose(const Eigen::Isometry3d& pose, double spatial_noise, double angle_noise);
+/**
+ * @brief perturbPose
+ * @param pose
+ * @param spatial_noise
+ * @param angle_noise
+ * @return
+ */
+Eigen::Isometry3d perturbPose(const Eigen::Isometry3d &pose,
+                              double spatial_noise,
+                              double angle_noise);
 
 }
 }

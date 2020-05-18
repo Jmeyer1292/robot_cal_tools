@@ -47,20 +47,44 @@ struct Pose6d
 // Useful typedefs shared by calibrations
 struct Correspondence2D3D
 {
+  Correspondence2D3D()
+    : in_target(Eigen::Vector3d::Zero())
+    , in_image(Eigen::Vector2d::Zero())
+  {
+  }
+
+  Correspondence2D3D(const Eigen::Vector3d& in_target_,
+                     const Eigen::Vector2d& in_image_)
+    : in_target(in_target_)
+    , in_image(in_image_)
+  {
+  }
+
   Eigen::Vector3d in_target;
   Eigen::Vector2d in_image;
 };
-
 using CorrespondenceSet = std::vector<Correspondence2D3D>;
 
 struct Correspondence3D3D
 {
+  Correspondence3D3D()
+    : in_target(Eigen::Vector3d::Zero())
+    , in_image(Eigen::Vector3d::Zero())
+  {
+  }
+
+  Correspondence3D3D(const Eigen::Vector3d& in_target_,
+                     const Eigen::Vector3d& in_image_)
+    : in_target(in_target_)
+    , in_image(in_image_)
+  {
+  }
+
   Eigen::Vector3d in_target;
   Eigen::Vector3d in_image;
 };
-
 using Correspondence3DSet = std::vector<Correspondence3D3D>;
 
-}
+} // namespace rct_optimizations
 
 #endif

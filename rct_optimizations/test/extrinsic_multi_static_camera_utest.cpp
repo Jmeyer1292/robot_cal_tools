@@ -1,24 +1,12 @@
 #include <gtest/gtest.h>
 #include <rct_optimizations/extrinsic_multi_static_camera.h>
 #include <rct_optimizations/ceres_math_utilities.h>
+#include <rct_optimizations_tests/utilities.h>
+#include <rct_optimizations_tests/observation_creator.h>
 
-void makePoints(std::size_t rows, std::size_t cols, double spacing, std::vector<Eigen::Vector3d>& points)
-{
-  points.reserve(rows * cols);
+using namespace rct_optimizations;
 
-  for (std::size_t i = 1; i < (rows + 1); i++)
-  {
-    double y = (rows - i) * spacing;
-    for (std::size_t j = 0; j < cols; j++)
-    {
-      double x = j * spacing;
-      Eigen::Vector3d point(x, y, 0.0);
-      points.push_back(point);
-    }
-  }
-}
-
-void printResults(const rct_optimizations::ExtrinsicMultiStaticCameraMovingTargetResult &opt_result)
+void printResults(const ExtrinsicMultiStaticCameraMovingTargetResult &opt_result)
 {
   // Report results
   std::cout << "Did converge?: " << opt_result.converged << "\n";
@@ -46,83 +34,116 @@ void printResults(const rct_optimizations::ExtrinsicMultiStaticCameraMovingTarge
   }
 }
 
-void addObservations(const Eigen::Vector3d& axis,
-                     const std::vector<Eigen::Vector3d> &target_points,
-                     const std::vector<Eigen::Isometry3d> &base_to_camera,
-                     const Eigen::Isometry3d &wrist_to_target,
-                     rct_optimizations::ExtrinsicMultiStaticCameraMovingTargetProblem &problem_def)
+struct Observations
 {
-  for (int i = -10; i <= 10; ++i)
-  {
-    Eigen::Isometry3d base_to_wrist;
+  std::vector<Eigen::Isometry3d> wrist_poses;
+  std::vector<CorrespondenceSet> correspondences;
+};
 
+Observations addObservations(const test::Target &target,
+                             const test::Camera &camera,
+                             const Eigen::Isometry3d &base_to_camera,
+                             const Eigen::Isometry3d &wrist_to_target,
+                             const Eigen::Vector3d &axis)
+{
+  const int n = 20;
+
+  Observations obs;
+  obs.wrist_poses.reserve(n + 1);
+  obs.correspondences.reserve(n + 1);
+
+  // Add a grid of robot poses and associated target observations
+  for (int i = -(n / 2); i <= (n / 2); ++i)
+  {
     Eigen::Isometry3d link_1 = Eigen::Isometry3d::Identity();
     link_1.translation() = Eigen::Vector3d(0, 0, 0.25);
 
-    Eigen::Isometry3d link_2(Eigen::AngleAxisd(i * M_PI/180.0, axis));
+    Eigen::Isometry3d link_2(Eigen::AngleAxisd(i * M_PI / 180.0, axis));
     link_2.translation() = Eigen::Vector3d(0, 0, 0.25);
 
-    base_to_wrist = link_1 * link_2;
+    Eigen::Isometry3d base_to_wrist = link_1 * link_2;
+    Eigen::Isometry3d base_to_target = base_to_wrist * wrist_to_target;
 
-    for (std::size_t c = 0; c < problem_def.intr.size(); ++c)
+    // Get visible observations
+    CorrespondenceSet obs_set = test::getCorrespondences(base_to_camera,
+                                                         base_to_target,
+                                                         camera,
+                                                         target,
+                                                         false);
+
+    if (obs_set.size() > 0)
     {
-      problem_def.wrist_poses[c].push_back(base_to_wrist);
-
-      rct_optimizations::CorrespondenceSet obs_set;
-      for (std::size_t j = 0; j < target_points.size(); ++j)
-      {
-        rct_optimizations::Correspondence2D3D pair;
-
-        Eigen::Isometry3d target_to_camera = wrist_to_target.inverse() * base_to_wrist.inverse() * base_to_camera[c];
-        Eigen::Vector3d in_camera = target_to_camera.inverse() * target_points[j];
-
-        double uv[2];
-        rct_optimizations::projectPoint(problem_def.intr[c], in_camera.data(), uv);
-        pair.in_image = Eigen::Vector2d(uv[0], uv[1]);
-        pair.in_target = target_points[j];
-
-        obs_set.push_back(pair);
-      }
-      problem_def.image_observations[c].push_back(obs_set);
+      obs.wrist_poses.push_back(base_to_wrist);
+      obs.correspondences.push_back(obs_set);
     }
   }
+
+  return obs;
 }
 
 TEST(ExtrinsicMultiStaticCamera, single_camera)
 {
-  rct_optimizations::ExtrinsicMultiStaticCameraMovingTargetProblem problem_def;
-  std::vector<Eigen::Vector3d> target_points;
-  makePoints(5, 5, 0.015, target_points);
+  ExtrinsicMultiStaticCameraMovingTargetProblem problem_def;
 
+  // Create a target
+  test::Target target(5, 5, 0.015);
+
+  // Create the base to camera transform
   std::vector<Eigen::Isometry3d> base_to_camera;
   base_to_camera.push_back(Eigen::Isometry3d(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX())));
   base_to_camera[0].translation() = Eigen::Vector3d(0, 0, 2.0);
 
+  // Create the wrist to target transform
   Eigen::Isometry3d wrist_to_target = Eigen::Isometry3d::Identity();
   wrist_to_target.translation() = Eigen::Vector3d(0, 0, 0.25);
 
+  // Set up the problem
   problem_def.intr.resize(1);
-  problem_def.base_to_camera_guess.resize(1);
-  problem_def.wrist_poses.resize(1);
-  problem_def.image_observations.resize(1);
+  problem_def.intr.at(0).fx() = 1411.0;
+  problem_def.intr.at(0).fy() = 1408.0;
+  problem_def.intr.at(0).cx() = 807.2;
+  problem_def.intr.at(0).cy() = 615.0;
 
+  problem_def.base_to_camera_guess.resize(problem_def.intr.size());
   problem_def.base_to_camera_guess[0] = Eigen::Isometry3d(Eigen::AngleAxisd(M_PI + 0.01, Eigen::Vector3d::UnitX()));
   problem_def.base_to_camera_guess[0].translation() = Eigen::Vector3d(0.01, 0.001, 1.99);
 
   problem_def.wrist_to_target_guess = Eigen::Isometry3d::Identity();
   problem_def.wrist_to_target_guess.translation() = Eigen::Vector3d(0.001, 0.001, 0.26);
 
-  problem_def.intr[0].fx() = 1411.0;
-  problem_def.intr[0].fy() = 1408.0;
-  problem_def.intr[0].cx() = 807.2;
-  problem_def.intr[0].cy() = 615.0;
+  // Add the observations
+  problem_def.wrist_poses.resize(problem_def.intr.size());
+  problem_def.image_observations.resize(problem_def.intr.size());
 
-  addObservations(Eigen::Vector3d::UnitY(), target_points, base_to_camera, wrist_to_target, problem_def);
-  addObservations(Eigen::Vector3d::UnitX(), target_points, base_to_camera, wrist_to_target, problem_def);
+  // Set up variables for observation generation
+  std::vector<Eigen::Vector3d> axes = {Eigen::Vector3d::UnitY(), Eigen::Vector3d::UnitX()};
+
+  // Generate observations for each camera
+  for (std::size_t i = 0; i < problem_def.intr.size(); ++i)
+  {
+    // Create the camera
+    test::Camera camera;
+    camera.intr = problem_def.intr.at(i);
+    camera.width = 1600;
+    camera.height = 1200;
+
+    // Generate various data by rotating about different axes
+    for(const auto& axis : axes)
+    {
+      auto tmp = addObservations(target, camera, base_to_camera.at(i), wrist_to_target, axis);
+
+      // Add the wrist poses to the problem
+      auto &poses = problem_def.wrist_poses.at(i);
+      poses.insert(poses.end(), tmp.wrist_poses.begin(), tmp.wrist_poses.end());
+
+      // Add the image_observations to the problem
+      auto &obs = problem_def.image_observations.at(i);
+      obs.insert(obs.end(), tmp.correspondences.begin(), tmp.correspondences.end());
+    }
+  }
 
   // Run optimization
-  rct_optimizations::ExtrinsicMultiStaticCameraMovingTargetResult
-      opt_result = rct_optimizations::optimize(problem_def);
+  ExtrinsicMultiStaticCameraMovingTargetResult opt_result = optimize(problem_def);
 
   EXPECT_TRUE(opt_result.converged);
   EXPECT_TRUE(opt_result.final_cost_per_obs < 1e-15);
@@ -133,32 +154,36 @@ TEST(ExtrinsicMultiStaticCamera, single_camera)
   }
 
   printResults(opt_result);
-
-
 }
 
 TEST(ExtrinsicMultiStaticCamera, two_cameras)
 {
-  rct_optimizations::ExtrinsicMultiStaticCameraMovingTargetProblem problem_def;
-  std::vector<Eigen::Vector3d> target_points;
-  makePoints(5, 5, 0.015, target_points);
+  ExtrinsicMultiStaticCameraMovingTargetProblem problem_def;
 
-  std::vector<Eigen::Isometry3d> base_to_camera;
+  // Create a target
+  test::Target target(5, 5, 0.015);
+
+  // Create the wrist to target transform
   Eigen::Isometry3d wrist_to_target = Eigen::Isometry3d::Identity();
+  wrist_to_target.translation() = Eigen::Vector3d(0, 0, 0.25);
 
+  // Create the base to camera transforms
+  std::vector<Eigen::Isometry3d> base_to_camera;
   base_to_camera.resize(2);
   base_to_camera[0] = Eigen::Isometry3d(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
   base_to_camera[0].translation() = Eigen::Vector3d(-0.1, 0, 2.0);
   base_to_camera[1] = Eigen::Isometry3d(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
   base_to_camera[1].translation() = Eigen::Vector3d(0.1, 0, 2.0);
 
-  wrist_to_target.translation() = Eigen::Vector3d(0, 0, 0.25);
-
+  // Set up the problem
   problem_def.intr.resize(2);
-  problem_def.base_to_camera_guess.resize(2);
-  problem_def.wrist_poses.resize(2);
-  problem_def.image_observations.resize(2);
+  problem_def.intr.at(0).fx() = 1411.0;
+  problem_def.intr.at(0).fy() = 1408.0;
+  problem_def.intr.at(0).cx() = 807.2;
+  problem_def.intr.at(0).cy() = 615.0;
+  problem_def.intr.at(1) = problem_def.intr.at(0);
 
+  problem_def.base_to_camera_guess.resize(problem_def.intr.size());
   problem_def.base_to_camera_guess[0] = Eigen::Isometry3d(Eigen::AngleAxisd(M_PI + 0.01, Eigen::Vector3d::UnitX()));
   problem_def.base_to_camera_guess[0].translation() = Eigen::Vector3d(-0.101, 0.001, 1.99);
   problem_def.base_to_camera_guess[1] = Eigen::Isometry3d(Eigen::AngleAxisd(M_PI + 0.02, Eigen::Vector3d::UnitX()));
@@ -166,19 +191,41 @@ TEST(ExtrinsicMultiStaticCamera, two_cameras)
 
   problem_def.wrist_to_target_guess = Eigen::Isometry3d::Identity();
   problem_def.wrist_to_target_guess.translation() = Eigen::Vector3d(0.001, 0.001, 0.26);
-
-  problem_def.intr[0].fx() = 1411.0;
-  problem_def.intr[0].fy() = 1408.0;
-  problem_def.intr[0].cx() = 807.2;
-  problem_def.intr[0].cy() = 615.0;
   problem_def.intr[1] = problem_def.intr[0];
 
-  addObservations(Eigen::Vector3d::UnitY(), target_points, base_to_camera, wrist_to_target, problem_def);
-  addObservations(Eigen::Vector3d::UnitX(), target_points, base_to_camera, wrist_to_target, problem_def);
+  // Add the observations
+  problem_def.wrist_poses.resize(problem_def.intr.size());
+  problem_def.image_observations.resize(problem_def.intr.size());
+
+  // Set up variables for observation generation
+  std::vector<Eigen::Vector3d> axes = {Eigen::Vector3d::UnitY(), Eigen::Vector3d::UnitX()};
+
+  // Generate observations for each camera
+  for (std::size_t i = 0; i < problem_def.intr.size(); ++i)
+  {
+    // Create the camera
+    test::Camera camera;
+    camera.intr = problem_def.intr.at(i);
+    camera.width = 1600;
+    camera.height = 1200;
+
+    // Generate various data by rotating about different axes
+    for(const auto& axis : axes)
+    {
+      auto tmp = addObservations(target, camera, base_to_camera.at(i), wrist_to_target, axis);
+
+      // Add the wrist poses to the problem
+      auto &poses = problem_def.wrist_poses.at(i);
+      poses.insert(poses.end(), tmp.wrist_poses.begin(), tmp.wrist_poses.end());
+
+      // Add the image_observations to the problem
+      auto &obs = problem_def.image_observations.at(i);
+      obs.insert(obs.end(), tmp.correspondences.begin(), tmp.correspondences.end());
+    }
+  }
 
   // Run optimization
-  rct_optimizations::ExtrinsicMultiStaticCameraMovingTargetResult
-      opt_result = rct_optimizations::optimize(problem_def);
+  ExtrinsicMultiStaticCameraMovingTargetResult opt_result = optimize(problem_def);
 
   EXPECT_TRUE(opt_result.converged);
   EXPECT_TRUE(opt_result.final_cost_per_obs < 1e-15);
