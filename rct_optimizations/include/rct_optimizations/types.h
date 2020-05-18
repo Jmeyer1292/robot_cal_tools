@@ -53,6 +53,13 @@ struct Correspondence2D3D
   {
   }
 
+  Correspondence2D3D(const Eigen::Vector3d& in_target_,
+                     const Eigen::Vector2d& in_image_)
+    : in_target(in_target_)
+    , in_image(in_image_)
+  {
+  }
+
   Eigen::Vector3d in_target;
   Eigen::Vector2d in_image;
 };
@@ -63,6 +70,13 @@ struct Correspondence3D3D
   Correspondence3D3D()
     : in_target(Eigen::Vector3d::Zero())
     , in_image(Eigen::Vector3d::Zero())
+  {
+  }
+
+  Correspondence3D3D(const Eigen::Vector3d& in_target_,
+                     const Eigen::Vector3d& in_image_)
+    : in_target(in_target_)
+    , in_image(in_image_)
   {
   }
 
