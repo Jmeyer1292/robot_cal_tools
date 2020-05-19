@@ -5,6 +5,7 @@
 // Test utilities
 #include <rct_optimizations_tests/utilities.h>
 #include <rct_optimizations_tests/observation_creator.h>
+#include <rct_optimizations_tests/pose_generator.h>
 
 using namespace rct_optimizations;
 
@@ -52,8 +53,19 @@ void run_test(InitialConditions condition)
   // Create some number of "test" images...
   //    We'll take pictures in a grid above the origin of the target
   std::vector<Eigen::Isometry3d> wrist_poses;
-  std::vector<CorrespondenceSet> correspondences;
-  for (int i = -5; i < 5; ++i)
+
+  //std::vector<Eigen::Affine3d> wrist_poses;
+  std::vector<rct_optimizations::CorrespondenceSet> correspondences;
+
+  //hemisphere poses: radius 2, 10 rows of 10 observations
+  std::vector<Eigen::Isometry3d>camera_poses = rct_optimizations::test::genHemispherePose(true_base_to_target,
+                                                           2,
+                                                           10,
+                                                           10
+        );
+  /* //Heres what we replace:
+
+  for (int i = -5; i < 5; theta_cnt++i)
   {
     for (int j = -5; j < 5; ++j)
     {
@@ -61,25 +73,29 @@ void run_test(InitialConditions condition)
       Eigen::Isometry3d camera_pose = test::lookAt(center_point,
                                                    true_base_to_target.translation(),
                                                    Eigen::Vector3d(1, 0, 0));
-      Eigen::Isometry3d wrist_pose = camera_pose * true_wrist_to_camera.inverse();
 
-      // Attempt to generate points
-      try
-      {
-        CorrespondenceSet corr = getCorrespondences(camera_pose,
-                                                    true_base_to_target,
-                                                    camera,
-                                                    grid,
-                                                    true);
-        correspondences.push_back(corr);
-        wrist_poses.push_back(wrist_pose);
-      }
-      catch (const std::exception& ex)
-      {
-        continue;
-      }
-    }
+ */
+ for (auto& pose : camera_poses)
+ {
+     Eigen::Isometry3d wrist_pose = pose * true_wrist_to_camera.inverse();
+
+       // Attempt to generate points
+       try
+       {
+         CorrespondenceSet corr = getCorrespondences(pose,
+                                                     true_base_to_target,
+                                                     camera,
+                                                     grid,
+                                                     true);
+         correspondences.push_back(corr);
+         wrist_poses.push_back(wrist_pose);
+       }
+       catch (const std::exception& ex)
+       {
+         continue;
+       }
   }
+
 
   // Fill out the calibration
   ExtrinsicCameraOnWristProblem problem;
