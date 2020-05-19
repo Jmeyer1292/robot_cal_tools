@@ -8,124 +8,209 @@
 
 using namespace rct_optimizations;
 
-namespace
-{
-static void printResults(const ExtrinsicHandEyeResult& r)
-{
-  // Report results
-  std::cout << "Did converge?: " << r.converged << "\n";
-  std::cout << "Initial cost?: " << r.initial_cost_per_obs << "\n";
-  std::cout << "Final cost?: " << r.final_cost_per_obs << "\n";
-
-  Eigen::Isometry3d c = r.wrist_to_camera;
-  Eigen::Isometry3d t = r.base_to_target;
-
-  std::cout << "Wrist to Camera:\n";
-  std::cout << c.matrix() << "\n";
-  std::cout << "Base to Target:\n";
-  std::cout << t.matrix() << "\n";
-}
-
 enum class InitialConditions
 {
-  PERFECT, IDENTITY_TARGET, RANDOM_AROUND_ANSWER
+  PERFECT,
+  RANDOM_AROUND_ANSWER
 };
 
-} // namespace anonymous
-
-void run_test(InitialConditions condition)
+template<typename ProblemT>
+struct ProblemCreator
 {
-  test::Target grid(5, 7, 0.025);
+  static Eigen::Isometry3d createPose(const Eigen::Isometry3d &pose, const InitialConditions &init)
+  {
+    Eigen::Isometry3d out(pose);
+    switch (init)
+    {
+    case InitialConditions::RANDOM_AROUND_ANSWER:
+    {
+      const double spatial_noise = 0.25; // +/- 0.25 meters
+      const double angular_noise = 45. * M_PI / 180.0; // +/- 45 degrees
+      out = test::perturbPose(pose, spatial_noise, angular_noise);
+      break;
+    }
+    default: // PERFECT
+      out = pose;
+    }
 
-  // Define the "true" conditions
-  auto true_base_to_target = Eigen::Isometry3d::Identity();
-  true_base_to_target.translation() = Eigen::Vector3d(1.0, 0, 0);
+    return out;
+  }
 
-  auto true_wrist_to_camera = Eigen::Isometry3d::Identity();
-  true_wrist_to_camera.translation() = Eigen::Vector3d(0.05, 0, 0.1);
-  true_wrist_to_camera.linear() <<  0,  0,  1,
-                                   -1,  0,  0,
-                                    0, -1,  0;
+  static ProblemT createProblem(const Eigen::Isometry3d &true_target,
+                                const Eigen::Isometry3d &true_camera,
+                                const test::Target &target,
+                                const InitialConditions &init);
 
-  // Set up the calibration problem
-  ExtrinsicHandEyeProblem3D3D problem;
+  /** @brief The maximum allowable cost per observation for this problem
+   * Note: this cost is squared (i.e. pixels^2 or m^2) */
+  static double max_cost_per_obs;
+};
 
-  // Create some number of "test" images...
-  // We'll take pictures in a grid above the origin of the target
+template<>
+ExtrinsicHandEyeProblem2D3D ProblemCreator<ExtrinsicHandEyeProblem2D3D>::createProblem(
+  const Eigen::Isometry3d &true_target,
+  const Eigen::Isometry3d &true_camera,
+  const test::Target &target,
+  const InitialConditions &init)
+{
+  test::Camera camera = test::makeKinectCamera();
+
+  ExtrinsicHandEyeProblem2D3D problem;
+  problem.intr = camera.intr;
+  problem.base_to_target_guess = createPose(true_target, init);
+  problem.wrist_to_camera_guess = createPose(true_camera, init);
+
+  // Create observations
   for (int i = -5; i < 5; ++i)
   {
     for (int j = -5; j < 5; ++j)
     {
-      Eigen::Vector3d center_point = true_base_to_target.translation() + Eigen::Vector3d(i * 0.025, j * 0.025, 1.0);
+      Eigen::Vector3d center_point = true_target.translation()
+                                     + Eigen::Vector3d(i * 0.025, j * 0.025, 1.0);
       Eigen::Isometry3d camera_pose = test::lookAt(center_point,
-                                                   true_base_to_target.translation(),
+                                                   true_target.translation(),
                                                    Eigen::Vector3d(1, 0, 0));
-      Eigen::Isometry3d wrist_pose = camera_pose * true_wrist_to_camera.inverse();
+      Eigen::Isometry3d wrist_pose = camera_pose * true_camera.inverse();
 
       // Attempt to generate points
       try
       {
-        Observation3D3D obs;
-        obs.correspondence_set = getCorrespondences(camera_pose, true_base_to_target, grid);
+        Observation2D3D obs;
+        obs.correspondence_set = getCorrespondences(camera_pose, true_target, camera, target, true);
         obs.to_camera_mount = wrist_pose;
+        obs.to_target_mount = Eigen::Isometry3d::Identity();
         problem.observations.push_back(obs);
       }
-      catch (const std::exception& ex)
+      catch (const std::exception &ex)
       {
         continue;
       }
     }
   }
 
-  // Set the initial guess
-  if (condition == InitialConditions::PERFECT)
+  return problem;
+}
+
+template<>
+double ProblemCreator<ExtrinsicHandEyeProblem2D3D>::max_cost_per_obs = 1.0;
+
+template<>
+ExtrinsicHandEyeProblem3D3D ProblemCreator<ExtrinsicHandEyeProblem3D3D>::createProblem(
+  const Eigen::Isometry3d &true_target,
+  const Eigen::Isometry3d &true_camera,
+  const test::Target &target,
+  const InitialConditions &init)
+{
+  ExtrinsicHandEyeProblem3D3D problem;
+  problem.base_to_target_guess = createPose(true_target, init);
+  problem.wrist_to_camera_guess = createPose(true_camera, init);
+
+  // Create observations
+  for (int i = -5; i < 5; ++i)
   {
-    problem.base_to_target_guess = true_base_to_target;
-    problem.wrist_to_camera_guess = true_wrist_to_camera;
-  }
-  else if (condition == InitialConditions::IDENTITY_TARGET)
-  {
-    problem.base_to_target_guess.setIdentity();
-    problem.wrist_to_camera_guess = true_wrist_to_camera;
-  }
-  else // condition == RANDOM
-  {
-    const double spatial_noise = 0.25; // +/- 0.25 meters
-    const double angular_noise = 45. * M_PI / 180.0; // +/- 45 degrees
-    problem.base_to_target_guess = test::perturbPose(true_base_to_target, spatial_noise, angular_noise);
-    problem.wrist_to_camera_guess = test::perturbPose(true_wrist_to_camera, spatial_noise, angular_noise);
-    std::cout << "initial base to target:\n" << problem.base_to_target_guess.matrix() << "\n";
-    std::cout << "initial wrist to camera:\n" << problem.wrist_to_camera_guess.matrix() << "\n";
+    for (int j = -5; j < 5; ++j)
+    {
+      Eigen::Vector3d center_point = true_target.translation()
+                                     + Eigen::Vector3d(i * 0.025, j * 0.025, 1.0);
+      Eigen::Isometry3d camera_pose = test::lookAt(center_point,
+                                                   true_target.translation(),
+                                                   Eigen::Vector3d(1, 0, 0));
+      Eigen::Isometry3d wrist_pose = camera_pose * true_camera.inverse();
+
+      Observation3D3D obs;
+      obs.correspondence_set = getCorrespondences(camera_pose, true_target, target);
+      obs.to_camera_mount = wrist_pose;
+      obs.to_target_mount = Eigen::Isometry3d::Identity();
+      problem.observations.push_back(obs);
+    }
   }
 
+  return problem;
+}
+
+template<>
+double ProblemCreator<ExtrinsicHandEyeProblem3D3D>::max_cost_per_obs = std::pow(1.0e-6, 2.0);
+
+template<typename ProblemT>
+class HandEyeTest : public ::testing::Test
+{
+  public:
+  HandEyeTest()
+    : true_target_mount_to_target(Eigen::Isometry3d::Identity())
+    , true_camera_mount_to_camera(Eigen::Isometry3d::Identity())
+    , target(7, 5, 0.025)
+  {
+    true_target_mount_to_target.translate(Eigen::Vector3d(1.0, 0, 0.0));
+
+    true_camera_mount_to_camera.translation() = Eigen::Vector3d(0.05, 0, 0.1);
+    true_camera_mount_to_camera.linear() << 0, 0, 1, -1, 0, 0, 0, -1, 0;
+  }
+
+  static void printResults(const ExtrinsicHandEyeResult &r)
+  {
+    // Report results
+    std::cout << "Did converge?: " << r.converged << "\n";
+    std::cout << "Initial cost?: " << r.initial_cost_per_obs << "\n";
+    std::cout << "Final cost?: " << r.final_cost_per_obs << "\n";
+
+    Eigen::Isometry3d c = r.wrist_to_camera;
+    Eigen::Isometry3d t = r.base_to_target;
+
+    std::cout << "Wrist to Camera:\n";
+    std::cout << c.matrix() << "\n";
+    std::cout << "Base to Target:\n";
+    std::cout << t.matrix() << "\n";
+  }
+
+  Eigen::Isometry3d true_target_mount_to_target;
+  Eigen::Isometry3d true_camera_mount_to_camera;
+  test::Target target;
+};
+
+using Implementations = ::testing::Types<ExtrinsicHandEyeProblem2D3D, ExtrinsicHandEyeProblem3D3D>;
+
+TYPED_TEST_CASE(HandEyeTest, Implementations);
+
+TYPED_TEST(HandEyeTest, PerfectInitialConditions)
+{
+  TypeParam prob = ProblemCreator<TypeParam>::createProblem(this->true_target_mount_to_target,
+                                                            this->true_camera_mount_to_camera,
+                                                            this->target,
+                                                            InitialConditions::PERFECT);
   // Run the optimization
-  auto result = optimize(problem);
+  auto result = optimize(prob);
 
   // Make sure it converged to the correct answer
   EXPECT_TRUE(result.converged);
-  EXPECT_TRUE(result.final_cost_per_obs < 1.0);
+  EXPECT_TRUE(result.final_cost_per_obs < ProblemCreator<TypeParam>::max_cost_per_obs);
 
-  EXPECT_TRUE(result.base_to_target.isApprox(true_base_to_target, 1e-6));
-  EXPECT_TRUE(result.wrist_to_camera.isApprox(true_wrist_to_camera, 1e-6));
+  EXPECT_TRUE(result.base_to_target.isApprox(this->true_target_mount_to_target, 1e-6));
+  EXPECT_TRUE(result.wrist_to_camera.isApprox(this->true_camera_mount_to_camera, 1e-6));
 
-  printResults(result);
+  this->printResults(result);
 }
 
-TEST(HandEye3D, perfect_start)
+TYPED_TEST(HandEyeTest, RandomAroundAnswerInitialConditions)
 {
-  run_test(InitialConditions::PERFECT);
-}
+  for (std::size_t i = 0; i < 10; ++i)
+  {
+    TypeParam prob
+      = ProblemCreator<TypeParam>::createProblem(this->true_target_mount_to_target,
+                                                 this->true_camera_mount_to_camera,
+                                                 this->target,
+                                                 InitialConditions::RANDOM_AROUND_ANSWER);
+    // Run the optimization
+    auto result = optimize(prob);
 
-TEST(HandEye3D, identity_target_start)
-{
-  run_test(InitialConditions::IDENTITY_TARGET);
-}
+    // Make sure it converged to the correct answer
+    EXPECT_TRUE(result.converged);
+    EXPECT_TRUE(result.final_cost_per_obs < ProblemCreator<TypeParam>::max_cost_per_obs);
 
-TEST(HandEye3D, perturbed_start)
-{
-  // Run 10 random tests
-  for (int i = 0; i < 10; ++i)
-    run_test(InitialConditions::RANDOM_AROUND_ANSWER);
+    EXPECT_TRUE(result.base_to_target.isApprox(this->true_target_mount_to_target, 1e-6));
+    EXPECT_TRUE(result.wrist_to_camera.isApprox(this->true_camera_mount_to_camera, 1e-6));
+
+    this->printResults(result);
+  }
 }
 
 int main(int argc, char **argv)
