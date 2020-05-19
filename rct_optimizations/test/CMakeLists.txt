@@ -35,7 +35,7 @@ add_dependencies(${PROJECT_NAME}_extrinsic_hand_eye_tests ${PROJECT_NAME})
 add_dependencies(run_tests ${PROJECT_NAME}_extrinsic_hand_eye_tests)
 
 add_executable(${PROJECT_NAME}_dh_parameter_tests dh_parameter_utest.cpp)
-target_link_libraries(${PROJECT_NAME}_dh_parameter_tests PRIVATE GTest::GTest GTest::Main)
+target_link_libraries(${PROJECT_NAME}_dh_parameter_tests PRIVATE ${PROJECT_NAME}_test_support GTest::GTest GTest::Main)
 rct_gtest_discover_tests(${PROJECT_NAME}_dh_parameter_tests)
 add_dependencies(${PROJECT_NAME}_dh_parameter_tests ${PROJECT_NAME})
 add_dependencies(run_tests ${PROJECT_NAME}_dh_parameter_tests)
