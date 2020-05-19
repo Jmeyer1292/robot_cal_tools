@@ -199,6 +199,7 @@ ExtrinsicHandEyeResult optimize(const ExtrinsicHandEyeProblem2D3D& params)
   }
 
   ceres::Solver::Options options;
+  options.max_num_iterations = 150;
   ceres::Solver::Summary summary;
 
   ceres::Solve(options, &problem, &summary);

@@ -138,7 +138,7 @@ class HandEyeTest : public ::testing::Test
   HandEyeTest()
     : true_target_mount_to_target(Eigen::Isometry3d::Identity())
     , true_camera_mount_to_camera(Eigen::Isometry3d::Identity())
-    , target(7, 5, 0.025)
+    , target(5, 7, 0.025)
   {
     true_target_mount_to_target.translate(Eigen::Vector3d(1.0, 0, 0.0));
 
