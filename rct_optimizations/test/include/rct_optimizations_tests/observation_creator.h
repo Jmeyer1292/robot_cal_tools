@@ -43,6 +43,7 @@ Correspondence3DSet getCorrespondences(const Eigen::Isometry3d &camera_pose,
  * @param eye - A point that the camera is looking at
  * @param up - The upvector in world-space
  */
+
 Eigen::Isometry3d lookAt(const Eigen::Vector3d &origin,
                          const Eigen::Vector3d &eye,
                          const Eigen::Vector3d &up) noexcept;

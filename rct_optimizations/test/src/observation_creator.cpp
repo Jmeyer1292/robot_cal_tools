@@ -75,6 +75,7 @@ Correspondence3DSet getCorrespondences(const Eigen::Isometry3d &camera_pose,
 Eigen::Isometry3d lookAt(const Eigen::Vector3d &origin,
                          const Eigen::Vector3d &eye,
                          const Eigen::Vector3d &up) noexcept
+
 {
   Eigen::Vector3d z = (eye - origin).normalized();
   Eigen::Vector3d x = z.cross(up).normalized();
