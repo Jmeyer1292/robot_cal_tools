@@ -71,67 +71,6 @@ protected:
   Eigen::Vector3d target_pt_;
 };
 
-//template<>
-//class ObservationCost<2>
-//{
-//  ObservationCost(const Eigen::Vector3d &obs,
-//                  const Eigen::Isometry3d &camera_mount_to_base,
-//                  const Eigen::Isometry3d &base_to_target_mount,
-//                  const Eigen::Matrix<double, 2, 1> &point_in_target,
-//                  const CameraIntrinsics& intr)
-//    : obs_(obs)
-//    , camera_mount_to_base_(poseEigenToCal(camera_mount_to_base))
-//    , base_to_target_mount_(poseEigenToCal(base_to_target_mount))
-//    , target_pt_(point_in_target)
-//    , intr_(intr)
-//  {
-//  }
-
-//  template<typename T>
-//  bool operator()(const T *pose_camera_to_camera_mount,
-//                  const T *pose_target_mount_to_target,
-//                  T *residual) const
-//  {
-//    // Get the point in the frame of the camera
-//    T camera_point[3];
-//    getTargetPointInCamera(pose_camera_to_camera_mount, pose_target_mount_to_target, camera_point);
-
-//    // Project the point into the image
-//    T xy_image[2];
-//    projectPoint(intr_, camera_point, xy_image);
-
-//    // Calculate the residual error
-//    residual[0] = xy_image[0] - obs_.x();
-//    residual[1] = xy_image[1] - obs_.y();
-
-//    return true;
-//  }
-
-//  Eigen::Matrix<double, 2, 1> obs_;
-//  Pose6d camera_mount_to_base_;
-//  Pose6d base_to_target_mount_;
-//  Eigen::Vector3d target_pt_;
-//  CameraIntrinsics intr_;
-//};
-
-//template<>
-//template<typename T>
-//bool ObservationCost<3>::operator()(const T *pose_camera_to_camera_mount,
-//                                    const T *pose_target_mount_to_target,
-//                                    T *residual) const
-//{
-//  // Get the target point in the frame of the camera
-//  T camera_point[3];
-//  getTargetPointInCamera(pose_camera_to_camera_mount, pose_target_mount_to_target, camera_point);
-
-//  // Calculate the residual error
-//  residual[0] = camera_point[0] - obs_.x();
-//  residual[1] = camera_point[1] - obs_.y();
-//  residual[2] = camera_point[2] - obs_.z();
-
-//  return true;
-//}
-
 /**
  * @brief The ObservationCost2D3D class
  */
