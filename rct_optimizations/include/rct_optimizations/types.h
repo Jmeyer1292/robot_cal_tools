@@ -52,33 +52,33 @@ struct Pose6d
 /**
  * @brief A pair of corresponding features in a N-dimensional sensor "image" and 3D target
  */
-template<Eigen::Index OBS_DIMENSION>
+template<Eigen::Index IMAGE_DIM, Eigen::Index WORLD_DIM>
 struct Correspondence
 {
-  using Set = std::vector<Correspondence<OBS_DIMENSION>>;
+  using Set = std::vector<Correspondence<IMAGE_DIM, WORLD_DIM>>;
   Correspondence()
-    : in_target(Eigen::Vector3d::Zero())
-    , in_image(Eigen::Matrix<double, OBS_DIMENSION, 1>::Zero())
+    : in_image(Eigen::Matrix<double, IMAGE_DIM, 1>::Zero())
+    , in_target(Eigen::Matrix<double, WORLD_DIM, 1>::Zero())
   {
   }
 
-  Correspondence(const Eigen::Vector3d& in_target_,
-                 const Eigen::Matrix<double, OBS_DIMENSION, 1>& in_image_)
+  Correspondence(const Eigen::Matrix<double, IMAGE_DIM, 1>& in_image_,
+                 const Eigen::Matrix<double, WORLD_DIM, 1>& in_target_)
     : in_target(in_target_)
     , in_image(in_image_)
   {
   }
 
-  /** @brief XYZ location of the feature relative to the target origin (meters) */
-  Eigen::Vector3d in_target;
-
   /** @brief N-dimensional location of the feature relative to the sensor */
-  Eigen::Matrix<double, OBS_DIMENSION, 1> in_image;
+  Eigen::Matrix<double, IMAGE_DIM, 1> in_image;
+
+  /** @brief N-dimensional location of the feature relative to the target origin */
+  Eigen::Matrix<double, WORLD_DIM, 1> in_target;
 };
 /** @brief Typedef for correspondence between 2D feature in image coordinates and 3D feature in target coordinates */
-using Correspondence2D3D = Correspondence<2>;
+using Correspondence2D3D = Correspondence<2, 3>;
 /** @brief Typedef for correspondence between 3D feature in sensor coordinates and 3D feature in target coordinates */
-using Correspondence3D3D = Correspondence<3>;
+using Correspondence3D3D = Correspondence<3, 3>;
 
 // Deprecated typedefs
 using CorrespondenceSet = Correspondence2D3D::Set;
@@ -95,10 +95,10 @@ using Correspondence3DSet = Correspondence3D3D::Set;
  *
  * Keep in mind that the optimization itself determines the final calibrated transforms from these "mount" frames to the camera and target.
  */
-template<Eigen::Index OBS_DIMENSION>
+template<Eigen::Index IMAGE_DIM, Eigen::Index WORLD_DIM>
 struct Observation
 {
-  using Set = std::vector<Observation<OBS_DIMENSION>>;
+  using Set = std::vector<Observation<IMAGE_DIM, WORLD_DIM>>;
   Observation()
     : to_camera_mount(Eigen::Isometry3d::Identity())
     , to_target_mount(Eigen::Isometry3d::Identity())
@@ -113,16 +113,16 @@ struct Observation
   }
 
   /** @brief A set of feature correspondences between the sensor output and target */
-  typename Correspondence<OBS_DIMENSION>::Set correspondence_set;
+  typename Correspondence<IMAGE_DIM, WORLD_DIM>::Set correspondence_set;
   /** @brief The transform to the frame to which the camera is mounted. */
   Eigen::Isometry3d to_camera_mount;
   /** @brief The transform to the frame to which the target is mounted. */
   Eigen::Isometry3d to_target_mount;
 };
 /** @brief Typedef for observations of 2D image to 3D target correspondences */
-using Observation2D3D = Observation<2>;
+using Observation2D3D = Observation<2, 3>;
 /** @brief Typedef for observations of 3D sensor to 3D target correspondences */
-using Observation3D3D = Observation<3>;
+using Observation3D3D = Observation<3, 3>;
 
 } // namespace rct_optimizations
 
