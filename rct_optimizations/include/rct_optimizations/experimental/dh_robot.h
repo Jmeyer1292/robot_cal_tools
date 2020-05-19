@@ -30,14 +30,12 @@ struct DHTransform
   {
   }
 
-  DHTransform(DHJointType type_, double d_, double theta_, double r_, double alpha_)
-    : type(type_)
-    , d(d_)
-    , theta(theta_)
-    , r(r_)
-    , alpha(alpha_)
+  DHTransform(std::array<double, 4> params_, DHJointType type_)
+    : params(std::move(params_))
+    , type(type_)
   {
   }
+
 
   virtual ~DHTransform() = default;
 
@@ -51,23 +49,25 @@ struct DHTransform
     Eigen::Isometry3d transform(Eigen::Isometry3d::Identity());
 
     // Create aliases for the d and theta parameters such that the joint value could be added to them appropriately
-    double d_ = d;
-    double theta_ = theta;
+    double d = params[0];
+    double theta = params[1];
+    double r = params[2];
+    double alpha = params[3];
     switch (type)
     {
     case DHJointType::LINEAR:
-      d_ += joint_value;
+      d += joint_value;
       break;
     case DHJointType::REVOLUTE:
-      theta_ += joint_value;
+      theta += joint_value;
       break;
     default:
       break;
     }
 
     // Perform the DH transformations
-    transform.translate(Eigen::Vector3d(0.0, 0.0, d_));
-    transform.rotate(Eigen::AngleAxisd(theta_, Eigen::Vector3d::UnitZ()));
+    transform.translate(Eigen::Vector3d(0.0, 0.0, d));
+    transform.rotate(Eigen::AngleAxisd(theta, Eigen::Vector3d::UnitZ()));
     transform.translate(Eigen::Vector3d(r, 0.0, 0.0));
     transform.rotate(Eigen::AngleAxisd(alpha, Eigen::Vector3d::UnitX()));
 
@@ -82,14 +82,16 @@ struct DHTransform
     return (dist(gen));
   }
 
+  /** @brief DH parameters
+   *  d: The linear offset in Z
+   *  theta: The rotational offset about Z
+   *  r: The linear offset in X
+   *  alpha: The rotational offset about X
+   */
+  std::array<double, 4> params;
   DHJointType type; /** @brief The type of actuation of the joint */
-  double d; /** @brief The linear offset in Z */
-  double theta; /** @brief The rotational offset about Z */
-  double r; /** @brief The linear offset in X */
-  double alpha; /** @brief The rotational offset about X */
-
-  double max =  M_PI / 2.0; // std::numeric_limits<double>::max(); /** @brief Joint max */
-  double min = -M_PI / 2.0; // std::numeric_limits<double>::lowest(); /** @brief Joint min */
+  double max = M_PI; /** @brief Joint max */
+  double min = -M_PI; /** @brief Joint min */
 };
 
 /**
@@ -104,14 +106,11 @@ struct GaussianNoiseDHTransform : public DHTransform
   {
   }
 
-  GaussianNoiseDHTransform(DHJointType type_,
-                           double d_,
-                           double theta_,
-                           double r_,
-                           double alpha_,
+  GaussianNoiseDHTransform(std::array<double, 4> params_,
+                           DHJointType type_,
                            double mean_,
                            double std_dev_)
-    : DHTransform(type_, d_, theta_, r_, alpha_)
+    : DHTransform(params_, type_)
     , mean(mean_)
     , std_dev(std_dev_)
   {
@@ -172,9 +171,9 @@ public:
   {
     std::vector<double> joints;
     joints.reserve(transforms_.size());
-    for (std::size_t i = 0; i < transforms_.size(); ++i)
+    for (const auto& t : transforms_)
     {
-      joints.push_back(transforms_.at(i)->createRandomJointValue());
+      joints.push_back(t->createRandomJointValue());
     }
     return getFK(joints);
   }
