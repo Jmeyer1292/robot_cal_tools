@@ -1,4 +1,4 @@
-#include <rct_optimizations_tests/robot_observation_creator.h>
+#include <rct_optimizations_tests/dh_chain_observation_creator.h>
 #include <rct_optimizations_tests/observation_creator.h>
 
 namespace rct_optimizations

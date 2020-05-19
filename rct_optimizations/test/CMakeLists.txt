@@ -4,7 +4,7 @@ find_package(GTest REQUIRED)
 add_library(${PROJECT_NAME}_test_support
   src/pose_generator.cpp
   src/observation_creator.cpp
-  src/robot_observation_creator.cpp
+  src/dh_chain_observation_creator.cpp
   src/utilities.cpp)
 target_link_libraries(${PROJECT_NAME}_test_support ${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME}_test_support PUBLIC include)
