@@ -81,8 +81,8 @@ using Correspondence2D3D = Correspondence<2, 3>;
 using Correspondence3D3D = Correspondence<3, 3>;
 
 // Deprecated typedefs
-using CorrespondenceSet = Correspondence2D3D::Set;
-using Correspondence3DSet = Correspondence3D3D::Set;
+using CorrespondenceSet [[deprecated]] = Correspondence2D3D::Set;
+using Correspondence3DSet [[deprecated]] = Correspondence3D3D::Set;
 
 /**
  * @brief A set of data representing a single observation of a calibration target.
