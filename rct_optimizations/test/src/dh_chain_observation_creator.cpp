@@ -69,7 +69,7 @@ Observation2D3D::Set create(const DHChain& to_camera_chain,
                                                     base_to_target,
                                                     camera,
                                                     target,
-                                                    true);
+                                                    false);
       }
       catch (const std::exception &)
       {
