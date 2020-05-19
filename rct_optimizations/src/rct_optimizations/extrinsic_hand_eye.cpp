@@ -38,7 +38,6 @@ public:
                   const T * pose_target_mount_to_target,
                   T * residual) const;
 
-protected:
   template<typename T>
   void getTargetPointInCamera(const T *pose_camera_to_camera_mount,
                               const T *pose_target_mount_to_target,
@@ -65,6 +64,7 @@ protected:
     transformPoint(camera_angle_axis, camera_position, camera_mount_point, camera_point);
   }
 
+protected:
   Eigen::Matrix<double, OBS_DIMENSION, 1> obs_;
   Pose6d camera_mount_to_base_;
   Pose6d base_to_target_mount_;
@@ -107,7 +107,7 @@ public:
     return true;
   }
 
-  private:
+private:
   CameraIntrinsics intr_;
 };
 
@@ -137,6 +137,22 @@ public:
   }
 };
 
+bool isPointVisible(const Pose6d &camera_to_camera_mount,
+                    const Pose6d &target_mount_to_target,
+                    const ObservationCost2D3D *cost_fn)
+{
+  const double *pose_camera_to_camera_mount = camera_to_camera_mount.values.data();
+  const double* pose_target_mount_to_target = target_mount_to_target.values.data();
+
+  double camera_point[3];
+  cost_fn->getTargetPointInCamera(pose_camera_to_camera_mount,
+                                  pose_target_mount_to_target,
+                                  camera_point);
+
+  // Return whether or not the projected point's Z value is greater than zero
+  return camera_point[2] > 0.0;
+}
+
 } // namespace anonymous
 
 namespace rct_optimizations
@@ -159,9 +175,23 @@ ExtrinsicHandEyeResult optimize(const ExtrinsicHandEyeProblem2D3D& params)
 
       // Allocate Ceres data structures - ownership is taken by the ceres
       // Problem data structure
-      auto* cost_fn = new ObservationCost2D3D(img_obs, wrist_to_base, observation.to_target_mount, point_in_target, params.intr);
+      auto *cost_fn = new ObservationCost2D3D(img_obs,
+                                              wrist_to_base,
+                                              observation.to_target_mount,
+                                              point_in_target,
+                                              params.intr);
 
-      auto* cost_block = new ceres::AutoDiffCostFunction<ObservationCost2D3D, 2, 6, 6>(cost_fn);
+      auto *cost_block = new ceres::AutoDiffCostFunction<ObservationCost2D3D, 2, 6, 6>(cost_fn);
+
+      // Check that the target feature in camera coordinates is visible by the camera
+      // Target features that project behind the camera tend to prevent the optimization from converging
+      if (!isPointVisible(internal_camera_to_wrist, internal_base_to_target, cost_fn))
+      {
+        throw std::runtime_error(
+          "Projected target feature lies behind the image plane using the "
+          "current target mount and camera mount transform guesses. Try updating the initial "
+          "transform guesses to more accurately represent the problem");
+      }
 
       problem.AddResidualBlock(cost_block, NULL, internal_camera_to_wrist.values.data(),
                                internal_base_to_target.values.data());
