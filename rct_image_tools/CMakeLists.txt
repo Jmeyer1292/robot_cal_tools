@@ -1,12 +1,13 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.5.0)
 project(rct_image_tools)
 
 add_compile_options(-std=c++11 -Wall -Wextra)
 
 find_package(OpenCV REQUIRED)
-find_package(catkin REQUIRED COMPONENTS
-  rct_optimizations
-)
+find_package(rct_optimizations REQUIRED)
+
+find_package(catkin REQUIRED)
+
 find_package(Eigen3 REQUIRED)
 # Eigen 3.2 (Wily) only provides EIGEN3_INCLUDE_DIR, not EIGEN3_INCLUDE_DIRS
 if(NOT EIGEN3_INCLUDE_DIRS)
@@ -19,8 +20,6 @@ catkin_package(
   LIBRARIES
     ${PROJECT_NAME}
     yaml-cpp
-  CATKIN_DEPENDS
-    rct_optimizations
   DEPENDS
     OpenCV
     Eigen3
@@ -50,6 +49,7 @@ target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
   yaml-cpp
+  rct::rct_optimizations
 )
 
 add_executable(${PROJECT_NAME}_test
@@ -61,6 +61,7 @@ add_dependencies(${PROJECT_NAME}_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catk
 target_link_libraries(${PROJECT_NAME}_test
   ${catkin_LIBRARIES}
   ${PROJECT_NAME}
+  rct::rct_optimizations
 )
 
 #############
