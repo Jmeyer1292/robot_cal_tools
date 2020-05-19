@@ -3,6 +3,7 @@
 #include <Eigen/Geometry>
 #include <memory>
 #include <utility>
+#include <vector>
 
 namespace rct_optimizations
 {
