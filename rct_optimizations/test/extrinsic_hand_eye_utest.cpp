@@ -178,7 +178,8 @@ TYPED_TEST(HandEyeTest, PerfectInitialConditions)
                                                             this->target,
                                                             InitialConditions::PERFECT);
   // Run the optimization
-  auto result = optimize(prob);
+  ExtrinsicHandEyeResult result;
+  EXPECT_NO_THROW(result = optimize(prob));
 
   // Make sure it converged to the correct answer
   EXPECT_TRUE(result.converged);
@@ -200,7 +201,8 @@ TYPED_TEST(HandEyeTest, RandomAroundAnswerInitialConditions)
                                                  this->target,
                                                  InitialConditions::RANDOM_AROUND_ANSWER);
     // Run the optimization
-    auto result = optimize(prob);
+    ExtrinsicHandEyeResult result;
+    EXPECT_NO_THROW(result = optimize(prob));
 
     // Make sure it converged to the correct answer
     EXPECT_TRUE(result.converged);
