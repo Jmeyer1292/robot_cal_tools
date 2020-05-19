@@ -159,8 +159,8 @@ namespace rct_optimizations
 {
 ExtrinsicHandEyeResult optimize(const ExtrinsicHandEyeProblem2D3D& params)
 {
-  Pose6d internal_base_to_target = poseEigenToCal(params.base_to_target_guess);
-  Pose6d internal_camera_to_wrist = poseEigenToCal(params.wrist_to_camera_guess.inverse());
+  Pose6d internal_base_to_target = poseEigenToCal(params.target_mount_to_target_guess);
+  Pose6d internal_camera_to_wrist = poseEigenToCal(params.camera_mount_to_camera_guess.inverse());
 
   ceres::Problem problem;
 
@@ -205,8 +205,8 @@ ExtrinsicHandEyeResult optimize(const ExtrinsicHandEyeProblem2D3D& params)
 
   ExtrinsicHandEyeResult result;
   result.converged = summary.termination_type == ceres::CONVERGENCE;
-  result.base_to_target = poseCalToEigen(internal_base_to_target);
-  result.wrist_to_camera = poseCalToEigen(internal_camera_to_wrist).inverse();
+  result.target_mount_to_target = poseCalToEigen(internal_base_to_target);
+  result.camera_mount_to_camera = poseCalToEigen(internal_camera_to_wrist).inverse();
   result.initial_cost_per_obs = summary.initial_cost / summary.num_residuals;
   result.final_cost_per_obs = summary.final_cost / summary.num_residuals;
 
@@ -216,8 +216,8 @@ ExtrinsicHandEyeResult optimize(const ExtrinsicHandEyeProblem2D3D& params)
 
 ExtrinsicHandEyeResult optimize(const ExtrinsicHandEyeProblem3D3D& params)
 {
-  Pose6d internal_base_to_target = poseEigenToCal(params.base_to_target_guess);
-  Pose6d internal_camera_to_wrist = poseEigenToCal(params.wrist_to_camera_guess.inverse());
+  Pose6d internal_base_to_target = poseEigenToCal(params.target_mount_to_target_guess);
+  Pose6d internal_camera_to_wrist = poseEigenToCal(params.camera_mount_to_camera_guess.inverse());
 
   ceres::Problem problem;
 
@@ -248,8 +248,8 @@ ExtrinsicHandEyeResult optimize(const ExtrinsicHandEyeProblem3D3D& params)
 
   ExtrinsicHandEyeResult result;
   result.converged = summary.termination_type == ceres::CONVERGENCE;
-  result.base_to_target = poseCalToEigen(internal_base_to_target);
-  result.wrist_to_camera = poseCalToEigen(internal_camera_to_wrist).inverse();
+  result.target_mount_to_target = poseCalToEigen(internal_base_to_target);
+  result.camera_mount_to_camera = poseCalToEigen(internal_camera_to_wrist).inverse();
   result.initial_cost_per_obs = summary.initial_cost / summary.num_residuals;
   result.final_cost_per_obs = summary.final_cost / summary.num_residuals;
 

@@ -57,8 +57,8 @@ ExtrinsicHandEyeProblem2D3D ProblemCreator<ExtrinsicHandEyeProblem2D3D>::createP
 
   ExtrinsicHandEyeProblem2D3D problem;
   problem.intr = camera.intr;
-  problem.base_to_target_guess = createPose(true_target, init);
-  problem.wrist_to_camera_guess = createPose(true_camera, init);
+  problem.target_mount_to_target_guess = createPose(true_target, init);
+  problem.camera_mount_to_camera_guess = createPose(true_camera, init);
 
   // Create observations
   for (int i = -5; i < 5; ++i)
@@ -102,8 +102,8 @@ ExtrinsicHandEyeProblem3D3D ProblemCreator<ExtrinsicHandEyeProblem3D3D>::createP
   const InitialConditions &init)
 {
   ExtrinsicHandEyeProblem3D3D problem;
-  problem.base_to_target_guess = createPose(true_target, init);
-  problem.wrist_to_camera_guess = createPose(true_camera, init);
+  problem.target_mount_to_target_guess = createPose(true_target, init);
+  problem.camera_mount_to_camera_guess = createPose(true_camera, init);
 
   // Create observations
   for (int i = -5; i < 5; ++i)
@@ -153,8 +153,8 @@ class HandEyeTest : public ::testing::Test
     std::cout << "Initial cost?: " << r.initial_cost_per_obs << "\n";
     std::cout << "Final cost?: " << r.final_cost_per_obs << "\n";
 
-    Eigen::Isometry3d c = r.wrist_to_camera;
-    Eigen::Isometry3d t = r.base_to_target;
+    Eigen::Isometry3d c = r.camera_mount_to_camera;
+    Eigen::Isometry3d t = r.target_mount_to_target;
 
     std::cout << "Wrist to Camera:\n";
     std::cout << c.matrix() << "\n";
@@ -185,8 +185,8 @@ TYPED_TEST(HandEyeTest, PerfectInitialConditions)
   EXPECT_TRUE(result.converged);
   EXPECT_TRUE(result.final_cost_per_obs < ProblemCreator<TypeParam>::max_cost_per_obs);
 
-  EXPECT_TRUE(result.base_to_target.isApprox(this->true_target_mount_to_target, 1e-6));
-  EXPECT_TRUE(result.wrist_to_camera.isApprox(this->true_camera_mount_to_camera, 1e-6));
+  EXPECT_TRUE(result.target_mount_to_target.isApprox(this->true_target_mount_to_target, 1e-6));
+  EXPECT_TRUE(result.camera_mount_to_camera.isApprox(this->true_camera_mount_to_camera, 1e-6));
 
   this->printResults(result);
 }
@@ -208,8 +208,8 @@ TYPED_TEST(HandEyeTest, RandomAroundAnswerInitialConditions)
     EXPECT_TRUE(result.converged);
     EXPECT_TRUE(result.final_cost_per_obs < ProblemCreator<TypeParam>::max_cost_per_obs);
 
-    EXPECT_TRUE(result.base_to_target.isApprox(this->true_target_mount_to_target, 1e-6));
-    EXPECT_TRUE(result.wrist_to_camera.isApprox(this->true_camera_mount_to_camera, 1e-6));
+    EXPECT_TRUE(result.target_mount_to_target.isApprox(this->true_target_mount_to_target, 1e-6));
+    EXPECT_TRUE(result.camera_mount_to_camera.isApprox(this->true_camera_mount_to_camera, 1e-6));
 
     this->printResults(result);
   }

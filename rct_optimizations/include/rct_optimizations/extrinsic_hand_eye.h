@@ -26,15 +26,15 @@ struct ExtrinsicHandEyeProblem2D3D
 {
   typename Observation2D3D::Set observations;
   CameraIntrinsics intr;
-  Eigen::Isometry3d base_to_target_guess;
-  Eigen::Isometry3d wrist_to_camera_guess;
+  Eigen::Isometry3d target_mount_to_target_guess;
+  Eigen::Isometry3d camera_mount_to_camera_guess;
 };
 
 struct ExtrinsicHandEyeProblem3D3D
 {
   typename Observation3D3D::Set observations;
-  Eigen::Isometry3d base_to_target_guess;
-  Eigen::Isometry3d wrist_to_camera_guess;
+  Eigen::Isometry3d target_mount_to_target_guess;
+  Eigen::Isometry3d camera_mount_to_camera_guess;
 };
 
 struct ExtrinsicHandEyeResult
@@ -43,8 +43,8 @@ struct ExtrinsicHandEyeResult
   double initial_cost_per_obs;
   double final_cost_per_obs;
 
-  Eigen::Isometry3d base_to_target;
-  Eigen::Isometry3d wrist_to_camera;
+  Eigen::Isometry3d target_mount_to_target;
+  Eigen::Isometry3d camera_mount_to_camera;
 };
 
 ExtrinsicHandEyeResult optimize(const ExtrinsicHandEyeProblem2D3D &params);
