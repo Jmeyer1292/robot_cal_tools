@@ -76,4 +76,32 @@ std::vector<Eigen::Isometry3d> rct_optimizations::test::genConicalPose(Eigen::Is
   return camera_positions;
 }
 
+std::vector<Eigen::Isometry3d> rct_optimizations::test::genGridPose(Eigen::Isometry3d target_pose,
+                                              int grid_side,
+                                              double spacing,
+                                              double h
+                                              )
+{
+  //Generates positions in target frame; need to convert to world frame
+  std::vector<Eigen::Isometry3d> camera_positions;
 
+  for(int i = -1* (grid_side-1)/2; i <= (grid_side-1)/2; ++i)
+  {
+    for(double j = -1* (grid_side-1)/2; j <= (grid_side-1)/2; ++j)
+    {
+      Eigen::Isometry3d camera_pose = Eigen::Isometry3d::Identity();
+      camera_pose.translation() = target_pose.translation();
+
+      //preserving target spatial coordinate frame:
+      camera_pose.translate(Eigen::Vector3d{i*spacing, j*spacing, h});
+
+      //change orientation to look at target
+      Eigen::Isometry3d camera_oriented = rct_optimizations::test::lookAt( camera_pose.translation(), target_pose.translation(), Eigen::Vector3d(1, 0, 0));
+
+      camera_positions.push_back(camera_oriented);
+      //for world frame need target * position
+      // camera_positions.push_back(target_pose * camera_oriented)?
+    }
+  }
+  return camera_positions;
+}

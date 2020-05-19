@@ -32,9 +32,14 @@ enum class InitialConditions
   PERFECT, IDENTITY_TARGET, RANDOM_AROUND_ANSWER
 };
 
+enum class CameraPattern
+{
+  HEMISPHERE, CONE, GRID
+};
+
 } // namespace anonymous
 
-void run_test(InitialConditions condition)
+void run_test(InitialConditions condition, CameraPattern pattern)
 {
 
   auto camera = test::makeKinectCamera();
@@ -57,24 +62,34 @@ void run_test(InitialConditions condition)
   //std::vector<Eigen::Affine3d> wrist_poses;
   std::vector<rct_optimizations::CorrespondenceSet> correspondences;
 
-  //hemisphere poses: radius 2, 10 rows of 10 observations
-  std::vector<Eigen::Isometry3d>camera_poses = rct_optimizations::test::genHemispherePose(true_base_to_target,
-                                                           2,
-                                                           10,
-                                                           10
-        );
-  /* //Heres what we replace:
-
-  for (int i = -5; i < 5; theta_cnt++i)
+  std::vector<Eigen::Isometry3d>camera_poses;
+  if(pattern == CameraPattern::HEMISPHERE)
   {
-    for (int j = -5; j < 5; ++j)
-    {
-      Eigen::Vector3d center_point = true_base_to_target.translation() + Eigen::Vector3d(i * 0.025, j * 0.025, 1.0);
-      Eigen::Isometry3d camera_pose = test::lookAt(center_point,
-                                                   true_base_to_target.translation(),
-                                                   Eigen::Vector3d(1, 0, 0));
-
- */
+    //hemisphere poses: radius 2, 10 rows of 10 observations
+    camera_poses = rct_optimizations::test::genHemispherePose(true_base_to_target,
+                                                             2,
+                                                             10,
+                                                             10
+                                                             );
+  }
+  if(pattern == CameraPattern::CONE)
+  {
+    //conical poses: 20 poses in a 1 meter radius cone at a distance of 2 meters
+    camera_poses = rct_optimizations::test::genConicalPose(true_base_to_target,
+                                                           20,
+                                                           1,
+                                                           2
+                                                           );
+  }
+  else //GRID
+  {
+    //grid poses: 100 poses at a distance of 2 meters with 0.2 meter spacing
+    camera_poses = rct_optimizations::test::genGridPose(true_base_to_target,
+                                                           10,
+                                                           0.2,
+                                                           2
+                                                           );
+  }
  for (auto& pose : camera_poses)
  {
      Eigen::Isometry3d wrist_pose = pose * true_wrist_to_camera.inverse();
@@ -136,21 +151,42 @@ void run_test(InitialConditions condition)
   printResults(result);
 }
 
-TEST(CameraOnWrist, perfect_start)
+TEST(CameraOnWrist, perfect_start_hemisphere)
 {
-  run_test(InitialConditions::PERFECT);
+  run_test(InitialConditions::PERFECT, CameraPattern::HEMISPHERE);
 }
 
-TEST(CameraOnWrist, identity_target_start)
+TEST(CameraOnWrist, perfect_start_cone)
 {
-  run_test(InitialConditions::IDENTITY_TARGET);
+  run_test(InitialConditions::PERFECT, CameraPattern::CONE);
 }
+
+TEST(CameraOnWrist, perfect_start_grid)
+{
+  run_test(InitialConditions::PERFECT, CameraPattern::GRID);
+}
+
+TEST(CameraOnWrist, identity_target_start_hemisphere)
+{
+  run_test(InitialConditions::IDENTITY_TARGET, CameraPattern::HEMISPHERE);
+}
+
+TEST(CameraOnWrist, identity_target_start_cone)
+{
+  run_test(InitialConditions::IDENTITY_TARGET, CameraPattern::CONE);
+}
+
+TEST(CameraOnWrist, identity_target_start_grid)
+{
+  run_test(InitialConditions::IDENTITY_TARGET, CameraPattern::GRID);
+}
+
 
 TEST(CameraOnWrist, perturbed_start)
 {
   // Run 10 random tests
   for (int i = 0; i < 10; ++i)
-    run_test(InitialConditions::RANDOM_AROUND_ANSWER);
+    run_test(InitialConditions::RANDOM_AROUND_ANSWER, CameraPattern::HEMISPHERE);
 }
 
 int main(int argc, char **argv)
