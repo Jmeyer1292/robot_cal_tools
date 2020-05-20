@@ -5,6 +5,7 @@
 // Test utilities
 #include <rct_optimizations_tests/utilities.h>
 #include <rct_optimizations_tests/observation_creator.h>
+#include <rct_optimizations_tests/pose_generator.h>
 
 using namespace rct_optimizations;
 
@@ -31,9 +32,14 @@ enum class InitialConditions
   PERFECT, IDENTITY_TARGET, RANDOM_AROUND_ANSWER
 };
 
+enum class CameraPattern
+{
+  HEMISPHERE, CONE, GRID
+};
+
 } // namespace anonymous
 
-void run_test(InitialConditions condition)
+void run_test(InitialConditions condition, CameraPattern pattern)
 {
 
   auto camera = test::makeKinectCamera();
@@ -52,34 +58,70 @@ void run_test(InitialConditions condition)
   // Create some number of "test" images...
   //    We'll take pictures in a grid above the origin of the target
   std::vector<Eigen::Isometry3d> wrist_poses;
-  std::vector<CorrespondenceSet> correspondences;
-  for (int i = -5; i < 5; ++i)
-  {
-    for (int j = -5; j < 5; ++j)
-    {
-      Eigen::Vector3d center_point = true_base_to_target.translation() + Eigen::Vector3d(i * 0.025, j * 0.025, 1.0);
-      Eigen::Isometry3d camera_pose = test::lookAt(center_point,
-                                                   true_base_to_target.translation(),
-                                                   Eigen::Vector3d(1, 0, 0));
-      Eigen::Isometry3d wrist_pose = camera_pose * true_wrist_to_camera.inverse();
 
-      // Attempt to generate points
-      try
-      {
-        CorrespondenceSet corr = getCorrespondences(camera_pose,
-                                                    true_base_to_target,
-                                                    camera,
-                                                    grid,
-                                                    true);
-        correspondences.push_back(corr);
-        wrist_poses.push_back(wrist_pose);
-      }
-      catch (const std::exception& ex)
-      {
-        continue;
-      }
-    }
+  //std::vector<Eigen::Affine3d> wrist_poses;
+  std::vector<rct_optimizations::CorrespondenceSet> correspondences;
+
+  std::vector<Eigen::Isometry3d>camera_poses;
+
+  if(pattern == CameraPattern::HEMISPHERE)
+  {
+    const double radius = 2.0;
+    const unsigned int theta_cnt = 10;
+    const unsigned int phi_cnt = 10;
+
+    //hemisphere poses: radius 2, 10 rows of 10 observations
+    camera_poses = rct_optimizations::test::genHemispherePose(true_base_to_target.translation(),
+                                                             radius,
+                                                             theta_cnt,
+                                                             phi_cnt
+                                                             );
   }
+  if(pattern == CameraPattern::CONE)
+  {
+    const double radius = 1.0;
+    const double h = 2.0;
+    const unsigned int observations = 20;
+    //conical poses: 20 poses in a 1 meter radius cone at a distance of 2 meters
+    camera_poses = rct_optimizations::test::genConicalPose(true_base_to_target.translation(),
+                                                           observations,
+                                                           radius,
+                                                           h
+                                                           );
+  }
+  else //GRID
+  {
+    const double spacing = 0.2;
+    const double h = 2.0;
+    unsigned int grid_side = 10;
+    //grid poses: 100 poses at a distance of 2 meters with 0.2 meter spacing
+    camera_poses = rct_optimizations::test::genGridPose(true_base_to_target.translation(),
+                                                           grid_side,
+                                                           spacing,
+                                                           h
+                                                           );
+  }
+ for (auto& pose : camera_poses)
+ {
+     Eigen::Isometry3d wrist_pose = pose * true_wrist_to_camera.inverse();
+
+       // Attempt to generate points
+       try
+       {
+         CorrespondenceSet corr = getCorrespondences(pose,
+                                                     true_base_to_target,
+                                                     camera,
+                                                     grid,
+                                                     true);
+         correspondences.push_back(corr);
+         wrist_poses.push_back(wrist_pose);
+       }
+       catch (const std::exception& ex)
+       {
+         continue;
+       }
+  }
+
 
   // Fill out the calibration
   ExtrinsicCameraOnWristProblem problem;
@@ -120,21 +162,42 @@ void run_test(InitialConditions condition)
   printResults(result);
 }
 
-TEST(CameraOnWrist, perfect_start)
+TEST(CameraOnWrist, perfect_start_hemisphere)
 {
-  run_test(InitialConditions::PERFECT);
+  run_test(InitialConditions::PERFECT, CameraPattern::HEMISPHERE);
 }
 
-TEST(CameraOnWrist, identity_target_start)
+TEST(CameraOnWrist, perfect_start_cone)
 {
-  run_test(InitialConditions::IDENTITY_TARGET);
+  run_test(InitialConditions::PERFECT, CameraPattern::CONE);
 }
+
+TEST(CameraOnWrist, perfect_start_grid)
+{
+  run_test(InitialConditions::PERFECT, CameraPattern::GRID);
+}
+
+TEST(CameraOnWrist, identity_target_start_hemisphere)
+{
+  run_test(InitialConditions::IDENTITY_TARGET, CameraPattern::HEMISPHERE);
+}
+
+TEST(CameraOnWrist, identity_target_start_cone)
+{
+  run_test(InitialConditions::IDENTITY_TARGET, CameraPattern::CONE);
+}
+
+//TEST(CameraOnWrist, identity_target_start_grid)
+//{
+//  run_test(InitialConditions::IDENTITY_TARGET, CameraPattern::GRID);
+//}
+
 
 TEST(CameraOnWrist, perturbed_start)
 {
   // Run 10 random tests
   for (int i = 0; i < 10; ++i)
-    run_test(InitialConditions::RANDOM_AROUND_ANSWER);
+    run_test(InitialConditions::RANDOM_AROUND_ANSWER, CameraPattern::HEMISPHERE);
 }
 
 int main(int argc, char **argv)

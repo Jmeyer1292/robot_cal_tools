@@ -56,6 +56,7 @@ target_link_libraries(${PROJECT_NAME}
 if(CATKIN_ENABLE_TESTING)
   # Build the test support library
   add_library(${PROJECT_NAME}_test_support
+    test/src/pose_generator.cpp
     test/src/observation_creator.cpp
     test/src/utilities.cpp)
   target_link_libraries(${PROJECT_NAME}_test_support ${PROJECT_NAME})
