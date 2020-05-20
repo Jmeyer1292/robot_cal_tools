@@ -63,31 +63,42 @@ void run_test(InitialConditions condition, CameraPattern pattern)
   std::vector<rct_optimizations::CorrespondenceSet> correspondences;
 
   std::vector<Eigen::Isometry3d>camera_poses;
+
   if(pattern == CameraPattern::HEMISPHERE)
   {
+    const double radius = 2.0;
+    const unsigned int theta_cnt = 10;
+    const unsigned int phi_cnt = 10;
+
     //hemisphere poses: radius 2, 10 rows of 10 observations
-    camera_poses = rct_optimizations::test::genHemispherePose(true_base_to_target,
-                                                             2,
-                                                             10,
-                                                             10
+    camera_poses = rct_optimizations::test::genHemispherePose(true_base_to_target.translation(),
+                                                             radius,
+                                                             theta_cnt,
+                                                             phi_cnt
                                                              );
   }
   if(pattern == CameraPattern::CONE)
   {
+    const double radius = 1.0;
+    const double h = 2.0;
+    const unsigned int observations = 20;
     //conical poses: 20 poses in a 1 meter radius cone at a distance of 2 meters
-    camera_poses = rct_optimizations::test::genConicalPose(true_base_to_target,
-                                                           20,
-                                                           1,
-                                                           2
+    camera_poses = rct_optimizations::test::genConicalPose(true_base_to_target.translation(),
+                                                           observations,
+                                                           radius,
+                                                           h
                                                            );
   }
   else //GRID
   {
+    const double spacing = 0.2;
+    const double h = 2.0;
+    unsigned int grid_side = 10;
     //grid poses: 100 poses at a distance of 2 meters with 0.2 meter spacing
-    camera_poses = rct_optimizations::test::genGridPose(true_base_to_target,
-                                                           10,
-                                                           0.2,
-                                                           2
+    camera_poses = rct_optimizations::test::genGridPose(true_base_to_target.translation(),
+                                                           grid_side,
+                                                           spacing,
+                                                           h
                                                            );
   }
  for (auto& pose : camera_poses)
@@ -176,10 +187,10 @@ TEST(CameraOnWrist, identity_target_start_cone)
   run_test(InitialConditions::IDENTITY_TARGET, CameraPattern::CONE);
 }
 
-TEST(CameraOnWrist, identity_target_start_grid)
-{
-  run_test(InitialConditions::IDENTITY_TARGET, CameraPattern::GRID);
-}
+//TEST(CameraOnWrist, identity_target_start_grid)
+//{
+//  run_test(InitialConditions::IDENTITY_TARGET, CameraPattern::GRID);
+//}
 
 
 TEST(CameraOnWrist, perturbed_start)

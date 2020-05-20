@@ -13,22 +13,27 @@ rct_optimizations::test::genHemispherePose(const Eigen::Vector3d& target_pose, c
   Eigen::VectorXd theta_range = Eigen::VectorXd::LinSpaced(theta_cnt, 0.0, M_PI);
   Eigen::VectorXd phi_range = Eigen::VectorXd::LinSpaced(phi_cnt, 0.0, M_PI);
 
-  for (std::size_t theta_it = 0; theta_it < theta_range.size(); ++theta_it)
+  for (std::size_t theta_it = 0; theta_it < theta_cnt; ++theta_it)
   {
     std::vector<Eigen::Isometry3d> local_scan_path;
     local_scan_path.reserve(phi_range.size() * theta_range.size());
-    for (std::size_t phi_it = 0; phi_it < phi_range.size(); ++phi_it)
+    for (std::size_t phi_it = 0; phi_it < phi_cnt; ++phi_it)
     {
       double theta_cur = theta_range(theta_it);
       double phi_cur = phi_range(phi_it);
 
       // position in target coordinate frame
       Eigen::Isometry3d camera = Eigen::Isometry3d::Identity();
-      camera.translation()(0) = r * std::cos(theta_cur) * std::sin(phi_cur);
-      camera.translation()(1) = r * std::sin(theta_cur) * std::sin(phi_cur);
-      camera.translation()(2) = r * std::cos(phi_cur);
+      camera.translation() = target_pose;
 
-      // x is 'up' in target frame (confirm)
+      Eigen::Vector3d position;
+      position(0) = r * std::cos(theta_cur) * std::sin(phi_cur);
+      position(1) = r * std::sin(theta_cur) * std::sin(phi_cur);
+      position(2) = r * std::cos(phi_cur);
+
+      camera.translate(position);
+
+      // x is 'up' in target frame
       Eigen::Isometry3d camera_oriented =
           rct_optimizations::test::lookAt(camera.translation(), target_pose, Eigen::Vector3d(1, 0, 0));
 
@@ -71,15 +76,16 @@ rct_optimizations::test::genGridPose(const Eigen::Vector3d& target_pose, const u
   // Generates positions in target frame; need to convert to world frame
   std::vector<Eigen::Isometry3d> camera_positions;
 
-  for (int i = -1 * (grid_side - 1) / 2; i <= (grid_side - 1) / 2; ++i)
+  double end_point = ((grid_side -1)/2) * spacing;
+  Eigen::VectorXd grid_coords = Eigen::VectorXd::LinSpaced(grid_side, -1 * end_point, end_point);
+
+  for (std::size_t i = 0; i < grid_side; ++i)
   {
-    for (double j = -1 * (grid_side - 1) / 2; j <= (grid_side - 1) / 2; ++j)
+    for (std::size_t j = 0; j < grid_side; ++j)
     {
       Eigen::Isometry3d camera_pose = Eigen::Isometry3d::Identity();
-      camera_pose.translation() = Eigen::Vector3d{ i * spacing, j * spacing, h };
-
-      // preserving target spatial coordinate frame:
-      camera_pose.translate(Eigen::Vector3d{ i * spacing, j * spacing, h });
+      camera_pose.translation()  = target_pose;
+      camera_pose.translate(Eigen::Vector3d{grid_coords(i), grid_coords(j), h });
 
       // change orientation to look at target
       Eigen::Isometry3d camera_oriented = rct_optimizations::test::lookAt(
@@ -88,6 +94,7 @@ rct_optimizations::test::genGridPose(const Eigen::Vector3d& target_pose, const u
       camera_positions.push_back(camera_oriented);
     }
   }
+
 
 
   return camera_positions;
