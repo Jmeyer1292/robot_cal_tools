@@ -7,16 +7,17 @@
 std::vector<Eigen::Isometry3d>
 rct_optimizations::test::genHemispherePose(const Eigen::Vector3d& target_pose, const double r, const unsigned int theta_cnt, const unsigned int phi_cnt)
 {
+    std::size_t position_cnt = theta_cnt * phi_cnt;
+
   // all in the target coordinate system, with z forward
   std::vector<Eigen::Isometry3d> camera_positions;
+  camera_positions.reserve(position_cnt);
 
   Eigen::VectorXd theta_range = Eigen::VectorXd::LinSpaced(theta_cnt, 0.0, M_PI);
   Eigen::VectorXd phi_range = Eigen::VectorXd::LinSpaced(phi_cnt, 0.0, M_PI);
 
   for (std::size_t theta_it = 0; theta_it < theta_cnt; ++theta_it)
   {
-    std::vector<Eigen::Isometry3d> local_scan_path;
-    local_scan_path.reserve(phi_range.size() * theta_range.size());
     for (std::size_t phi_it = 0; phi_it < phi_cnt; ++phi_it)
     {
       double theta_cur = theta_range(theta_it);
@@ -49,6 +50,8 @@ std::vector<Eigen::Isometry3d>
 rct_optimizations::test::genConicalPose(const Eigen::Vector3d& target_pose, const unsigned int observations, const double r, const double h)
 {
   std::vector<Eigen::Isometry3d> camera_positions;
+  camera_positions.reserve(observations);
+
   // Generates positions in target frame; need to convert to world frame
   double dt = 2.0f * M_PI / double(observations);  // delta theta about cone base
 
@@ -75,8 +78,10 @@ rct_optimizations::test::genGridPose(const Eigen::Vector3d& target_pose, const u
 {
   // Generates positions in target frame; need to convert to world frame
   std::vector<Eigen::Isometry3d> camera_positions;
+  camera_positions.reserve(grid_side * grid_side);
 
-  double end_point = ((grid_side -1)/2) * spacing;
+
+  double end_point = (static_cast<double>(grid_side - 1) / 2.0) * spacing;
   Eigen::VectorXd grid_coords = Eigen::VectorXd::LinSpaced(grid_side, -1 * end_point, end_point);
 
   for (std::size_t i = 0; i < grid_side; ++i)
