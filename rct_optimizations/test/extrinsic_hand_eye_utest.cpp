@@ -229,6 +229,8 @@ TYPED_TEST(HandEyeTest, RandomAroundAnswerInitialConditions)
 
     this->printResults(result);
   }
+  EXPECT_EQ(count, n);
+  EXPECT_LT(count, max_attempts);
 }
 
 int main(int argc, char **argv)
