@@ -178,6 +178,7 @@ TYPED_TEST(HandEyeTest, PerfectInitialConditions)
                                                             this->target,
                                                             InitialConditions::PERFECT);
   // Run the optimization
+  // Expect the function not to throw an exception because it is starting with perfect initial conditions
   ExtrinsicHandEyeResult result;
   EXPECT_NO_THROW(result = optimize(prob));
 
@@ -193,7 +194,10 @@ TYPED_TEST(HandEyeTest, PerfectInitialConditions)
 
 TYPED_TEST(HandEyeTest, RandomAroundAnswerInitialConditions)
 {
-  for (std::size_t i = 0; i < 10; ++i)
+  const std::size_t n = 10;
+  const std::size_t max_attempts = 2 * n;
+  std::size_t count = 0;
+  while(count < n && count < max_attempts)
   {
     TypeParam prob
       = ProblemCreator<TypeParam>::createProblem(this->true_target_mount_to_target,
@@ -201,8 +205,20 @@ TYPED_TEST(HandEyeTest, RandomAroundAnswerInitialConditions)
                                                  this->target,
                                                  InitialConditions::RANDOM_AROUND_ANSWER);
     // Run the optimization
+    // Catch exceptions during the optimization because there is a good chance that infeasible initial
+    // transform guesses will be randomly generated
     ExtrinsicHandEyeResult result;
-    EXPECT_NO_THROW(result = optimize(prob));
+    try
+    {
+      result = optimize(prob);
+    }
+    catch (const std::exception &ex)
+    {
+      std::cout << "Exception from optimization; continuing: '" << ex.what() << "'" << std::endl;
+      continue;
+    }
+
+    ++count;
 
     // Make sure it converged to the correct answer
     EXPECT_TRUE(result.converged);
