@@ -25,8 +25,8 @@ struct ProblemCreator
     {
     case InitialConditions::RANDOM_AROUND_ANSWER:
     {
-      const double spatial_noise = 0.25; // +/- 0.25 meters
-      const double angular_noise = 45. * M_PI / 180.0; // +/- 45 degrees
+      const double spatial_noise = 0.1; // +/- 0.1 meters
+      const double angular_noise = 20.0 * M_PI / 180.0; // +/- 20 degrees
       out = test::perturbPose(pose, spatial_noise, angular_noise);
       break;
     }
@@ -166,7 +166,7 @@ TYPED_TEST(HandEyeChainTest, PerfectInitialConditions)
 TYPED_TEST(HandEyeChainTest, RandomAroundAnswerInitialConditions)
 {
   const std::size_t n = 10;
-  const std::size_t max_attempts = 15;
+  const std::size_t max_attempts = 2 * n;
   std::size_t count = 0;
   while(count < n && count < max_attempts)
   {
@@ -184,24 +184,25 @@ TYPED_TEST(HandEyeChainTest, RandomAroundAnswerInitialConditions)
     {
       // Run the optimization
       result = optimize(prob);
+      ++count;
+
+      // Make sure it converged to the correct answer
+      EXPECT_TRUE(result.converged);
+      EXPECT_TRUE(result.final_cost_per_obs < ProblemCreator<TypeParam>::max_cost_per_obs);
+
+      EXPECT_TRUE(result.target_mount_to_target.isApprox(this->true_target_mount_to_target, 1e-6));
+      EXPECT_TRUE(result.camera_mount_to_camera.isApprox(this->true_camera_mount_to_camera, 1e-6));
+
+      this->printResults(result);
     }
     catch (const std::exception &ex)
     {
       std::cout << "Error from optimization; continuing: '" << ex.what() << "'" << std::endl;
       continue;
     }
-
-    ++count;
-
-    // Make sure it converged to the correct answer
-    EXPECT_TRUE(result.converged);
-    EXPECT_TRUE(result.final_cost_per_obs < ProblemCreator<TypeParam>::max_cost_per_obs);
-
-    EXPECT_TRUE(result.target_mount_to_target.isApprox(this->true_target_mount_to_target, 1e-6));
-    EXPECT_TRUE(result.camera_mount_to_camera.isApprox(this->true_camera_mount_to_camera, 1e-6));
-
-    this->printResults(result);
   }
+  EXPECT_EQ(count, n);
+  EXPECT_LT(count, max_attempts);
 }
 
 int main(int argc, char **argv)
