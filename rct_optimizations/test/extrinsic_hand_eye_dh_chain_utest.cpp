@@ -112,7 +112,7 @@ class HandEyeChainTest : public ::testing::Test
     , true_camera_mount_to_camera(Eigen::Isometry3d::Identity())
     , target(7, 5, 0.025)
   {
-    true_target_mount_to_target.translate(Eigen::Vector3d(1.0, 0, -1.0));
+    true_target_mount_to_target.translate(Eigen::Vector3d(1.0, 0.0, 0.0));
 
     true_camera_mount_to_camera.translation() = Eigen::Vector3d(0.05, 0, 0.1);
     true_camera_mount_to_camera.linear() << 0, 0, 1, -1, 0, 0, 0, -1, 0;
@@ -150,6 +150,7 @@ TYPED_TEST(HandEyeChainTest, PerfectInitialConditions)
                                                      this->target,
                                                      InitialConditions::PERFECT);
   // Run the optimization
+  // Do not attempt to catch exceptions here because the initial guess should be correct
   auto result = optimize(prob);
 
   // Make sure it converged to the correct answer
@@ -164,14 +165,33 @@ TYPED_TEST(HandEyeChainTest, PerfectInitialConditions)
 
 TYPED_TEST(HandEyeChainTest, RandomAroundAnswerInitialConditions)
 {
-  for (std::size_t i = 0; i < 10; ++i)
+  const std::size_t n = 10;
+  const std::size_t max_attempts = 15;
+  std::size_t count = 0;
+  while(count < n && count < max_attempts)
   {
-    TypeParam prob = ProblemCreator<TypeParam>::createProblem(this->true_target_mount_to_target,
-                                                       this->true_camera_mount_to_camera,
-                                                       this->target,
-                                                       InitialConditions::RANDOM_AROUND_ANSWER);
-    // Run the optimization
-    auto result = optimize(prob);
+    TypeParam prob
+      = ProblemCreator<TypeParam>::createProblem(this->true_target_mount_to_target,
+                                                 this->true_camera_mount_to_camera,
+                                                 this->target,
+                                                 InitialConditions::RANDOM_AROUND_ANSWER);
+
+    // Attempt to catch exceptions thrown by the optimize function
+    // It is likely that randomly perturbing the camera and target produce an infeasible initial state
+    // (i.e. some observations lie behind the image plane of a 2D camera)
+    ExtrinsicHandEyeResult result;
+    try
+    {
+      // Run the optimization
+      result = optimize(prob);
+    }
+    catch (const std::exception &ex)
+    {
+      std::cout << "Error from optimization; continuing: '" << ex.what() << "'" << std::endl;
+      continue;
+    }
+
+    ++count;
 
     // Make sure it converged to the correct answer
     EXPECT_TRUE(result.converged);
