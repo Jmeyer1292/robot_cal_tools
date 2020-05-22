@@ -1,31 +1,10 @@
-cmake_minimum_required(VERSION 2.8.3)
-project(rct_optimizations)
+cmake_minimum_required(VERSION 3.5.0)
+project(rct_optimizations VERSION 0.1.0 LANGUAGES CXX)
 
-add_compile_options(-std=c++11 -Wall -Wextra)
-
-find_package(catkin REQUIRED)
+find_package(rct_common REQUIRED)
 find_package(Ceres REQUIRED)
 
-catkin_package(
-  INCLUDE_DIRS
-    include
-    ${CERES_INCLUDE_DIRS}
-  LIBRARIES
-    ${PROJECT_NAME}
-  DEPENDS
-    CERES
-)
-
-###########
-## Build ##
-###########
-
-include_directories(
-  include
-  ${CERES_INCLUDE_DIRS}
-)
-
-add_library(${PROJECT_NAME}
+add_library(${PROJECT_NAME} SHARED
   # Utilities
   src/${PROJECT_NAME}/eigen_conversions.cpp
   # Optimizations (monocular camera)
@@ -42,49 +21,26 @@ add_library(${PROJECT_NAME}
   src/${PROJECT_NAME}/pnp.cpp
   src/${PROJECT_NAME}/multi_camera_pnp.cpp
 )
-
-add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-target_link_libraries(${PROJECT_NAME}
-  ${catkin_LIBRARIES}
+target_compile_options(${PROJECT_NAME} PUBLIC -std=c++11)
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra)
+target_include_directories(${PROJECT_NAME} PUBLIC
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+  "$<INSTALL_INTERFACE:include>")
+target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
+  ${CERES_INCLUDE_DIRS}
+)
+target_link_libraries(${PROJECT_NAME} PUBLIC
   ${CERES_LIBRARIES}
 )
 
-#############
-## Testing ##
-#############
-if(CATKIN_ENABLE_TESTING)
-  # Build the test support library
-  add_library(${PROJECT_NAME}_test_support
-    test/src/pose_generator.cpp
-    test/src/observation_creator.cpp
-    test/src/utilities.cpp)
-  target_link_libraries(${PROJECT_NAME}_test_support ${PROJECT_NAME})
-  target_include_directories(${PROJECT_NAME}_test_support PUBLIC test/include)
-
-  # The actual tests...
-  catkin_add_gtest(${PROJECT_NAME}_conversion_tests test/conversion_utest.cpp)
-  target_link_libraries(${PROJECT_NAME}_conversion_tests ${PROJECT_NAME}_test_support)
-
-  catkin_add_gtest(${PROJECT_NAME}_extrinsic_multi_static_camera_tests test/extrinsic_multi_static_camera_utest.cpp)
-  target_link_libraries(${PROJECT_NAME}_extrinsic_multi_static_camera_tests ${PROJECT_NAME}_test_support)
-
-  catkin_add_gtest(${PROJECT_NAME}_extrinsic_camera_on_wrist_tests test/extrinsic_camera_on_wrist_utest.cpp)
-  target_link_libraries(${PROJECT_NAME}_extrinsic_camera_on_wrist_tests ${PROJECT_NAME}_test_support)
+if(RCT_BUILD_TESTS)
+  enable_testing()
+  rct_add_run_tests_target()
+  add_subdirectory(test)
 endif()
 
-#############
-## Install ##
-#############
+rct_configure_package(${PROJECT_NAME})
 
-install(TARGETS ${PROJECT_NAME}
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-
-install(DIRECTORY include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-  FILES_MATCHING PATTERN "*.h"
-  PATTERN ".svn" EXCLUDE
+install(DIRECTORY include/${PROJECT_NAME}
+  DESTINATION include
 )

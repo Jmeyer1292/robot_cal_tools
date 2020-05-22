@@ -1,11 +1,12 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.5.0)
 project(rct_ros_tools)
 
 add_compile_options(-std=c++11 -Wall -Wextra)
 
+find_package(rct_optimizations REQUIRED)
+
 find_package(catkin REQUIRED COMPONENTS
   rct_image_tools
-  rct_optimizations
   roscpp
 
   # TODO: Export these to a different package dedicated to 'ros tools'
@@ -26,6 +27,7 @@ catkin_package(
     yaml-cpp
   CATKIN_DEPENDS
     roscpp
+    rct_image_tools
 )
 
 ###########
@@ -48,6 +50,7 @@ add_dependencies(${PROJECT_NAME}_data_loader ${${PROJECT_NAME}_EXPORTED_TARGETS}
 target_link_libraries(${PROJECT_NAME}_data_loader
  yaml-cpp
  ${OpenCV_LIBRARIES}
+ rct::rct_optimizations
 )
 
 # Executable for collecting data sets via subscribers and triggered with services
