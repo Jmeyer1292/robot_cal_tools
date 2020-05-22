@@ -4,9 +4,9 @@ project(rct_examples)
 add_compile_options(-std=c++11 -Wall -Wextra)
 
 find_package(rct_optimizations REQUIRED)
+find_package(rct_image_tools REQUIRED)
 
 find_package(catkin REQUIRED COMPONENTS
-  rct_image_tools
   rct_ros_tools
   roslib
 )
@@ -27,7 +27,6 @@ catkin_package()
 
 include_directories(
   ${catkin_INCLUDE_DIRS}
-  ${EIGEN3_INCLUDE_DIRS}
 )
 
 #####################
@@ -39,7 +38,7 @@ set_target_properties(${PROJECT_NAME}_wrist_example PROPERTIES OUTPUT_NAME examp
 
 add_dependencies(${PROJECT_NAME}_wrist_example ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(${PROJECT_NAME}_wrist_example ${catkin_LIBRARIES} rct::rct_optimizations)
+target_link_libraries(${PROJECT_NAME}_wrist_example ${catkin_LIBRARIES} rct::rct_optimizations rct::rct_image_tools)
 
 ###############################
 ## Offline Calibration Tools ##
@@ -51,7 +50,7 @@ set_target_properties(${PROJECT_NAME}_moving_camera PROPERTIES OUTPUT_NAME movin
 
 add_dependencies(${PROJECT_NAME}_moving_camera ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(${PROJECT_NAME}_moving_camera ${catkin_LIBRARIES} rct::rct_optimizations)
+target_link_libraries(${PROJECT_NAME}_moving_camera ${catkin_LIBRARIES} rct::rct_optimizations rct::rct_image_tools)
 
 # Executable for demonstrating extrinsic cal of static camera, moving target functionality
 add_executable(${PROJECT_NAME}_static_camera src/tools/static_camera_extrinsic.cpp)
@@ -60,7 +59,7 @@ set_target_properties(${PROJECT_NAME}_static_camera PROPERTIES OUTPUT_NAME stati
 
 add_dependencies(${PROJECT_NAME}_static_camera ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(${PROJECT_NAME}_static_camera ${catkin_LIBRARIES} rct::rct_optimizations)
+target_link_libraries(${PROJECT_NAME}_static_camera ${catkin_LIBRARIES} rct::rct_optimizations rct::rct_image_tools)
 
 # Executable for demonstrating extrinsic cal of multiple static camera, moving target functionality
 add_executable(${PROJECT_NAME}_multi_static_camera src/tools/multi_static_camera_extrinsic.cpp)
@@ -69,7 +68,7 @@ set_target_properties(${PROJECT_NAME}_multi_static_camera PROPERTIES OUTPUT_NAME
 
 add_dependencies(${PROJECT_NAME}_multi_static_camera ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(${PROJECT_NAME}_multi_static_camera ${catkin_LIBRARIES} rct::rct_optimizations)
+target_link_libraries(${PROJECT_NAME}_multi_static_camera ${catkin_LIBRARIES} rct::rct_optimizations rct::rct_image_tools)
 
 # Executable for demonstrating extrinsic cal of multiple static camera multi step, moving target functionality
 # First it calibrates the cameras to each other then it calibrates the set of camera where there relationship
@@ -80,7 +79,7 @@ set_target_properties(${PROJECT_NAME}_multi_static_camera_multi_step PROPERTIES 
 
 add_dependencies(${PROJECT_NAME}_multi_static_camera_multi_step ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(${PROJECT_NAME}_multi_static_camera_multi_step ${catkin_LIBRARIES} rct::rct_optimizations)
+target_link_libraries(${PROJECT_NAME}_multi_static_camera_multi_step ${catkin_LIBRARIES} rct::rct_optimizations rct::rct_image_tools)
 
 #Executable for demonstrating intrinsic calibration of a camera
 add_executable(${PROJECT_NAME}_intr src/tools/intrinsic_calibration.cpp)
@@ -89,7 +88,7 @@ set_target_properties(${PROJECT_NAME}_intr PROPERTIES OUTPUT_NAME intr_camera_ca
 
 add_dependencies(${PROJECT_NAME}_intr ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(${PROJECT_NAME}_intr ${catkin_LIBRARIES} rct::rct_optimizations)
+target_link_libraries(${PROJECT_NAME}_intr ${catkin_LIBRARIES} rct::rct_optimizations rct::rct_image_tools)
 
 # Executable demonstrating solving for the pose of a target given camera properties
 add_executable(${PROJECT_NAME}_pnp src/tools/solve_pnp.cpp)
@@ -98,7 +97,7 @@ set_target_properties(${PROJECT_NAME}_pnp PROPERTIES OUTPUT_NAME solve_pnp_ex PR
 
 add_dependencies(${PROJECT_NAME}_pnp ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(${PROJECT_NAME}_pnp ${catkin_LIBRARIES} rct::rct_optimizations)
+target_link_libraries(${PROJECT_NAME}_pnp ${catkin_LIBRARIES} rct::rct_optimizations rct::rct_image_tools)
 
 # Executable demonstrating solving for the pose of a target given multiple camera properties
 add_executable(${PROJECT_NAME}_multi_camera_pnp src/tools/solve_multi_camera_pnp.cpp)
@@ -107,17 +106,17 @@ set_target_properties(${PROJECT_NAME}_multi_camera_pnp PROPERTIES OUTPUT_NAME so
 
 add_dependencies(${PROJECT_NAME}_multi_camera_pnp ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(${PROJECT_NAME}_multi_camera_pnp ${catkin_LIBRARIES} rct::rct_optimizations)
+target_link_libraries(${PROJECT_NAME}_multi_camera_pnp ${catkin_LIBRARIES} rct::rct_optimizations rct::rct_image_tools)
 
 #############
 ## Testing ##
 #############
-if(CATKIN_ENABLE_TESTING)
+if(CATKIN_ENABLE_TESTING AND RCT_BUILD_TESTS)
   find_package(GTest REQUIRED)
   # Tests extrinsic wrist calibration example
   catkin_add_gtest(${PROJECT_NAME}_wrist_test src/examples/camera_on_wrist.cpp)
   target_compile_definitions(${PROJECT_NAME}_wrist_test PRIVATE -DRCT_ENABLE_TESTING)
-  target_link_libraries(${PROJECT_NAME}_wrist_test ${catkin_LIBRARIES} rct::rct_optimizations GTest::GTest GTest::Main)
+  target_link_libraries(${PROJECT_NAME}_wrist_test ${catkin_LIBRARIES} rct::rct_optimizations rct::rct_image_tools GTest::GTest GTest::Main)
 endif()
 
 #############

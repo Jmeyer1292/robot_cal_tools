@@ -4,9 +4,11 @@ project(rct_ros_tools)
 add_compile_options(-std=c++11 -Wall -Wextra)
 
 find_package(rct_optimizations REQUIRED)
+find_package(rct_image_tools REQUIRED)
+
+find_package(OpenCV REQUIRED)
 
 find_package(catkin REQUIRED COMPONENTS
-  rct_image_tools
   roscpp
 
   # TODO: Export these to a different package dedicated to 'ros tools'
@@ -15,8 +17,6 @@ find_package(catkin REQUIRED COMPONENTS
   image_transport
   eigen_conversions
 )
-
-find_package(OpenCV REQUIRED)
 
 # This package only provides examples. It does not export any tools.
 catkin_package(
@@ -27,7 +27,6 @@ catkin_package(
     yaml-cpp
   CATKIN_DEPENDS
     roscpp
-    rct_image_tools
 )
 
 ###########
@@ -51,6 +50,7 @@ target_link_libraries(${PROJECT_NAME}_data_loader
  yaml-cpp
  ${OpenCV_LIBRARIES}
  rct::rct_optimizations
+ rct::rct_image_tools
 )
 
 # Executable for collecting data sets via subscribers and triggered with services
@@ -64,6 +64,7 @@ add_dependencies(${PROJECT_NAME}_cmd ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catki
 target_link_libraries(${PROJECT_NAME}_cmd
  ${catkin_LIBRARIES}
  ${PROJECT_NAME}_data_loader
+ rct::rct_image_tools
 )
 
 #############
