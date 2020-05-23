@@ -23,18 +23,15 @@ Camera makeKinectCamera()
 
 Eigen::Isometry3d perturbPose(const Eigen::Isometry3d& pose, double spatial_noise, double angle_noise)
 {
-  std::random_device dev;
-  std::default_random_engine eng (dev());
+  auto spatial_dist = std::bind(std::uniform_real_distribution<double>{-spatial_noise, spatial_noise}, std::mt19937(std::random_device{}()));
+  auto angle_dist = std::bind(std::uniform_real_distribution<double>{-angle_noise, angle_noise}, std::mt19937(std::random_device{}()));
+  auto one_to_one = std::bind(std::uniform_real_distribution<double>{-1, 1}, std::mt19937(std::random_device{}()));
 
-  std::uniform_real_distribution<double> spatial_dist (-spatial_noise, spatial_noise);
-  std::uniform_real_distribution<double> angle_dist (-angle_noise, angle_noise);
-  std::uniform_real_distribution<double> one_to_one (-1, 1);
-
-  Eigen::Vector3d translation (spatial_dist(eng), spatial_dist(eng), spatial_dist(eng));
-  Eigen::Vector3d rot_axis (one_to_one(eng), one_to_one(eng), one_to_one(eng));
+  Eigen::Vector3d translation (spatial_dist(), spatial_dist(), spatial_dist());
+  Eigen::Vector3d rot_axis (one_to_one(), one_to_one(), one_to_one());
   rot_axis.normalize();
 
-  double angle = angle_dist(eng);
+  double angle = angle_dist();
 
   Eigen::Isometry3d new_pose = pose * Eigen::Translation3d(translation) * Eigen::AngleAxisd(angle, rot_axis);
 
