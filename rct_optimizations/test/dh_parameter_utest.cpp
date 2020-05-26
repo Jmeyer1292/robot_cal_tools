@@ -57,13 +57,13 @@ TEST(DHChain, FKWithJointSubsetPointerTest)
 TEST(DHChain, generateObservations3D)
 {
   const std::size_t n = 100;
-  auto observations = test::create(test::createABBIRB2400(),
-                                   DHChain({}),
-                                   Eigen::Isometry3d::Identity(),
-                                   Eigen::Isometry3d::Identity(),
-                                   Eigen::Isometry3d::Identity(),
-                                   test::Target(5, 5, 0.025),
-                                   n);
+  auto observations = test::createObservations(test::createABBIRB2400(),
+                                               DHChain({}),
+                                               Eigen::Isometry3d::Identity(),
+                                               Eigen::Isometry3d::Identity(),
+                                               Eigen::Isometry3d::Identity(),
+                                               test::Target(5, 5, 0.025),
+                                               n);
   EXPECT_EQ(observations.size(), n);
 }
 
@@ -83,14 +83,14 @@ TEST(DHChain, generateObservations2D)
   const test::Target target(5, 5, 0.025);
   const test::Camera camera = test::makeKinectCamera();
   Observation2D3D::Set observations;
-  EXPECT_NO_THROW(observations = test::create(camera_robot,
-                                              target_robot,
-                                              Eigen::Isometry3d::Identity(),
-                                              Eigen::Isometry3d::Identity(),
-                                              camera_base_to_target_base,
-                                              test::Target(5, 5, 0.025),
-                                              camera,
-                                              n));
+  EXPECT_NO_THROW(observations = test::createObservations(camera_robot,
+                                                          target_robot,
+                                                          Eigen::Isometry3d::Identity(),
+                                                          Eigen::Isometry3d::Identity(),
+                                                          camera_base_to_target_base,
+                                                          test::Target(5, 5, 0.025),
+                                                          camera,
+                                                          n));
   EXPECT_GE(observations.size(), n);
 }
 

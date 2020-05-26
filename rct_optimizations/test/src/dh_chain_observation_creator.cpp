@@ -5,13 +5,13 @@ namespace rct_optimizations
 {
 namespace test
 {
-Observation3D3D::Set create(const DHChain& to_camera_chain,
-                            const DHChain& to_target_chain,
-                            const Eigen::Isometry3d& true_mount_to_camera,
-                            const Eigen::Isometry3d& true_mount_to_target,
-                            const Eigen::Isometry3d &camera_base_to_target_base,
-                            const Target &target,
-                            const std::size_t n)
+Observation3D3D::Set createObservations(const DHChain &to_camera_chain,
+                                        const DHChain &to_target_chain,
+                                        const Eigen::Isometry3d &true_mount_to_camera,
+                                        const Eigen::Isometry3d &true_mount_to_target,
+                                        const Eigen::Isometry3d &camera_base_to_target_base,
+                                        const Target &target,
+                                        const std::size_t n)
 {
   Observation3D3D::Set observations;
   observations.reserve(n);
@@ -31,14 +31,14 @@ Observation3D3D::Set create(const DHChain& to_camera_chain,
   return observations;
 }
 
-Observation2D3D::Set create(const DHChain& to_camera_chain,
-                            const DHChain& to_target_chain,
-                            const Eigen::Isometry3d& true_mount_to_camera,
-                            const Eigen::Isometry3d& true_mount_to_target,
-                            const Eigen::Isometry3d &camera_base_to_target_base,
-                            const Target &target,
-                            const Camera &camera,
-                            const std::size_t n)
+Observation2D3D::Set createObservations(const DHChain &to_camera_chain,
+                                        const DHChain &to_target_chain,
+                                        const Eigen::Isometry3d &true_mount_to_camera,
+                                        const Eigen::Isometry3d &true_mount_to_target,
+                                        const Eigen::Isometry3d &camera_base_to_target_base,
+                                        const Target &target,
+                                        const Camera &camera,
+                                        const std::size_t n)
 {
   Observation2D3D::Set observations;
   observations.reserve(n);

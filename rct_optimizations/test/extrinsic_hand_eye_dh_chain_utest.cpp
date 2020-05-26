@@ -63,14 +63,14 @@ ExtrinsicHandEyeProblem2D3D ProblemCreator<ExtrinsicHandEyeProblem2D3D>::createP
 
   DHChain camera_chain = test::createABBIRB2400();
   DHChain target_chain({});
-  problem.observations = test::create(camera_chain,
-                                      target_chain,
-                                      true_camera,
-                                      Eigen::Isometry3d::Identity(),
-                                      true_target,
-                                      target,
-                                      camera,
-                                      100);
+  problem.observations = test::createObservations(camera_chain,
+                                                  target_chain,
+                                                  true_camera,
+                                                  Eigen::Isometry3d::Identity(),
+                                                  true_target,
+                                                  target,
+                                                  camera,
+                                                  100);
   return problem;
 }
 
@@ -90,13 +90,13 @@ ExtrinsicHandEyeProblem3D3D ProblemCreator<ExtrinsicHandEyeProblem3D3D>::createP
 
   DHChain camera_chain = test::createABBIRB2400();
   DHChain target_chain({});
-  problem.observations = test::create(camera_chain,
-                                      target_chain,
-                                      true_camera,
-                                      Eigen::Isometry3d::Identity(),
-                                      true_target,
-                                      target,
-                                      100);
+  problem.observations = test::createObservations(camera_chain,
+                                                  target_chain,
+                                                  true_camera,
+                                                  Eigen::Isometry3d::Identity(),
+                                                  true_target,
+                                                  target,
+                                                  100);
   return problem;
 }
 

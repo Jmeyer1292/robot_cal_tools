@@ -21,7 +21,7 @@ namespace test
  * @param n - Number of samples
  * @return A vector of 3D-3D observations
  */
-Observation3D3D::Set create(const DHChain& to_camera_chain,
+Observation3D3D::Set createObservations(const DHChain& to_camera_chain,
                             const DHChain& to_target_chain,
                             const Eigen::Isometry3d& true_mount_to_camera,
                             const Eigen::Isometry3d& true_mount_to_target,
@@ -41,7 +41,7 @@ Observation3D3D::Set create(const DHChain& to_camera_chain,
  * @param n - Number of samples
  * @return
  */
-Observation2D3D::Set create(const DHChain& to_camera_chain,
+Observation2D3D::Set createObservations(const DHChain& to_camera_chain,
                             const DHChain& to_target_chain,
                             const Eigen::Isometry3d& true_mount_to_camera,
                             const Eigen::Isometry3d& true_mount_to_target,
