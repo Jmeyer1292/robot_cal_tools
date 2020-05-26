@@ -19,11 +19,11 @@ namespace test
  * @return A set of all "seen" correspondences
  * @throws Exception if @ref require_all is true and not all observations are seen
  */
-CorrespondenceSet getCorrespondences(const Eigen::Isometry3d &camera_pose,
-                                     const Eigen::Isometry3d &target_pose,
-                                     const Camera &camera,
-                                     const Target &target,
-                                     const bool require_all = false);
+Correspondence2D3D::Set getCorrespondences(const Eigen::Isometry3d &camera_pose,
+                                           const Eigen::Isometry3d &target_pose,
+                                           const Camera &camera,
+                                           const Target &target,
+                                           const bool require_all = false);
 
 /**
  * @brief Observes a set of simulated 3D-3D correspondences given a target definition.
@@ -33,9 +33,9 @@ CorrespondenceSet getCorrespondences(const Eigen::Isometry3d &camera_pose,
  * @param target - the observation target definition
  * @return
  */
-Correspondence3DSet getCorrespondences(const Eigen::Isometry3d &camera_pose,
-                                       const Eigen::Isometry3d &target_pose,
-                                       const Target &target) noexcept;
+Correspondence3D3D::Set getCorrespondences(const Eigen::Isometry3d &camera_pose,
+                                           const Eigen::Isometry3d &target_pose,
+                                           const Target &target) noexcept;
 
 /**
  * @brief Defines a camera matrix using a camera origin, a position its looking at, and an up vector hint

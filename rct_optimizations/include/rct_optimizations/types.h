@@ -7,7 +7,9 @@
 
 namespace rct_optimizations
 {
-
+/**
+ * @brief Structure representing camera intrinsic parameters for a pin-hole model camera
+ */
 struct CameraIntrinsics
 {
   std::array<double, 4> values;
@@ -23,6 +25,9 @@ struct CameraIntrinsics
   const double& cy() const { return values[3]; }
 };
 
+/**
+ * @brief Representation of an isometry homogeneous transform for better integration with Ceres
+ */
 struct Pose6d
 {
   Pose6d() = default;
@@ -44,46 +49,80 @@ struct Pose6d
   const double& z() const { return values[5]; }
 };
 
-// Useful typedefs shared by calibrations
-struct Correspondence2D3D
+/**
+ * @brief A pair of corresponding features in a N-dimensional sensor "image" and 3D target
+ */
+template<Eigen::Index IMAGE_DIM, Eigen::Index WORLD_DIM>
+struct Correspondence
 {
-  Correspondence2D3D()
-    : in_target(Eigen::Vector3d::Zero())
-    , in_image(Eigen::Vector2d::Zero())
+  using Set = std::vector<Correspondence<IMAGE_DIM, WORLD_DIM>>;
+  Correspondence()
+    : in_image(Eigen::Matrix<double, IMAGE_DIM, 1>::Zero())
+    , in_target(Eigen::Matrix<double, WORLD_DIM, 1>::Zero())
   {
   }
 
-  Correspondence2D3D(const Eigen::Vector3d& in_target_,
-                     const Eigen::Vector2d& in_image_)
+  Correspondence(const Eigen::Matrix<double, IMAGE_DIM, 1>& in_image_,
+                 const Eigen::Matrix<double, WORLD_DIM, 1>& in_target_)
     : in_target(in_target_)
     , in_image(in_image_)
   {
   }
 
-  Eigen::Vector3d in_target;
-  Eigen::Vector2d in_image;
-};
-using CorrespondenceSet = std::vector<Correspondence2D3D>;
+  /** @brief N-dimensional location of the feature relative to the sensor */
+  Eigen::Matrix<double, IMAGE_DIM, 1> in_image;
 
-struct Correspondence3D3D
+  /** @brief N-dimensional location of the feature relative to the target origin */
+  Eigen::Matrix<double, WORLD_DIM, 1> in_target;
+};
+/** @brief Typedef for correspondence between 2D feature in image coordinates and 3D feature in target coordinates */
+using Correspondence2D3D = Correspondence<2, 3>;
+/** @brief Typedef for correspondence between 3D feature in sensor coordinates and 3D feature in target coordinates */
+using Correspondence3D3D = Correspondence<3, 3>;
+
+// Deprecated typedefs
+using CorrespondenceSet [[deprecated]] = Correspondence2D3D::Set;
+using Correspondence3DSet [[deprecated]] = Correspondence3D3D::Set;
+
+/**
+ * @brief A set of data representing a single observation of a calibration target.
+ * This consists of the feature correspondences as well as the transforms to the "mount" frames of the camera and target.
+ * For a moving camera or target, the "mount" pose would likely be the transform from the robot base to the robot tool flange.
+ * For a stationary camera or target, this "mount" pose would simply be identity.
+ *
+ * Note that @ref to_camera_mount and @ref to_target_mount do not necessarily need to be relative the the same coordinate system because
+ * certain calibration problems might optimize a 6D transform in between the root frame of @ref to_camera mount and the root frame of @ref to_target_mount
+ *
+ * Keep in mind that the optimization itself determines the final calibrated transforms from these "mount" frames to the camera and target.
+ */
+template<Eigen::Index IMAGE_DIM, Eigen::Index WORLD_DIM>
+struct Observation
 {
-  Correspondence3D3D()
-    : in_target(Eigen::Vector3d::Zero())
-    , in_image(Eigen::Vector3d::Zero())
+  using Set = std::vector<Observation<IMAGE_DIM, WORLD_DIM>>;
+  Observation()
+    : to_camera_mount(Eigen::Isometry3d::Identity())
+    , to_target_mount(Eigen::Isometry3d::Identity())
   {
   }
 
-  Correspondence3D3D(const Eigen::Vector3d& in_target_,
-                     const Eigen::Vector3d& in_image_)
-    : in_target(in_target_)
-    , in_image(in_image_)
+  Observation(const Eigen::Isometry3d& to_camera_mount_,
+              const Eigen::Isometry3d& to_target_mount_)
+    : to_camera_mount(to_camera_mount_)
+    , to_target_mount(to_target_mount_)
   {
   }
 
-  Eigen::Vector3d in_target;
-  Eigen::Vector3d in_image;
+  /** @brief A set of feature correspondences between the sensor output and target */
+  typename Correspondence<IMAGE_DIM, WORLD_DIM>::Set correspondence_set;
+  /** @brief The transform to the frame to which the camera is mounted. */
+  Eigen::Isometry3d to_camera_mount;
+  /** @brief The transform to the frame to which the target is mounted. */
+  Eigen::Isometry3d to_target_mount;
 };
-using Correspondence3DSet = std::vector<Correspondence3D3D>;
+/** @brief Typedef for observations of 2D image to 3D target correspondences */
+using Observation2D3D = Observation<2, 3>;
+/** @brief Typedef for observations of 3D sensor to 3D target correspondences */
+using Observation3D3D = Observation<3, 3>;
 
 } // namespace rct_optimizations
 
