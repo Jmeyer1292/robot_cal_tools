@@ -43,10 +43,9 @@ Eigen::Isometry3d DHTransform::createRelativeTransform(const double joint_value)
 
 double DHTransform::createRandomJointValue() const
 {
-  std::random_device rd;
-  std::default_random_engine gen(rd());
+  std::mt19937 mt_rand = std::mt19937(std::random_device{}());
   std::uniform_real_distribution<double> dist(min, max);
-  return (dist(gen));
+  return (dist(mt_rand));
 }
 
 // Gaussian Noise DH Transform
@@ -63,10 +62,9 @@ GaussianNoiseDHTransform::GaussianNoiseDHTransform(std::array<double, 4> params_
 
 Eigen::Isometry3d GaussianNoiseDHTransform::createRelativeTransform(const double joint) const
 {
-  std::random_device rd;
-  std::mt19937 gen(rd());
+  std::mt19937 mt_rand(std::random_device{}());
   std::normal_distribution<double> dist(mean, std_dev);
-  return DHTransform::createRelativeTransform(joint + dist(gen));
+  return DHTransform::createRelativeTransform(joint + dist(mt_rand));
 }
 
 // DH Chain

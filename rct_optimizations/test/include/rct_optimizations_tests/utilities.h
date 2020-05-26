@@ -26,12 +26,6 @@ struct Camera
 Camera makeKinectCamera();
 
 /**
- * @brief Creates a DH parameter-based robot representation of an ABB IRB2400
- * @return
- */
-//DHRobot createABBIRB2400();
-
-/**
  * @brief A sample grid target for test purposes
  */
 struct Target
@@ -68,7 +62,10 @@ Eigen::Isometry3d perturbPose(const Eigen::Isometry3d &pose,
                               double spatial_noise,
                               double angle_noise);
 
-
+/**
+ * @brief Creates a DH parameter-based robot representation of an ABB IRB2400
+ * @return
+ */
 inline DHChain createABBIRB2400()
 {
   std::vector<DHTransform::Ptr> joints;
@@ -92,6 +89,10 @@ inline DHChain createABBIRB2400()
   return DHChain(std::move(joints));
 }
 
+/**
+ * @brief Creates a DH parameter-based robot representation of an ABB IRB2400 with random joint noise
+ * @return
+ */
 inline DHChain createABBIRB2400WithNoise()
 {
   std::vector<DHTransform::Ptr> joints;
