@@ -14,6 +14,14 @@ struct PnPProblem
   Eigen::Isometry3d camera_to_target_guess;
 };
 
+struct PnPProblem3D
+{
+  rct_optimizations::CameraIntrinsics intr;
+  Correspondence3DSet correspondences;
+
+  Eigen::Isometry3d camera_to_target_guess;
+};
+
 struct PnPResult
 {
   bool converged;
@@ -24,6 +32,7 @@ struct PnPResult
 };
 
 PnPResult optimize(const PnPProblem& params);
+PnPResult optimize(const PnPProblem3D& params);
 
 }
 
