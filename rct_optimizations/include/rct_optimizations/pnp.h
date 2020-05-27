@@ -17,7 +17,7 @@ struct PnPProblem
 struct PnPProblem3D
 {
   rct_optimizations::CameraIntrinsics intr;
-  Correspondence3DSet correspondences;
+  Correspondence3D3D::Set correspondences;
 
   Eigen::Isometry3d camera_to_target_guess;
 };
