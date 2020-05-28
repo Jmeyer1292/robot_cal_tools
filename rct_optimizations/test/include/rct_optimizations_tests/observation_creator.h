@@ -2,6 +2,7 @@
 #define RCT_OPTIMIZATIONS_TESTS_OBS_CREATOR_H
 
 #include <rct_optimizations_tests/utilities.h>
+#include <rct_optimizations_tests/pose_generator.h>
 
 namespace rct_optimizations
 {
@@ -38,14 +39,38 @@ Correspondence3D3D::Set getCorrespondences(const Eigen::Isometry3d &camera_pose,
                                            const Target &target) noexcept;
 
 /**
- * @brief Defines a camera matrix using a camera origin, a position its looking at, and an up vector hint
- * @param origin - The position of the camera focal point
- * @param eye - A point that the camera is looking at
- * @param up - The upvector in world-space
+ * @brief Creates a 2D-3D observation set
+ * @param camera - camera intrinsics
+ * @param target - target definition
+ * @param pose_generator - base class for camera pose generation
+ * @param true_target_mount_to_target - the true transform from the target mount to the target
+ * @param true_camera_mount_to_camera - the true transform from the camera mount to the camera
+ * @param camera_base_to_target_base - the transform from the camera base frame to the target base frame (typically identity)
+ * @return
  */
-Eigen::Isometry3d lookAt(const Eigen::Vector3d &origin,
-                         const Eigen::Vector3d &eye,
-                         const Eigen::Vector3d &up) noexcept;
+Observation2D3D::Set createObservations(
+  const Camera &camera,
+  const Target &target,
+  const PoseGenerator &pose_generator,
+  const Eigen::Isometry3d &true_target_mount_to_target,
+  const Eigen::Isometry3d &true_camera_mount_to_camera,
+  const Eigen::Isometry3d &camera_base_to_target_base = Eigen::Isometry3d::Identity());
+
+/**
+ * @brief Creates a 3D-3D observation set
+ * @param target - target definition
+ * @param pose_generator - base class for camera pose generation
+ * @param true_target_mount_to_target - the true transform from the target mount to the target
+ * @param true_camera_mount_to_camera - the true transform from the camera mount to the camera
+ * @param camera_base_to_target_base - the transform from the camera base frame to the target base frame (typically identity)
+ * @return
+ */
+Observation3D3D::Set createObservations(
+  const Target &target,
+  const PoseGenerator &pose_generator,
+  const Eigen::Isometry3d &true_target_mount_to_target,
+  const Eigen::Isometry3d &true_camera_mount_to_camera,
+  const Eigen::Isometry3d &camera_base_to_target_base = Eigen::Isometry3d::Identity());
 
 } // namespace test
 } // namespace rct_optimizations
