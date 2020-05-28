@@ -122,8 +122,8 @@ inline
 void printOptResults(bool converged, double initial_cost_per_obs, double final_cost_per_obs)
 {
   std::cout << "Did converge?: " << converged << std::endl;
-  std::cout << "Initial cost?: " << initial_cost_per_obs << " (pixels per dot)" << std::endl;
-  std::cout << "Final cost?: " << final_cost_per_obs << " (pixels per dot)" << std::endl;
+  std::cout << "Initial cost?: " << std::sqrt(initial_cost_per_obs) << " (pixels per dot)" << std::endl;
+  std::cout << "Final cost?: " << std::sqrt(final_cost_per_obs) << " (pixels per dot)" << std::endl;
 }
 
 inline
