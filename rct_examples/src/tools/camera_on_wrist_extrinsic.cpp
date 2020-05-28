@@ -6,7 +6,7 @@
 #include <rct_image_tools/image_observation_finder.h>
 #include <rct_image_tools/image_utils.h>
 // The calibration function for 'moving camera' on robot wrist
-#include <rct_optimizations/extrinsic_camera_on_wrist.h>
+#include <rct_optimizations/extrinsic_hand_eye.h>
 #include <rct_optimizations/experimental/pnp.h>
 
 // For display of found targets
@@ -16,13 +16,12 @@
 #include <rct_optimizations/ceres_math_utilities.h>
 
 static void reproject(const Eigen::Isometry3d& wrist_to_camera, const Eigen::Isometry3d& base_to_target,
-                      const Eigen::Isometry3d& base_to_wrist, const rct_optimizations::CameraIntrinsics& intr,
-                      const rct_image_tools::ModifiedCircleGridTarget& target, const cv::Mat& image,
-                      const rct_optimizations::CorrespondenceSet& corr)
+                      const rct_optimizations::Observation2D3D& obs, const rct_optimizations::CameraIntrinsics& intr,
+                      const rct_image_tools::ModifiedCircleGridTarget& target, const cv::Mat& image)
 {
   // We want to compute the "positional error" as well
   // So first we compute the "camera to target" transform based on the calibration...
-  Eigen::Isometry3d camera_to_target = (base_to_wrist * wrist_to_camera).inverse() * base_to_target;
+  Eigen::Isometry3d camera_to_target = (obs.to_camera_mount * wrist_to_camera).inverse() * base_to_target;
   std::vector<cv::Point2d> reprojections = rct_image_tools::getReprojections(camera_to_target, intr, target.points);
 
   cv::Mat frame = image.clone();
@@ -30,7 +29,7 @@ static void reproject(const Eigen::Isometry3d& wrist_to_camera, const Eigen::Iso
 
   rct_optimizations::PnPProblem pb;
   pb.camera_to_target_guess = camera_to_target;
-  pb.correspondences = corr;
+  pb.correspondences = obs.correspondence_set;
   pb.intr = intr;
   rct_optimizations::PnPResult r = rct_optimizations::optimize(pb);
 
@@ -88,17 +87,17 @@ int main(int argc, char** argv)
   rct_image_tools::ModifiedCircleGridObservationFinder obs_finder(target);
 
   // Now we create our calibration problem
-  rct_optimizations::ExtrinsicCameraOnWristProblem problem_def;
+  rct_optimizations::ExtrinsicHandEyeProblem2D3D problem_def;
   problem_def.intr = intr; // Set the camera properties
 
   // Our 'base to camera guess': A camera off to the side, looking at a point centered in front of the robot
-  if (!rct_ros_tools::loadPose(pnh, "base_to_target_guess", problem_def.base_to_target_guess))
+  if (!rct_ros_tools::loadPose(pnh, "base_to_target_guess", problem_def.target_mount_to_target_guess))
   {
     ROS_WARN_STREAM("Unable to load guess for base to camera from the 'base_to_target_guess' parameter struct");
     return 1;
   }
 
-  if (!rct_ros_tools::loadPose(pnh, "wrist_to_camera_guess", problem_def.wrist_to_camera_guess))
+  if (!rct_ros_tools::loadPose(pnh, "wrist_to_camera_guess", problem_def.camera_mount_to_camera_guess))
   {
     ROS_WARN_STREAM("Unable to load guess for wrist to target from the 'wrist_to_camera_guess' parameter struct");
     return 1;
@@ -107,6 +106,7 @@ int main(int argc, char** argv)
   // Finally, we need to process our images into correspondence sets: for each dot in the
   // target this will be where that dot is in the target and where it was seen in the image.
   // Repeat for each image. We also tell where the wrist was when the image was taken.
+  problem_def.observations.reserve(data_set.images.size());
   for (std::size_t i = 0; i < data_set.images.size(); ++i)
   {
     // Try to find the circle grid in this image:
@@ -125,26 +125,32 @@ int main(int argc, char** argv)
       cv::waitKey();
     }
 
+    rct_optimizations::Observation2D3D obs;
+    obs.correspondence_set.reserve(maybe_obs->size());
+
     // So for each image we need to:
     //// 1. Record the wrist position
-    problem_def.wrist_poses.push_back(data_set.tool_poses[i]);
+    obs.to_camera_mount = data_set.tool_poses[i];
+    obs.to_target_mount = Eigen::Isometry3d::Identity();
 
     //// And finally add that to the problem
-    problem_def.image_observations.push_back(rct_image_tools::getCorrespondenceSet(*maybe_obs, target.points));
+    obs.correspondence_set = rct_image_tools::getCorrespondenceSet(*maybe_obs, target.points);
+
+    problem_def.observations.push_back(obs);
   }
 
   // Now we have a defined problem, run optimization:
-  rct_optimizations::ExtrinsicCameraOnWristResult opt_result = rct_optimizations::optimize(problem_def);
+  rct_optimizations::ExtrinsicHandEyeResult opt_result = rct_optimizations::optimize(problem_def);
 
   // Report results
   rct_ros_tools::printOptResults(opt_result.converged, opt_result.initial_cost_per_obs, opt_result.final_cost_per_obs);
   rct_ros_tools::printNewLine();
 
-  Eigen::Isometry3d c = opt_result.wrist_to_camera;
+  Eigen::Isometry3d c = opt_result.camera_mount_to_camera;
   rct_ros_tools::printTransform(c, "Wrist", "Camera", "WRIST TO CAMERA");
   rct_ros_tools::printNewLine();
 
-  Eigen::Isometry3d t = opt_result.base_to_target;
+  Eigen::Isometry3d t = opt_result.target_mount_to_target;
   rct_ros_tools::printTransform(t, "Base", "Target", "BASE TO TARGET");
   rct_ros_tools::printNewLine();
 
@@ -152,8 +158,12 @@ int main(int argc, char** argv)
   for (std::size_t i = 0; i < data_set.images.size(); ++i)
   {
     rct_ros_tools::printTitle("REPROJECT IMAGE " + std::to_string(i));
-    reproject(opt_result.wrist_to_camera, opt_result.base_to_target, data_set.tool_poses[i],
-              intr, target, data_set.images[i], problem_def.image_observations[i]);
+    reproject(opt_result.camera_mount_to_camera,
+              opt_result.target_mount_to_target,
+              problem_def.observations[i],
+              intr,
+              target,
+              data_set.images[i]);
   }
 
   return 0;
