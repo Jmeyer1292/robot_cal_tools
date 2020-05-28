@@ -7,15 +7,11 @@ find_package(Ceres REQUIRED)
 add_library(${PROJECT_NAME} SHARED
   # Utilities
   src/${PROJECT_NAME}/eigen_conversions.cpp
-  # Optimizations (monocular camera)
-  src/${PROJECT_NAME}/extrinsic_camera_on_wrist.cpp
-  src/${PROJECT_NAME}/extrinsic_static_camera.cpp
   # Optimizations (multiple cameras)
   src/${PROJECT_NAME}/extrinsic_multi_static_camera.cpp
   src/${PROJECT_NAME}/extrinsic_multi_static_camera_only.cpp
   src/${PROJECT_NAME}/extrinsic_multi_static_camera_wrist_only.cpp
-  # Optimizations (3D sensor)
-  src/${PROJECT_NAME}/extrinsic_3d_camera_on_wrist.cpp
+  # Optimizations (extrinsic hand-eye, 2D and 3D cameras)
   src/${PROJECT_NAME}/extrinsic_hand_eye.cpp
   # Optimizations (Experimental) - Intrinsic
   src/${PROJECT_NAME}/camera_intrinsic.cpp
