@@ -5,6 +5,7 @@
 // Test utilities
 #include <rct_optimizations_tests/utilities.h>
 #include <rct_optimizations_tests/observation_creator.h>
+#include <memory>
 
 using namespace rct_optimizations;
 
@@ -38,6 +39,7 @@ struct ProblemCreator
 
   static ProblemT createProblem(const Eigen::Isometry3d &true_target,
                                 const Eigen::Isometry3d &true_camera,
+                                const test::PoseGenerator& pose_generator,
                                 const test::Target &target,
                                 const InitialConditions &init);
 
@@ -50,6 +52,7 @@ template<>
 ExtrinsicHandEyeProblem2D3D ProblemCreator<ExtrinsicHandEyeProblem2D3D>::createProblem(
   const Eigen::Isometry3d &true_target,
   const Eigen::Isometry3d &true_camera,
+  const test::PoseGenerator& pose_generator,
   const test::Target &target,
   const InitialConditions &init)
 {
@@ -59,34 +62,11 @@ ExtrinsicHandEyeProblem2D3D ProblemCreator<ExtrinsicHandEyeProblem2D3D>::createP
   problem.intr = camera.intr;
   problem.target_mount_to_target_guess = createPose(true_target, init);
   problem.camera_mount_to_camera_guess = createPose(true_camera, init);
-
-  // Create observations
-  for (int i = -5; i < 5; ++i)
-  {
-    for (int j = -5; j < 5; ++j)
-    {
-      Eigen::Vector3d center_point = true_target.translation()
-                                     + Eigen::Vector3d(i * 0.025, j * 0.025, 1.0);
-      Eigen::Isometry3d camera_pose = test::lookAt(center_point,
-                                                   true_target.translation(),
-                                                   Eigen::Vector3d(1, 0, 0));
-      Eigen::Isometry3d wrist_pose = camera_pose * true_camera.inverse();
-
-      // Attempt to generate points
-      try
-      {
-        Observation2D3D obs;
-        obs.correspondence_set = getCorrespondences(camera_pose, true_target, camera, target, true);
-        obs.to_camera_mount = wrist_pose;
-        obs.to_target_mount = Eigen::Isometry3d::Identity();
-        problem.observations.push_back(obs);
-      }
-      catch (const std::exception &ex)
-      {
-        continue;
-      }
-    }
-  }
+  problem.observations = test::createObservations(camera,
+                                                  target,
+                                                  pose_generator,
+                                                  true_target,
+                                                  true_camera);
 
   return problem;
 }
@@ -98,32 +78,14 @@ template<>
 ExtrinsicHandEyeProblem3D3D ProblemCreator<ExtrinsicHandEyeProblem3D3D>::createProblem(
   const Eigen::Isometry3d &true_target,
   const Eigen::Isometry3d &true_camera,
+  const test::PoseGenerator& pose_generator,
   const test::Target &target,
   const InitialConditions &init)
 {
   ExtrinsicHandEyeProblem3D3D problem;
   problem.target_mount_to_target_guess = createPose(true_target, init);
   problem.camera_mount_to_camera_guess = createPose(true_camera, init);
-
-  // Create observations
-  for (int i = -5; i < 5; ++i)
-  {
-    for (int j = -5; j < 5; ++j)
-    {
-      Eigen::Vector3d center_point = true_target.translation()
-                                     + Eigen::Vector3d(i * 0.025, j * 0.025, 1.0);
-      Eigen::Isometry3d camera_pose = test::lookAt(center_point,
-                                                   true_target.translation(),
-                                                   Eigen::Vector3d(1, 0, 0));
-      Eigen::Isometry3d wrist_pose = camera_pose * true_camera.inverse();
-
-      Observation3D3D obs;
-      obs.correspondence_set = getCorrespondences(camera_pose, true_target, target);
-      obs.to_camera_mount = wrist_pose;
-      obs.to_target_mount = Eigen::Isometry3d::Identity();
-      problem.observations.push_back(obs);
-    }
-  }
+  problem.observations = test::createObservations(target, pose_generator, true_target, true_camera);
 
   return problem;
 }
@@ -134,7 +96,7 @@ double ProblemCreator<ExtrinsicHandEyeProblem3D3D>::max_cost_per_obs = std::pow(
 template<typename ProblemT>
 class HandEyeTest : public ::testing::Test
 {
-  public:
+public:
   HandEyeTest()
     : true_target_mount_to_target(Eigen::Isometry3d::Identity())
     , true_camera_mount_to_camera(Eigen::Isometry3d::Identity())
@@ -173,8 +135,10 @@ TYPED_TEST_CASE(HandEyeTest, Implementations);
 
 TYPED_TEST(HandEyeTest, PerfectInitialConditions)
 {
+  test::HemispherePoseGenerator pg;
   TypeParam prob = ProblemCreator<TypeParam>::createProblem(this->true_target_mount_to_target,
                                                             this->true_camera_mount_to_camera,
+                                                            pg,
                                                             this->target,
                                                             InitialConditions::PERFECT);
   // Run the optimization
@@ -197,11 +161,15 @@ TYPED_TEST(HandEyeTest, RandomAroundAnswerInitialConditions)
   const std::size_t n = 10;
   const std::size_t max_attempts = 2 * n;
   std::size_t count = 0;
+
+  test::HemispherePoseGenerator pg;
+
   while(count < n && count < max_attempts)
   {
     TypeParam prob
       = ProblemCreator<TypeParam>::createProblem(this->true_target_mount_to_target,
                                                  this->true_camera_mount_to_camera,
+                                                 pg,
                                                  this->target,
                                                  InitialConditions::RANDOM_AROUND_ANSWER);
     // Run the optimization
