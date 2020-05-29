@@ -18,14 +18,17 @@ int main()
   //camera intrinsics?
   rct_optimizarions::CameraIntrinsics CI;
 
-  //target type?
+  //large target
+  rct_image_tools::ModifiedCircleGridTarget target(10, 10, 0.0254);
 
+  //need observations
   for (std::size_t i = 0; i < 50; ++i)
   {
     //take observation, push it back
     //observations need camera pose, target pose, camera def, target def, and some bool?
   }
 
+  //feed observation set
   //run noise qualifier
 
 }

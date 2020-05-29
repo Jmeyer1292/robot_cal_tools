@@ -10,6 +10,7 @@ target_link_libraries(${PROJECT_NAME}_test_support ${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME}_test_support PUBLIC include)
 
 # The actual tests...
+
 # Conversions
 add_executable(${PROJECT_NAME}_conversion_tests conversion_utest.cpp)
 target_link_libraries(${PROJECT_NAME}_conversion_tests PRIVATE ${PROJECT_NAME}_test_support GTest::GTest GTest::Main)
@@ -68,6 +69,7 @@ add_dependencies(run_tests ${PROJECT_NAME}_camera_intrinsic_validation_tests)
 # Install the test executables so they can be run independently later if needed
 install(
   TARGETS
+    ${PROJECT_NAME}_pnp_tests
     ${PROJECT_NAME}_conversion_tests
     ${PROJECT_NAME}_covariance_tests
     ${PROJECT_NAME}_extrinsic_multi_static_camera_tests
