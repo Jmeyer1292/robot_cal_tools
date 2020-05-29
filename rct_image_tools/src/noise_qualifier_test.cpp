@@ -1,19 +1,24 @@
 #include <Eigen/Dense>
 #include <rct_image_tools/noise_qualifier.h>
-#include <rct_optimizations/observation_creator.h>
+#include <rct_optimizations/types.h>
+#include <rct_optimizations_tests/utilities.h>
+
+#include "rct_optimizations_tests/pose_generator.h"
+
+//#include  "rct_optimizations_tests/observation_creator.h"
 
 //collect 2d images
-int main()
+int main(int argc, char** argv)
 {
-  std::vector<rct_observations::Observation2D3D> obs;
+  rct_optimizations::Observation2D3D::Set obs;
   obs.reserve(50);
 
-  Eigen::Isometry3d target = Eigen::Isometry3d::Identity();
-  Eigen::Isomety3d camera =  Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d target_loc = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d camera_loc =  Eigen::Isometry3d::Identity();
 
   //need a reasonable location
-  camera.translate(1.0,1.0,1.0);
-  camera = rct_optimizations::test::looksAt(camera.translation(), target.translation(), Eigen::Vector3d(1.0,0.0,0.0));
+  camera_loc.translate(Eigen::Vector3d(1.0,1.0,1.0));
+  camera_loc = rct_optimizations::test::lookAt(camera.translation(), target.translation(), Eigen::Vector3d(1.0,0.0,0.0));
 
   //camera intrinsics?
   rct_optimizarions::CameraIntrinsics CI;
@@ -24,11 +29,21 @@ int main()
   //need observations
   for (std::size_t i = 0; i < 50; ++i)
   {
-    //take observation, push it back
+    Observation2D3D ob;
+    ob.to_target_mount = target_loc;
+    ob_to_camera_mount = camera_loc;
+    //heres where we can add noise
+    ob.correspondence_set = getCorrespondences(target_loc,
+                                               camera_loc,
+                                               camera,
+                                               target,
+                                               false);
+
+    obs.push_back(rct_optimizations);
     //observations need camera pose, target pose, camera def, target def, and some bool?
   }
 
-  //feed observation set
-  //run noise qualifier
+  rct_image_tools::NoiseQualParams2D3D param(obs, CI, guess);
+  rct_image_tools::NoiseStatistics qualifyNoise(param);
 
 }
