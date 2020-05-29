@@ -1,4 +1,21 @@
 #include <rct_optimizations/validation/camera_intrinsic_calibration_validation.h>
+#include <boost/accumulators/accumulators.hpp>
+#include <boost/accumulators/statistics.hpp>
+
+// Specialize std::numeric_limits for the Eigen::Vector3d type
+// Ref: https://stackoverflow.com/questions/7908982/using-boost-accumulators-with-eigenvector-types
+namespace std
+{
+template<>
+struct numeric_limits<Eigen::Vector3d>
+{
+  static const bool is_specialized = true;
+  static Eigen::Vector3d max()
+  {
+    return Eigen::Vector3d::Ones() * std::numeric_limits<double>::max();
+  }
+};
+} // namespace std
 
 namespace rct_optimizations
 {
@@ -45,6 +62,46 @@ Eigen::Isometry3d getInternalTargetTransformation(const Correspondence2D3D::Set 
 
   // Return the transformation from target 1 to target 2
   return camera_to_target_1.inverse() * camera_to_target_2;
+}
+
+bool validateCameraIntrinsicCalibration(const Observation2D3D::Set &observations,
+                                        const CameraIntrinsics &intr,
+                                        const Eigen::Isometry3d &camera_to_target_guess,
+                                        const double diff_threshold)
+{
+  // Check that the observations are all the same size
+  // Assuming that each observation's correspondences are ordered the same
+  for (std::size_t i = 0; i < observations.size() - 1; ++i)
+  {
+    const Observation2D3D &obs_1 = observations[i];
+    const Observation2D3D &obs_2 = observations[i + 1];
+
+    // Check that the correspondences in all observations are the same size
+    if (obs_1.correspondence_set.size() != obs_2.correspondence_set.size())
+    {
+      throw std::runtime_error("They don't match");
+    }
+  }
+
+  // Create accumulators for mean and variance
+  namespace ba = boost::accumulators;
+  ba::accumulator_set<Eigen::Vector3d, ba::stats<ba::tag::mean>> acc;
+
+  // Accumulate the position vector of the transformation
+  for (const auto &obs : observations)
+  {
+    Eigen::Isometry3d t = getInternalTargetTransformation(obs.correspondence_set,
+                                                          intr,
+                                                          camera_to_target_guess,
+                                                          1.0);
+    acc(t.translation());
+  }
+
+  // Calculate the mean and variance of the measurements
+  Eigen::Vector3d mean = ba::mean(acc);
+
+  // Make sure that the mean is less than the acceptable threshold
+  return mean.norm() < diff_threshold;
 }
 
 } // namespace rct_optimizations

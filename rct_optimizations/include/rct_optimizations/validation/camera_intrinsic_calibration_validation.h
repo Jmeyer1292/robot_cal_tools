@@ -27,4 +27,29 @@ Eigen::Isometry3d getInternalTargetTransformation(
   const Eigen::Isometry3d &camera_to_target_guess = Eigen::Isometry3d::Identity(),
   const double residual_sq_error_threshold = 1.0);
 
+/**
+ * @brief
+ *   Method:
+ *     1. Check that the correspondences in all observations are the same size
+ *       - Assumptions:
+ *         - Correspondences are ordered in the same way for each observation
+ *         - The correspondences in each observation can be divided in half to get the same two sets of features
+ *     2. Calculate transform between two virtual targets in correspondences in adjacent observations
+ *     3. Calculate the positional difference in this transform for all observations
+ *       - Theoretically, this difference should be zero for a perfectly intrinsically calibrated camera
+ *         that perfectly observed the target features
+ *     4. Record the mean and standard deviation of
+ *     5. Return whether or not the mean of all the measurements was less than the input threshold
+ *
+ * @param observations
+ * @param intr - camera intrinsic parameters
+ * @param camera_to_target_guess -
+ * @param diff_threshold - The max error
+ * @return
+ */
+bool validateCameraIntrinsicCalibration(const Observation2D3D::Set &observations,
+                                        const CameraIntrinsics &intr,
+                                        const Eigen::Isometry3d &camera_to_target_guess,
+                                        const double diff_threshold);
+
 } // namespace rct_optimizations
