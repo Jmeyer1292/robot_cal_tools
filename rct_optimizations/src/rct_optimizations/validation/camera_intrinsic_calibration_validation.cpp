@@ -2,21 +2,6 @@
 #include <boost/accumulators/accumulators.hpp>
 #include <boost/accumulators/statistics.hpp>
 
-// Specialize std::numeric_limits for the Eigen::Vector3d type
-// Ref: https://stackoverflow.com/questions/7908982/using-boost-accumulators-with-eigenvector-types
-namespace std
-{
-template<>
-struct numeric_limits<Eigen::Vector3d>
-{
-  static const bool is_specialized = true;
-  static Eigen::Vector3d max()
-  {
-    return Eigen::Vector3d::Ones() * std::numeric_limits<double>::max();
-  }
-};
-} // namespace std
-
 namespace rct_optimizations
 {
 Eigen::Isometry3d getInternalTargetTransformation(const Correspondence2D3D::Set &correspondences,
@@ -66,8 +51,10 @@ Eigen::Isometry3d getInternalTargetTransformation(const Correspondence2D3D::Set 
 
 bool validateCameraIntrinsicCalibration(const Observation2D3D::Set &observations,
                                         const CameraIntrinsics &intr,
-                                        const Eigen::Isometry3d &camera_to_target_guess,
-                                        const double diff_threshold)
+                                        const double threshold,
+                                        const Eigen::Isometry3d &camera_mount_to_camera,
+                                        const Eigen::Isometry3d &target_mount_to_target,
+                                        const Eigen::Isometry3d &camera_base_to_target_base)
 {
   // Check that the observations are all the same size
   // Assuming that each observation's correspondences are ordered the same
@@ -85,23 +72,33 @@ bool validateCameraIntrinsicCalibration(const Observation2D3D::Set &observations
 
   // Create accumulators for mean and variance
   namespace ba = boost::accumulators;
-  ba::accumulator_set<Eigen::Vector3d, ba::stats<ba::tag::mean>> acc;
+  ba::accumulator_set<double, ba::features<ba::stats<ba::tag::mean>, ba::stats<ba::tag::variance>>>
+    acc;
 
   // Accumulate the position vector of the transformation
   for (const auto &obs : observations)
   {
+    Eigen::Isometry3d camera_base_to_camera = obs.to_camera_mount * camera_mount_to_camera;
+    Eigen::Isometry3d camera_base_to_target = camera_base_to_target_base * obs.to_target_mount
+                                              * target_mount_to_target;
+
+    Eigen::Isometry3d camera_to_target = camera_base_to_camera.inverse() * camera_base_to_target;
+
     Eigen::Isometry3d t = getInternalTargetTransformation(obs.correspondence_set,
                                                           intr,
-                                                          camera_to_target_guess,
+                                                          camera_to_target,
                                                           1.0);
-    acc(t.translation());
+    acc(t.translation().norm());
   }
 
   // Calculate the mean and variance of the measurements
-  Eigen::Vector3d mean = ba::mean(acc);
+  // Theoretically each transform from virtual target 1 to virtual target 2 should be zero; thus the mean should be zero
+  // In practice the mean represents bias from the ideal zero state and the variance is the amount of change around the mean
+  double mean = ba::mean(acc);
+  double stdev = std::sqrt(ba::variance(acc));
 
   // Make sure that the mean is less than the acceptable threshold
-  return mean.norm() < diff_threshold;
+  return mean + 2.0 * stdev < threshold;
 }
 
 } // namespace rct_optimizations
