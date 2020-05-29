@@ -27,6 +27,11 @@ Camera makeKinectCamera();
 
 /**
  * @brief A sample grid target for test purposes
+ * Looking down at the target
+ *   - The origin is in the lower left corner
+ *   - The x coordinate defines the feature column
+ *   - The y coordinate defines the feature row
+ *   - The points are ordered row-wise from the top left corner to the bottom right corner
  */
 struct Target
 {
