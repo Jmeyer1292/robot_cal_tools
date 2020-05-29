@@ -102,6 +102,40 @@ TEST(PNP_2D, BadIntrinsicParameters)
   EXPECT_FALSE(result.camera_to_target.isApprox(target_to_camera.inverse(), 1.0e-3));
   EXPECT_GT(result.final_cost_per_obs, 1.0e-3);
 }
+//TODO: add a 2d vaildation (requires intrinsics for projection)
+
+TEST(PnPTest, 3DValidation)
+{
+  //correspondences: do easy offset between target & camera (ie make set translate 0.5 +x)
+  //setup params
+  PnPProblem3D setup;
+
+  //testing with only one observation
+  Correspondence3D3D::Set corrs;
+  corrs.reserve(9);
+
+  Eigen::Vector3d origin(1.0,1.0,1.0);
+  //what is the origin?
+  for(std::size_t i=0; i < 3; ++i)
+  {
+    for (std::size_t j =0; j < 3; j++)
+    {
+      Correspondence3D3D c;
+      Eigen::Vector3d world_point =Eigen::Vector3d(double<i>, double<j>, double<(i*j)%3>);
+      Eigen::Vector3d camera_point = world_point - Eigen::Vector3d(1.0,1.0,1.0);
+      c.in_target = world_point;
+      c.in_image = camera_point;
+
+      corrs.push_back(c);
+    }
+  }
+
+  setup.correspondences = corrs;
+  setup.camera_to_target_guess = Eigen::Isometry3d::Identity();
+
+  PnPResult res = rct_optimizations::optimize(setup);
+  EXPECT_TRUE(res.converged);
+}
 
 int main(int argc, char **argv)
 {
