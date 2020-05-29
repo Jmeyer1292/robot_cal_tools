@@ -51,7 +51,7 @@ TEST(CameraIntrinsicCalibrationValidation, GetInternalTargetTransformationTest)
 
   // Bad camera intrinsics, imperfect camera to target guess
   {
-    // Tweak the camera intrinsics slightly (+/- 5%)
+    // Tweak the camera intrinsics slightly (+/- 1%)
     camera.intr.fx() += 0.01 * camera.intr.fx();
     camera.intr.fy() -= 0.01 * camera.intr.fy();
     camera.intr.cx() -= 0.01 * camera.intr.cx();
