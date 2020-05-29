@@ -21,16 +21,19 @@ TEST(CameraIntrinsicCalibrationValidation, GetInternalTargetTransformationTest)
 
   Eigen::Isometry3d camera_to_target = base_to_camera.inverse() * base_to_target;
 
+  /* Since `getInternalTargetTransformation` simply splits the correspondences in half,
+     * creating two virtual targets with different features relative to the same origin,
+     * the expected transformation from one virtual target to the other should be identity */
+  const Eigen::Isometry3d expected(Eigen::Isometry3d::Identity());
+
   // Perfect camera intrinsics, perfect camera to target guess
   {
     Eigen::Isometry3d transform;
     EXPECT_NO_THROW(
       transform = getInternalTargetTransformation(corr_set, camera.intr, camera_to_target));
 
-    /* Since `getInternalTargetTransformation` simply splits the correspondences in half,
-     * creating two virtual targets with different features relative to the same origin,
-     * the transformation from one virtual target to the other should be identity */
-    EXPECT_TRUE(transform.isApprox(Eigen::Isometry3d::Identity()));
+    // Expect the transform to be almost exactly as expected
+    EXPECT_TRUE(transform.isApprox(expected));
   }
 
   // Create a slightly noisy camera to target guess (1 cm positional and ~5 degrees orientation noise)
@@ -42,10 +45,8 @@ TEST(CameraIntrinsicCalibrationValidation, GetInternalTargetTransformationTest)
     EXPECT_NO_THROW(
       transform = getInternalTargetTransformation(corr_set, camera.intr, camera_to_target_guess));
 
-    /* Since `getInternalTargetTransformation` simply splits the correspondences in half,
-     * creating two virtual targets with different features relative to the same origin,
-     * the transformation from one virtual target to the other should be identity */
-    EXPECT_TRUE(transform.isApprox(Eigen::Isometry3d::Identity(), 1.0e-8));
+    // Expect the transform to be very close to its expected value, but with a small error from the PnP
+    EXPECT_TRUE(transform.isApprox(expected, 1.0e-8));
   }
 
   // Bad camera intrinsics, imperfect camera to target guess
@@ -60,10 +61,8 @@ TEST(CameraIntrinsicCalibrationValidation, GetInternalTargetTransformationTest)
     EXPECT_NO_THROW(
       transform = getInternalTargetTransformation(corr_set, camera.intr, camera_to_target_guess));
 
-    /* Since `getInternalTargetTransformation` simply splits the correspondences in half,
-     * creating two virtual targets with different features relative to the same origin,
-     * the transformation from one virtual target to the other should be identity */
-    EXPECT_FALSE(transform.isApprox(Eigen::Isometry3d::Identity(), 1.0e-8));
+    // Expect the transform to be very close to its expected value, but with a small error from the PnP
+    EXPECT_FALSE(transform.isApprox(expected, 1.0e-8));
   }
 }
 
