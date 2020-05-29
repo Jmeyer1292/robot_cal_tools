@@ -66,6 +66,76 @@ TEST(CameraIntrinsicCalibrationValidation, GetInternalTargetTransformationTest)
   }
 }
 
+TEST(blah, foo)
+{
+  test::Camera camera = test::makeKinectCamera();
+  test::Target target(5, 7, 0.025);
+  test::GridPoseGenerator pose_gen;
+
+  // Create the relevant calibration transforms
+  Eigen::Isometry3d camera_mount_to_camera(Eigen::Isometry3d::Identity());
+  Eigen::Isometry3d target_mount_to_target(Eigen::Isometry3d::Identity());
+  Eigen::Isometry3d camera_base_to_target_base(Eigen::Isometry3d::Identity());
+
+  // Create some observations
+  Observation2D3D::Set observations = test::createObservations(camera,
+                                                               target,
+                                                               pose_gen,
+                                                               target_mount_to_target,
+                                                               camera_mount_to_camera);
+
+  // Validate the intrinsic calibration
+  // Perfect intrinsic parameters, perfect transform guesses
+  {
+    double threshold = 1.0e-15;
+    bool valid = validateCameraIntrinsicCalibration(observations,
+                                                    camera.intr,
+                                                    threshold,
+                                                    camera_mount_to_camera,
+                                                    target_mount_to_target,
+                                                    camera_base_to_target_base);
+    EXPECT_TRUE(valid);
+  }
+
+  // Perturb the calibration transforms slightly
+  Eigen::Isometry3d camera_mount_to_camera_guess = test::perturbPose(camera_mount_to_camera,
+                                                                     0.01,
+                                                                     0.01);
+  Eigen::Isometry3d target_mount_to_target_guess = test::perturbPose(target_mount_to_target,
+                                                                     0.01,
+                                                                     0.01);
+
+  // Perfect intrinsic parameters, imperfect transform guesses
+  {
+    double threshold = 1.0e-8;
+    bool valid = validateCameraIntrinsicCalibration(observations,
+                                                    camera.intr,
+                                                    threshold,
+                                                    camera_mount_to_camera_guess,
+                                                    target_mount_to_target_guess,
+                                                    camera_base_to_target_base);
+    EXPECT_TRUE(valid);
+  }
+
+  // Imperfect intrinsic parameters, imperfect transform guesses
+  {
+    // Changing the intrinsic values by 1% should yield an error of more than 1mm
+    camera.intr.fx() += 0.01 * camera.intr.fx();
+    camera.intr.fy() -= 0.01 * camera.intr.fy();
+    camera.intr.cx() -= 0.01 * camera.intr.cx();
+    camera.intr.cx() += 0.01 * camera.intr.cy();
+    double threshold = 1.0e-3;
+
+    bool valid = validateCameraIntrinsicCalibration(observations,
+                                                    camera.intr,
+                                                    threshold,
+                                                    camera_mount_to_camera_guess,
+                                                    target_mount_to_target_guess,
+                                                    camera_base_to_target_base);
+    EXPECT_FALSE(valid);
+  }
+}
+
 int main(int argc, char **argv)
 {
   testing::InitGoogleTest(&argc, argv);
