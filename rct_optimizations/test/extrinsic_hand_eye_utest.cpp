@@ -196,6 +196,15 @@ TYPED_TEST(HandEyeTest, PerfectInitialConditions)
   EXPECT_TRUE(result.target_mount_to_target.isApprox(this->true_target_mount_to_target, 1e-6));
   EXPECT_TRUE(result.camera_mount_to_camera.isApprox(this->true_camera_mount_to_camera, 1e-6));
 
+  EXPECT_EQ(result.covariance_camera_mount_to_camera.rows(), 6);
+  EXPECT_EQ(result.covariance_camera_mount_to_camera.cols(), 6);
+
+  EXPECT_EQ(result.covariance_target_mount_to_target.rows(), 6);
+  EXPECT_EQ(result.covariance_target_mount_to_target.cols(), 6);
+
+  EXPECT_EQ(result.covariance_tform_target_to_tform_camera.rows(), 6);
+  EXPECT_EQ(result.covariance_tform_target_to_tform_camera.cols(), 6);
+
   this->printResults(result);
 }
 
@@ -233,6 +242,15 @@ TYPED_TEST(HandEyeTest, RandomAroundAnswerInitialConditions)
 
     EXPECT_TRUE(result.target_mount_to_target.isApprox(this->true_target_mount_to_target, 1e-6));
     EXPECT_TRUE(result.camera_mount_to_camera.isApprox(this->true_camera_mount_to_camera, 1e-6));
+
+    EXPECT_EQ(result.covariance_camera_mount_to_camera.rows(), 6);
+    EXPECT_EQ(result.covariance_camera_mount_to_camera.cols(), 6);
+
+    EXPECT_EQ(result.covariance_target_mount_to_target.rows(), 6);
+    EXPECT_EQ(result.covariance_target_mount_to_target.cols(), 6);
+
+    EXPECT_EQ(result.covariance_tform_target_to_tform_camera.rows(), 6);
+    EXPECT_EQ(result.covariance_tform_target_to_tform_camera.cols(), 6);
 
     this->printResults(result);
   }
