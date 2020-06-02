@@ -22,12 +22,6 @@ rct_gtest_discover_tests(${PROJECT_NAME}_extrinsic_multi_static_camera_tests)
 add_dependencies(${PROJECT_NAME}_extrinsic_multi_static_camera_tests ${PROJECT_NAME})
 add_dependencies(run_tests ${PROJECT_NAME}_extrinsic_multi_static_camera_tests)
 
-add_executable(${PROJECT_NAME}_extrinsic_camera_on_wrist_tests extrinsic_camera_on_wrist_utest.cpp)
-target_link_libraries(${PROJECT_NAME}_extrinsic_camera_on_wrist_tests PRIVATE ${PROJECT_NAME}_test_support GTest::GTest GTest::Main)
-rct_gtest_discover_tests(${PROJECT_NAME}_extrinsic_camera_on_wrist_tests)
-add_dependencies(${PROJECT_NAME}_extrinsic_camera_on_wrist_tests ${PROJECT_NAME})
-add_dependencies(run_tests ${PROJECT_NAME}_extrinsic_camera_on_wrist_tests)
-
 add_executable(${PROJECT_NAME}_extrinsic_hand_eye_tests extrinsic_hand_eye_utest.cpp)
 target_link_libraries(${PROJECT_NAME}_extrinsic_hand_eye_tests PRIVATE ${PROJECT_NAME}_test_support GTest::GTest GTest::Main)
 rct_gtest_discover_tests(${PROJECT_NAME}_extrinsic_hand_eye_tests)
@@ -51,7 +45,6 @@ install(
   TARGETS
     ${PROJECT_NAME}_conversion_tests
     ${PROJECT_NAME}_extrinsic_multi_static_camera_tests
-    ${PROJECT_NAME}_extrinsic_camera_on_wrist_tests
     ${PROJECT_NAME}_extrinsic_hand_eye_tests
     ${PROJECT_NAME}_dh_parameter_tests
     ${PROJECT_NAME}_extrinsic_hand_eye_dh_chain_tests
