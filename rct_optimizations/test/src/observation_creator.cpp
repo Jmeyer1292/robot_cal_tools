@@ -37,7 +37,7 @@ Correspondence2D3D::Set getCorrespondences(const Eigen::Isometry3d &camera_pose,
     // Calculate the target coordinates in the camera frame
     Eigen::Vector3d pt_in_camera = camera_to_target * point;
 
-    // Reject points behind the camera or outside the image
+    // Include points only in front of the camera and inside the image
     if (pt_in_camera.z() > 0.0 && projectAndTest(pt_in_camera, camera, corr.in_image))
     {
       correspondences.push_back(corr);
