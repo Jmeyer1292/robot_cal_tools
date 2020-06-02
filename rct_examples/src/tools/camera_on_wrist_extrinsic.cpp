@@ -154,9 +154,9 @@ int main(int argc, char** argv)
   rct_ros_tools::printTransform(t, "Base", "Target", "BASE TO TARGET");
   rct_ros_tools::printNewLine();
 
-  std::cout << "Covariance (wrist to camera):\n" << opt_result.covariance_wrist_to_camera.matrix() << std::endl;
-  std::cout << "Covariance (base to target):\n" << opt_result.covariance_base_to_target.matrix() << std::endl;
-  std::cout << "Covariance (w2c vs b2t):\n" << opt_result.covariance_w2c_vs_b2t.matrix() << std::endl;
+  std::cout << "Covariance (wrist to camera):\n" << opt_result.covariance_camera_mount_to_camera.matrix() << std::endl;
+  std::cout << "Covariance (base to target):\n" << opt_result.covariance_target_mount_to_target.matrix() << std::endl;
+  std::cout << "Covariance (w2c vs b2t):\n" << opt_result.covariance_tform_target_to_tform_camera.matrix() << std::endl;
 
 
   rct_ros_tools::printTitle("REPROJECTION ERROR");
