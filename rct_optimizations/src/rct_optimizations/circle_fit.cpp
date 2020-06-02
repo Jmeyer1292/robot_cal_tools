@@ -106,15 +106,7 @@ rct_optimizations::optimize(const rct_optimizations::CircleFitProblem& params)
   result.radius = pow(circle_params[2], 2);
   result.initial_cost_per_obs = summary.initial_cost / summary.num_residuals;
   result.final_cost_per_obs = summary.final_cost / summary.num_residuals;
-
-  try
-  {
-    result.covariance = rct_optimizations::computeDVCovariance(problem, circle_params.data(), 3);
-  }
-  catch(std::runtime_error &e)
-  {
-    std::cout << "Failed to compute covariance: " << e.what() << std::endl;
-  }
+  result.covariance = rct_optimizations::computeDVCovariance(problem, circle_params.data(), 3);
 
   return result;
 }
