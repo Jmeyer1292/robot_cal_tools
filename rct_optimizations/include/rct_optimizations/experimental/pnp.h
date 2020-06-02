@@ -9,7 +9,7 @@ namespace rct_optimizations
 struct PnPProblem
 {
   rct_optimizations::CameraIntrinsics intr;
-  CorrespondenceSet correspondences;
+  Correspondence2D3D::Set correspondences;
 
   Eigen::Isometry3d camera_to_target_guess;
 };

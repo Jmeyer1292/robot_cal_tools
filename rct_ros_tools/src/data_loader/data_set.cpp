@@ -143,7 +143,7 @@ rct_ros_tools::ExtrinsicCorrespondenceDataSet::ExtrinsicCorrespondenceDataSet(co
     {
       mask_(c, i) = 1;
       // Try to find the circle grid in this image:
-      rct_optimizations::CorrespondenceSet obs_set = rct_image_tools::getCorrespondenceSet(obs_finder, data_set.images[i]);
+      rct_optimizations::Correspondence2D3D::Set obs_set = rct_image_tools::getCorrespondenceSet(obs_finder, data_set.images[i]);
       if (obs_set.empty())
       {
         ROS_WARN_STREAM("Unable to find the circle grid in image: " << i);
@@ -191,7 +191,7 @@ bool rct_ros_tools::ExtrinsicCorrespondenceDataSet::foundCorrespondence(std::siz
   return static_cast<bool>(mask_(camera_index, image_index));
 }
 
-const rct_optimizations::CorrespondenceSet&
+const rct_optimizations::Correspondence2D3D::Set&
 rct_ros_tools::ExtrinsicCorrespondenceDataSet::getCorrespondenceSet(std::size_t camera_index, std::size_t image_index) const
 {
   return correspondences_(camera_index, image_index);

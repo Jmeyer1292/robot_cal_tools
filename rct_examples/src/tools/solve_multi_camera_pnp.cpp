@@ -22,7 +22,7 @@ static void reproject(const Eigen::Isometry3d& base_to_target,
                       const std::vector<rct_optimizations::CameraIntrinsics>& intr,
                       const rct_image_tools::ModifiedCircleGridTarget& target,
                       const cv::Mat& image,
-                      const std::vector<rct_optimizations::CorrespondenceSet>& corr)
+                      const std::vector<rct_optimizations::Correspondence2D3D::Set>& corr)
 {
 
   Eigen::Isometry3d camera_to_target = base_to_camera[0].inverse() * base_to_target;
@@ -150,7 +150,7 @@ int main(int argc, char** argv)
   {
     if (corr_data_set.getImageCameraCount(i) == corr_data_set.getCameraCount())
     {
-      std::vector<rct_optimizations::CorrespondenceSet> corr_set;
+      std::vector<rct_optimizations::Correspondence2D3D::Set> corr_set;
       for (std::size_t c = 0; c < num_of_cameras; ++c)
       {
         corr_set.push_back(corr_data_set.getCorrespondenceSet(c, i));

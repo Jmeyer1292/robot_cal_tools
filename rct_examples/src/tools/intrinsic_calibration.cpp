@@ -11,7 +11,7 @@
 
 #include <opencv2/calib3d.hpp>
 
-void opencvCameraCalibration(const std::vector<rct_optimizations::CorrespondenceSet>& obs,
+void opencvCameraCalibration(const std::vector<rct_optimizations::Correspondence2D3D::Set>& obs,
                              const cv::Size& image_size,
                              const rct_optimizations::CameraIntrinsics& intr)
 {
