@@ -81,7 +81,7 @@ rct_optimizations::optimize(const rct_optimizations::CircleFitProblem& params)
 
   ceres::Problem problem;
 
-  ceres::LossFunction* loss_fn = NULL;
+  ceres::LossFunction* loss_fn = nullptr;
 
   for (auto obs : params.observations)
   {
