@@ -39,6 +39,14 @@ protected:
 
   virtual void setObservations() = 0;
 
+  static void printResults(const rct_optimizations::CircleFitResult& r)
+  {
+    std::cout << "X: " << r.x_center << std::endl;
+    std::cout << "Y: " << r.y_center << std::endl;
+    std::cout << "R: " << r.radius << std::endl;
+    std::cout << "Covariance Matrix:\n" << r.covariance.matrix() << std::endl;
+  }
+
   std::double_t center_x_actual, center_y_actual, radius_actual;
 
   rct_optimizations::CircleFitProblem problem;
@@ -226,13 +234,9 @@ protected:
 
 TEST_F(CircleFitUnit_PerfectObservations_RandomGuess, FitCircleToPerfectObs)
 {
-  rct_optimizations::CircleFitResult result = rct_optimizations::optimize(problem);
-
-  std::cout << "X: " << center_x_actual << " vs " << result.x_center << std::endl;
-  std::cout << "Y: " << center_y_actual << " vs " << result.y_center << std::endl;
-  std::cout << "R: " << radius_actual << " vs " << result.radius << std::endl;
-
-  std::cout << "Covariance Matrix:\n" << result.covariance.matrix() << std::endl;
+  rct_optimizations::CircleFitResult result;
+  EXPECT_NO_THROW(result = rct_optimizations::optimize(problem));
+  printResults(result);
 
   // assert that the optimization converged and expect that the results are close to the real values
   ASSERT_TRUE(result.converged);
@@ -265,13 +269,9 @@ TEST_F(CircleFitUnit_PerfectObservations_RandomGuess, FitCircleToPerfectObs)
 
 TEST_F(CircleFitUnit_ClusteredObservations, FitCircleToClusteredObs)
 {
-  rct_optimizations::CircleFitResult result = rct_optimizations::optimize(problem);
-
-  std::cout << "X: " << center_x_actual << " vs " << result.x_center << std::endl;
-  std::cout << "Y: " << center_y_actual << " vs " << result.y_center << std::endl;
-  std::cout << "R: " << radius_actual << " vs " << result.radius << std::endl;
-
-  std::cout << "Covariance Matrix:\n" << result.covariance.matrix() << std::endl;
+  rct_optimizations::CircleFitResult result;
+  EXPECT_NO_THROW(result = rct_optimizations::optimize(problem));
+  printResults(result);
 
   // assert 3x3 covariance matrix
   ASSERT_EQ(result.covariance.rows(), 3);
@@ -293,13 +293,9 @@ TEST_F(CircleFitUnit_ClusteredObservations, FitCircleToClusteredObs)
 
 TEST_F(CircleFitUnit_ClusteredObservationsPerturbed, FitCircleToClusteredObsPerturbed)
 {
-  rct_optimizations::CircleFitResult result = rct_optimizations::optimize(problem);
-
-  std::cout << "X: " << center_x_actual << " vs " << result.x_center << std::endl;
-  std::cout << "Y: " << center_y_actual << " vs " << result.y_center << std::endl;
-  std::cout << "R: " << radius_actual << " vs " << result.radius << std::endl;
-
-  std::cout << "Covariance Matrix:\n" << result.covariance.matrix() << std::endl;
+  rct_optimizations::CircleFitResult result;
+  EXPECT_NO_THROW(result = rct_optimizations::optimize(problem));
+  printResults(result);
 
   // assert 3x3 covariance matrix
   ASSERT_EQ(result.covariance.rows(), 3);
@@ -321,13 +317,9 @@ TEST_F(CircleFitUnit_ClusteredObservationsPerturbed, FitCircleToClusteredObsPert
 
 TEST_F(CircleFitUnit_ParallelLines, FitCircleToParallelLines)
 {
-  rct_optimizations::CircleFitResult result = rct_optimizations::optimize(problem);
-
-  std::cout << "X: " << center_x_actual << " vs " << result.x_center << std::endl;
-  std::cout << "Y: " << center_y_actual << " vs " << result.y_center << std::endl;
-  std::cout << "R: " << radius_actual << " vs " << result.radius << std::endl;
-
-  std::cout << "Covariance Matrix:\n" << result.covariance.matrix() << std::endl;
+  rct_optimizations::CircleFitResult result;
+  EXPECT_NO_THROW(result = rct_optimizations::optimize(problem));
+  printResults(result);
 
   // assert 3x3 covariance matrix
   ASSERT_EQ(result.covariance.rows(), 3);
@@ -347,14 +339,9 @@ TEST_F(CircleFitUnit_ParallelLines, FitCircleToParallelLines)
 // Do optimization to fit a circle to two observed points.
 TEST_F(CircleFitUnit_TwoObsX, FitCircleToTwoPoints)
 {
-  rct_optimizations::CircleFitResult result = rct_optimizations::optimize(problem);
-  auto cov_mat = result.covariance.matrix();
-
-  std::cout << "X: " << center_x_actual << " vs " << result.x_center << std::endl;
-  std::cout << "Y: " << center_y_actual << " vs " << result.y_center << std::endl;
-  std::cout << "R: " << radius_actual << " vs " << result.radius << std::endl;
-
-  std::cout << "Covariance Matrix:\n" << result.covariance.matrix() << std::endl;
+  rct_optimizations::CircleFitResult result;
+  EXPECT_NO_THROW(result = rct_optimizations::optimize(problem));
+  printResults(result);
 
   // assert 3x3 covariance matrix
   ASSERT_EQ(result.covariance.rows(), 3);
@@ -382,14 +369,9 @@ TEST_F(CircleFitUnit_TwoObsX, FitCircleToTwoPoints)
 // Do optimization to fit a circle to two observed points.
 TEST_F(CircleFitUnit_TwoObsY, FitCircleToTwoPoints)
 {
-  rct_optimizations::CircleFitResult result = rct_optimizations::optimize(problem);
-  auto cov_mat = result.covariance.matrix();
-
-  std::cout << "X: " << center_x_actual << " vs " << result.x_center << std::endl;
-  std::cout << "Y: " << center_y_actual << " vs " << result.y_center << std::endl;
-  std::cout << "R: " << radius_actual << " vs " << result.radius << std::endl;
-
-  std::cout << "Covariance Matrix:\n" << result.covariance.matrix() << std::endl;
+  rct_optimizations::CircleFitResult result;
+  EXPECT_NO_THROW(result = rct_optimizations::optimize(problem));
+  printResults(result);
 
   // assert 3x3 covariance matrix
   ASSERT_EQ(result.covariance.rows(), 3);
@@ -416,14 +398,9 @@ TEST_F(CircleFitUnit_TwoObsY, FitCircleToTwoPoints)
 // Do optimization to fit a circle to just one observed point.
 TEST_F(CircleFitUnit_OneObs, FitCircleToOnePoint)
 {
-  rct_optimizations::CircleFitResult result = rct_optimizations::optimize(problem);
-  auto cov_mat = result.covariance.matrix();
-
-  std::cout << "X: " << center_x_actual << " vs " << result.x_center << std::endl;
-  std::cout << "Y: " << center_y_actual << " vs " << result.y_center << std::endl;
-  std::cout << "R: " << radius_actual << " vs " << result.radius << std::endl;
-
-  std::cout << "Covariance Matrix:\n" << result.covariance.matrix() << std::endl;
+  rct_optimizations::CircleFitResult result;
+  EXPECT_NO_THROW(result = rct_optimizations::optimize(problem));
+  printResults(result);
 
   // assert 3x3 covariance matrix
   ASSERT_EQ(result.covariance.rows(), 3);
@@ -447,13 +424,9 @@ TEST_F(CircleFitUnit_OneObs, FitCircleToOnePoint)
 
 TEST_F(CircleFitUnit_ThreeObs, FitCircleToThreePoints)
 {
-  rct_optimizations::CircleFitResult result = rct_optimizations::optimize(problem);
-
-  std::cout << "X: " << center_x_actual << " vs " << result.x_center << std::endl;
-  std::cout << "Y: " << center_y_actual << " vs " << result.y_center << std::endl;
-  std::cout << "R: " << radius_actual << " vs " << result.radius << std::endl;
-
-  std::cout << "Covariance Matrix:\n" << result.covariance.matrix() << std::endl;
+  rct_optimizations::CircleFitResult result;
+  EXPECT_NO_THROW(result = rct_optimizations::optimize(problem));
+  printResults(result);
 
   // assert 3x3 covariance matrix
   ASSERT_EQ(result.covariance.rows(), 3);
