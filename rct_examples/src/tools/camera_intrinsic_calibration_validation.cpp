@@ -16,7 +16,7 @@ void analyzeResults(const rct_optimizations::IntrinsicCalibrationAccuracyResult 
                     const double pos_tol, const double ang_tol)
 {
   ROS_INFO_STREAM("Positional Error:\nMean (m): " << result.pos_error.first << "\nStd. Dev. (m): " << result.pos_error.second);
-  ROS_INFO_STREAM("Angular Error:\nMean (m): " << result.ang_error.first << "\nStd. Dev. (m): " << result.ang_error.second);
+  ROS_INFO_STREAM("Angular Error:\nMean (rad): " << result.ang_error.first << "\nStd. Dev. (rad): " << result.ang_error.second);
 
   // Calculate the error such that it represents ~95% of the results (mean + 2 * sigma)
   double pos_error = result.pos_error.first + 2.0 * result.pos_error.second;
