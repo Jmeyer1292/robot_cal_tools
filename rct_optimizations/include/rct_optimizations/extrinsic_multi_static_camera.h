@@ -39,7 +39,7 @@ struct ExtrinsicMultiStaticCameraMovingTargetProblem
    * frame" to the image location it was detected at (2D). The outer-most vector is for each camera,
    * the inner vector is the images valid for that camera.
    */
-  std::vector<std::vector<CorrespondenceSet>> image_observations;
+  std::vector<std::vector<Correspondence2D3D::Set>> image_observations;
 
   /** @brief Your best guess at the "wrist frame" to "target frame" transform */
   Eigen::Isometry3d wrist_to_target_guess;

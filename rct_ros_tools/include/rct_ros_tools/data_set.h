@@ -47,11 +47,11 @@ public:
   bool foundCorrespondence(std::size_t camera_index, std::size_t image_index) const;
 
   /** @brief Get the correspondence set for a given camera and image index */
-  const rct_optimizations::CorrespondenceSet& getCorrespondenceSet(std::size_t camera_index, std::size_t image_index) const;
+  const rct_optimizations::Correspondence2D3D::Set& getCorrespondenceSet(std::size_t camera_index, std::size_t image_index) const;
 
 private:
   /** @brief Correspondence pairs for a given image and camera */
-  Eigen::Matrix<rct_optimizations::CorrespondenceSet, Eigen::Dynamic, Eigen::Dynamic> correspondences_;
+  Eigen::Matrix<rct_optimizations::Correspondence2D3D::Set, Eigen::Dynamic, Eigen::Dynamic> correspondences_;
 
   /** @brief Mask matrix indicating if the target was found */
   Eigen::Matrix<unsigned, Eigen::Dynamic, Eigen::Dynamic> mask_;

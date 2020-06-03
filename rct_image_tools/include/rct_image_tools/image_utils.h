@@ -60,9 +60,9 @@ void drawReprojections(const std::vector<cv::Point2d> &reprojections,
  * @return The correspondence set
  */
 inline
-rct_optimizations::CorrespondenceSet getCorrespondenceSet(const std::vector<Eigen::Vector2d> &observations, const std::vector<Eigen::Vector3d> &target_points)
+rct_optimizations::Correspondence2D3D::Set getCorrespondenceSet(const std::vector<Eigen::Vector2d> &observations, const std::vector<Eigen::Vector3d> &target_points)
 {
-  rct_optimizations::CorrespondenceSet obs_set;
+  rct_optimizations::Correspondence2D3D::Set obs_set;
 
   //// Create the correspondence pairs
   assert(observations.size() == target_points.size());
@@ -87,12 +87,12 @@ rct_optimizations::CorrespondenceSet getCorrespondenceSet(const std::vector<Eige
  * @return A correspondence set
  */
 inline
-rct_optimizations::CorrespondenceSet getCorrespondenceSet(const rct_image_tools::ModifiedCircleGridObservationFinder &obs_finder, const cv::Mat& image)
+rct_optimizations::Correspondence2D3D::Set getCorrespondenceSet(const rct_image_tools::ModifiedCircleGridObservationFinder &obs_finder, const cv::Mat& image)
 {
   const rct_image_tools::ModifiedCircleGridTarget& target = obs_finder.target();
   auto maybe_obs = obs_finder.findObservations(image);
 
-  rct_optimizations::CorrespondenceSet obs_set;
+  rct_optimizations::Correspondence2D3D::Set obs_set;
   if (maybe_obs)
   {
     obs_set = getCorrespondenceSet(*maybe_obs, target.points);

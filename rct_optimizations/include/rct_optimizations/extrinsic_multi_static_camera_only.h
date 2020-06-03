@@ -44,7 +44,7 @@ struct ExtrinsicMultiStaticCameraOnlyProblem
    * frame" to the image location it was detected at (2D). The outer-most vector is for each camera,
    * the inner vector is the images valid for that camera.
    */
-  std::vector<std::vector<CorrespondenceSet>> image_observations;
+  std::vector<std::vector<Correspondence2D3D::Set>> image_observations;
 
   /** @brief Your best guess at the "base frame" to "camera frame" transform; one for each camera */
   std::vector<Eigen::Isometry3d> base_to_camera_guess;

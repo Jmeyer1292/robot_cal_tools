@@ -37,7 +37,7 @@ void printResults(const ExtrinsicMultiStaticCameraMovingTargetResult &opt_result
 struct Observations
 {
   std::vector<Eigen::Isometry3d> wrist_poses;
-  std::vector<CorrespondenceSet> correspondences;
+  std::vector<Correspondence2D3D::Set> correspondences;
 };
 
 Observations addObservations(const test::Target &target,
@@ -65,11 +65,11 @@ Observations addObservations(const test::Target &target,
     Eigen::Isometry3d base_to_target = base_to_wrist * wrist_to_target;
 
     // Get visible observations
-    CorrespondenceSet obs_set = test::getCorrespondences(base_to_camera,
-                                                         base_to_target,
-                                                         camera,
-                                                         target,
-                                                         false);
+    Correspondence2D3D::Set obs_set = test::getCorrespondences(base_to_camera,
+                                                               base_to_target,
+                                                               camera,
+                                                               target,
+                                                               false);
 
     if (obs_set.size() > 0)
     {

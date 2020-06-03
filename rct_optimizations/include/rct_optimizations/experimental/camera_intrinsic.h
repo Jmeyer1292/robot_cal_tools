@@ -9,7 +9,7 @@ namespace rct_optimizations
 
 struct IntrinsicEstimationProblem
 {
-  std::vector<CorrespondenceSet> image_observations;
+  std::vector<Correspondence2D3D::Set> image_observations;
   CameraIntrinsics intrinsics_guess;
 
   bool use_extrinsic_guesses;
