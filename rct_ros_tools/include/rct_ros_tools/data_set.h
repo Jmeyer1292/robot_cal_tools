@@ -18,6 +18,8 @@ struct ExtrinsicDataSet
 
 boost::optional<ExtrinsicDataSet> parseFromFile(const std::string& path);
 
+cv::Mat readImageOpenCV(const std::string& path);
+
 bool saveToDirectory(const std::string& path, const ExtrinsicDataSet& data);
 
 /**

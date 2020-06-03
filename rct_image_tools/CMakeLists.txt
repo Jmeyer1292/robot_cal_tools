@@ -22,7 +22,6 @@ add_library(${PROJECT_NAME} SHARED
   src/${PROJECT_NAME}/aruco_finder.cpp
   src/${PROJECT_NAME}/circle_detector.cpp
   src/${PROJECT_NAME}/modified_circle_grid_target.cpp
-  src/${PROJECT_NAME}/noise_qualifier.cpp
 )
 target_compile_options(${PROJECT_NAME} PUBLIC -std=c++11)
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra)

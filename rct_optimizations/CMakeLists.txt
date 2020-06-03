@@ -4,6 +4,12 @@ project(rct_optimizations VERSION 0.1.0 LANGUAGES CXX)
 find_package(rct_common REQUIRED)
 find_package(Ceres REQUIRED)
 
+find_package(catkin REQUIRED COMPONENTS
+  rct_common
+)
+
+#catkin_package(INCLUDE_DIRS include)
+
 add_library(${PROJECT_NAME} SHARED
   # Utilities
   src/${PROJECT_NAME}/eigen_conversions.cpp
@@ -24,7 +30,10 @@ add_library(${PROJECT_NAME} SHARED
   src/${PROJECT_NAME}/dh_chain.cpp
   # Validation Tools
   src/${PROJECT_NAME}/validation/camera_intrinsic_calibration_validation.cpp
+  #Noise Qualification
+  src/${PROJECT_NAME}/noise_qualifier.cpp
 )
+
 target_compile_options(${PROJECT_NAME} PUBLIC -std=c++14)
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra)
 target_include_directories(${PROJECT_NAME} PUBLIC

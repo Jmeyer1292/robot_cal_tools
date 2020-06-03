@@ -1,6 +1,6 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
-#include <rct_image_tools/noise_qualifier.h>
+#include <rct_optimizations/noise_qualifier.h>
 #include <rct_optimizations/experimental/pnp.h>
 
 //accumulators
@@ -11,21 +11,16 @@
 
 
 
-namespace rct_image_tools
+namespace rct_optimizations
 {
 
-
-//can use a fixed/ known setup to avoid having to use CV to derive an initial guess
-
- rct_image_tools::NoiseStatistics qualifyNoise(const NoiseQualParams2D3D &params)
+ NoiseStatistics qualifyNoise2D(const NoiseQualParams2D3D& params)
  {
 
-  rct_image_tools::NoiseStatistics output;
+  rct_optimizations::NoiseStatistics output;
 
   std::vector<Eigen::Isometry3d> solution_transforms;
 
-  //This could be the completely wrong approach for this problem
-  //Ideal: a vector of accumulator_sets to handle everything very cleanly
   using namespace boost::accumulators;
   accumulator_set<double, stats<tag::mean, tag::variance>> x_acc;
   accumulator_set<double, stats<tag::mean, tag::variance>> y_acc;
@@ -84,13 +79,10 @@ namespace rct_image_tools
   return output;
 }
 
-
-//3D-3D, doesn't work bc there is no PnP to use
-
- rct_image_tools::NoiseStatistics qualifyNoise(const NoiseQualParams3D3D &params)
+ rct_optimizations::NoiseStatistics qualifyNoise3D(const NoiseQualParams3D3D &params)
  {
 
-  rct_image_tools::NoiseStatistics output;
+  rct_optimizations::NoiseStatistics output;
 
   std::vector<Eigen::Isometry3d> solution_transforms;
 
@@ -152,4 +144,4 @@ namespace rct_image_tools
   return output;
 }
 
-}//rct_image_tools
+}//rct_optimizations

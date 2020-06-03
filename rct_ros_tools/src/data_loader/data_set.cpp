@@ -22,7 +22,7 @@ static std::string combine(const std::string& dir, const std::string& rel_path)
   return dir + "/" + rel_path;
 }
 
-static cv::Mat readImageOpenCV(const std::string& path)
+cv::Mat rct_ros_tools::readImageOpenCV(const std::string& path)
 {
   cv::Mat image = cv::imread(path, CV_LOAD_IMAGE_COLOR); // TODO: Is CV_LOAD_IMAGE_COLOR needed?
   if (image.data == NULL)
@@ -32,7 +32,7 @@ static cv::Mat readImageOpenCV(const std::string& path)
   return image;
 }
 
-static rct_ros_tools::ExtrinsicDataSet parse(const YAML::Node& root, const std::string& root_path)
+rct_ros_tools::ExtrinsicDataSet parse(const YAML::Node& root, const std::string& root_path)
 {
   rct_ros_tools::ExtrinsicDataSet data;
 
@@ -41,7 +41,7 @@ static rct_ros_tools::ExtrinsicDataSet parse(const YAML::Node& root, const std::
     // Each entry should have a pose and image path. This path is relative to the root_path directory!
     const auto img_path = root[i]["image"].as<std::string>();
     const auto pose_path = root[i]["pose"].as<std::string>();
-    cv::Mat image = readImageOpenCV(combine(root_path, img_path));
+    cv::Mat image = rct_ros_tools::readImageOpenCV(combine(root_path, img_path));
     Eigen::Isometry3d p;
     rct_ros_tools::loadPose(combine(root_path, pose_path), p);
 
