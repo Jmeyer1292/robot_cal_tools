@@ -37,7 +37,7 @@ namespace rct_optimizations
     pnpParams.intr = params.intr;
 
 
-    pnpParams.correspondences = ob.correspondence_set; //Need to pull a correspondence set outta the observation set? Does not follow heigharchy from pr comment
+    pnpParams.correspondences = ob.correspondence_set;
     pnpParams.camera_to_target_guess = params.camera_guess;
 
     result = rct_optimizations::optimize(pnpParams);
@@ -51,7 +51,7 @@ namespace rct_optimizations
     y_acc(result.camera_to_target.translation()(1));
     z_acc(result.camera_to_target.translation()(2));
 
-//    Need a good way to track the rotational values in the position
+//    Need a good way to track the rotational values in the position (use poseXd)
 //    similar transforms should give similar eas (caveat: tranforms near singularities are vulnerable)
     Eigen::Vector3d ea = result.camera_to_target.linear().eulerAngles(0,1,2);
     r_acc(ea(0));
@@ -59,7 +59,6 @@ namespace rct_optimizations
     yw_acc(ea(2));
 
   }
-
 
   output.mean(0) = boost::accumulators::mean(x_acc);
   output.mean(1) = boost::accumulators::mean(y_acc);
@@ -86,8 +85,6 @@ namespace rct_optimizations
 
   std::vector<Eigen::Isometry3d> solution_transforms;
 
-  //This could be the completely wrong approach for this problem
-  //Ideal: a vector of accumulator_sets to handle everything very cleanly
   using namespace boost::accumulators;
   accumulator_set<double, stats<tag::mean, tag::variance>> x_acc;
   accumulator_set<double, stats<tag::mean, tag::variance>> y_acc;
@@ -101,8 +98,6 @@ namespace rct_optimizations
   {
     rct_optimizations::PnPResult result;
     rct_optimizations::PnPProblem3D pnpParams;
-    pnpParams.intr = params.intr;
-
 
     pnpParams.correspondences = ob.correspondence_set;
     pnpParams.camera_to_target_guess = params.camera_guess;
@@ -124,7 +119,6 @@ namespace rct_optimizations
     yw_acc(ea(2));
 
   }
-
 
   output.mean(0) = boost::accumulators::mean(x_acc);
   output.mean(1) = boost::accumulators::mean(y_acc);
