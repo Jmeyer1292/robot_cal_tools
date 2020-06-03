@@ -5,7 +5,7 @@
 
 using namespace rct_optimizations;
 
-TEST(CameraIntrinsicCalibrationValidation, GetInternalTargetTransformationTest)
+TEST(CameraIntrinsicCalibrationValidation, MeasureVirtualTargetDiff)
 {
   test::Target target(8, 6, 0.025);
   test::Camera camera = test::makeKinectCamera();
@@ -28,12 +28,12 @@ TEST(CameraIntrinsicCalibrationValidation, GetInternalTargetTransformationTest)
 
   // Perfect camera intrinsics, perfect camera to target guess
   {
-    Eigen::Isometry3d transform;
+    VirtualCorrespondenceResult result;
     EXPECT_NO_THROW(
-      transform = getInternalTargetTransformation(corr_set, camera.intr, camera_to_target));
+      result = measureVirtualTargetDiff(corr_set, camera.intr, camera_to_target));
 
     // Expect the transform to be almost exactly as expected
-    EXPECT_TRUE(transform.isApprox(expected));
+    EXPECT_TRUE(result.t1_to_t2.isApprox(expected));
   }
 
   // Create a slightly noisy camera to target guess (1 cm positional and ~5 degrees orientation noise)
@@ -41,12 +41,12 @@ TEST(CameraIntrinsicCalibrationValidation, GetInternalTargetTransformationTest)
 
   // Perfect camera intrinsics, imperfect camera to target guess
   {
-    Eigen::Isometry3d transform;
+    VirtualCorrespondenceResult result;
     EXPECT_NO_THROW(
-      transform = getInternalTargetTransformation(corr_set, camera.intr, camera_to_target_guess));
+      result = measureVirtualTargetDiff(corr_set, camera.intr, camera_to_target_guess));
 
     // Expect the transform to be very close to its expected value, but with a small error from the PnP
-    EXPECT_TRUE(transform.isApprox(expected, 1.0e-8));
+    EXPECT_TRUE(result.t1_to_t2.isApprox(expected, 1.0e-8));
   }
 
   // Bad camera intrinsics, imperfect camera to target guess
@@ -57,16 +57,16 @@ TEST(CameraIntrinsicCalibrationValidation, GetInternalTargetTransformationTest)
     camera.intr.cx() -= 0.01 * camera.intr.cx();
     camera.intr.cy() += 0.01 * camera.intr.cy();
 
-    Eigen::Isometry3d transform;
+    VirtualCorrespondenceResult result;
     EXPECT_NO_THROW(
-      transform = getInternalTargetTransformation(corr_set, camera.intr, camera_to_target_guess));
+      result = measureVirtualTargetDiff(corr_set, camera.intr, camera_to_target_guess));
 
-    // Expect the transform to be very close to its expected value, but with a small error from the PnP
-    EXPECT_FALSE(transform.isApprox(expected, 1.0e-8));
+    // Expect the transform to not be very close to its expected value
+    EXPECT_FALSE(result.t1_to_t2.isApprox(expected, 1.0e-8));
   }
 }
 
-TEST(blah, foo)
+TEST(CameraIntrinsicCalibrationValidation, MeasureIntrinsicCalibrationAccuracy)
 {
   test::Camera camera = test::makeKinectCamera();
   test::Target target(5, 7, 0.025);
@@ -87,14 +87,21 @@ TEST(blah, foo)
   // Validate the intrinsic calibration
   // Perfect intrinsic parameters, perfect transform guesses
   {
-    double threshold = 1.0e-15;
-    bool valid = validateCameraIntrinsicCalibration(observations,
-                                                    camera.intr,
-                                                    threshold,
-                                                    camera_mount_to_camera,
-                                                    target_mount_to_target,
-                                                    camera_base_to_target_base);
-    EXPECT_TRUE(valid);
+    IntrinsicCalibrationAccuracyResult result = measureIntrinsicCalibrationAccuracy(observations,
+                                                                 camera.intr,
+                                                                 camera_mount_to_camera,
+                                                                 target_mount_to_target,
+                                                                 camera_base_to_target_base);
+
+    // Expect results to be within 2 sigma (~95%) of the threshold
+    {
+      double threshold = 1.0e-14;
+      EXPECT_LT(result.pos_error.first + 2.0 * result.pos_error.second, threshold);
+    }
+    {
+      double threshold = 1.0e-14;
+      EXPECT_LT(result.ang_error.first + 2.0 * result.ang_error.second, threshold);
+    }
   }
 
   // Perturb the calibration transforms slightly
@@ -107,14 +114,21 @@ TEST(blah, foo)
 
   // Perfect intrinsic parameters, imperfect transform guesses
   {
-    double threshold = 1.0e-8;
-    bool valid = validateCameraIntrinsicCalibration(observations,
-                                                    camera.intr,
-                                                    threshold,
-                                                    camera_mount_to_camera_guess,
-                                                    target_mount_to_target_guess,
-                                                    camera_base_to_target_base);
-    EXPECT_TRUE(valid);
+    IntrinsicCalibrationAccuracyResult result = measureIntrinsicCalibrationAccuracy(observations,
+                                                                 camera.intr,
+                                                                 camera_mount_to_camera_guess,
+                                                                 target_mount_to_target_guess,
+                                                                 camera_base_to_target_base);
+
+    // Expect results to be within 2 sigma (~95%) of the threshold
+    {
+      double threshold = 1.0e-7;
+      EXPECT_LT(result.pos_error.first + 2.0 * result.pos_error.second, threshold);
+    }
+    {
+      double threshold = 1.0e-7;
+      EXPECT_LT(result.ang_error.first + 2.0 * result.ang_error.second, threshold);
+    }
   }
 
   // Imperfect intrinsic parameters, imperfect transform guesses
@@ -124,15 +138,22 @@ TEST(blah, foo)
     camera.intr.fy() -= 0.01 * camera.intr.fy();
     camera.intr.cx() -= 0.01 * camera.intr.cx();
     camera.intr.cx() += 0.01 * camera.intr.cy();
-    double threshold = 1.0e-3;
 
-    bool valid = validateCameraIntrinsicCalibration(observations,
-                                                    camera.intr,
-                                                    threshold,
-                                                    camera_mount_to_camera_guess,
-                                                    target_mount_to_target_guess,
-                                                    camera_base_to_target_base);
-    EXPECT_FALSE(valid);
+    IntrinsicCalibrationAccuracyResult result = measureIntrinsicCalibrationAccuracy(observations,
+                                                                 camera.intr,
+                                                                 camera_mount_to_camera_guess,
+                                                                 target_mount_to_target_guess,
+                                                                 camera_base_to_target_base);
+
+    // Expect results not to be within 2 sigma (~95%) of the threshold because we modified the camera intrinsics
+    {
+      double threshold = 1.0e-3;
+      EXPECT_GT(result.pos_error.first + 2.0 * result.pos_error.second, threshold);
+    }
+    {
+      double threshold = 1.0e-3;
+      EXPECT_GT(result.ang_error.first + 2.0 * result.ang_error.second, threshold);
+    }
   }
 }
 
