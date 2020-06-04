@@ -114,15 +114,15 @@ TEST(PnPTest, 3DValidation)
   Correspondence3D3D::Set corrs;
   corrs.reserve(9);
 
-  Eigen::Vector3d origin(1.0,1.0,1.0);
-  //what is the origin?
+  Eigen::Vector3d origin(0.0,0.0,0.0);
+
   for(std::size_t i=0; i < 3; ++i)
   {
     for (std::size_t j =0; j < 3; j++)
     {
       Correspondence3D3D c;
       Eigen::Vector3d world_point =Eigen::Vector3d(double(i), double(j), double((i*j)%3));
-      Eigen::Vector3d camera_point = world_point - Eigen::Vector3d(1.0,1.0,1.0);
+      Eigen::Vector3d camera_point = world_point;
       c.in_target = world_point;
       c.in_image = camera_point;
 

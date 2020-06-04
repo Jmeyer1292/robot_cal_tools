@@ -20,12 +20,9 @@ int main(int argc, char** argv)
   rct_image_tools::ModifiedCircleGridTarget target (rows, cols, 0.01);
   rct_image_tools::ModifiedCircleGridObservationFinder obs_finder(target);
 
-
   YAML::Node root = YAML::LoadFile(path + std::string("/data.yaml"));
-  //const std::string root_path = rootPath(path);
 
   //Load camera intrinsics
-
   rct_optimizations::CameraIntrinsics camera = rct_ros_tools::loadIntrinsics(path +  std::string("/camera_data.yaml"));
 
   //reserve observations
@@ -59,14 +56,11 @@ int main(int argc, char** argv)
     ob.to_target_mount = Eigen::Isometry3d::Identity();
     ob.to_camera_mount = p;
 
-    rct_optimizations::CorrespondenceSet correspondences;
+    rct_optimizations::Correspondence2D3D::Set correspondences;
 
     // And loop over each detected dot:
     for (std::size_t j = 0; j < maybe_obs->size(); ++j)
     {
-      // The 'target.points' data structure and the observation vector returned by
-      // 'obs_finder.findObservations()' are in the same order! So the j-th index in each
-      // respresents the same dot!
       rct_optimizations::Correspondence2D3D pair;
       pair.in_image = maybe_obs->at(j); // The obs finder and target define their points in the same order!
       pair.in_target = target.points[j];
@@ -77,9 +71,18 @@ int main(int argc, char** argv)
   }
 
   //then feed observations into qualify
-  //start with a good guess, but may be too good
+  //start with a good guess
   Eigen::Isometry3d guess = observations[0].to_camera_mount;
   const rct_optimizations::NoiseQualParams2D3D param{observations, camera, guess};
 
   rct_optimizations::NoiseStatistics output = rct_optimizations::qualifyNoise2D(param);
+
+  //TODO: Find proper method for reporting output
+  std::cout << "The standard deviation is : x: " << output.std_dev(0) <<
+                                          "\n y: " << output.std_dev(1) <<
+                                          "\n z: " << output.std_dev(2) <<
+                                       "\n roll: " << output.std_dev(3) <<
+                                      "\n pitch: " << output.std_dev(4) <<
+                                        "\n yaw: " << output.std_dev(5) <<
+                                                              std::endl;
 }
