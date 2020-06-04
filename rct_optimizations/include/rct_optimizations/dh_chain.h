@@ -14,6 +14,15 @@ enum class DHJointType : unsigned
   FIXED
 };
 
+template<typename T>
+using Isometry3 = Eigen::Transform<T, 3, Eigen::Isometry>;
+
+template<typename T>
+using Vector3 = Eigen::Matrix<T, 3, 1>;
+
+template<typename T>
+using Vector2 = Eigen::Matrix<T, 2, 1>;
+
 /**
  * @brief Struct representing the DH parameters of a single transformation between adjacent links.
  * This struct follows the classical DH parameter convention: Trans[Zi-1](d) * Rot[Zi-1](theta) * Trans[Xi](r) * Rot[Xi](alpha)
@@ -27,11 +36,19 @@ struct DHTransform
   virtual ~DHTransform() = default;
 
   /**
+   *
+   */
+  template<typename T>
+  Isometry3<T> createRelativeTransform(const T joint_value,
+                                              const T* offsets) const;
+
+  /**
    * @brief Creates the homogoneous transformation from the previous link to the current link
    * @param joint_value
    * @return
    */
-  virtual Eigen::Isometry3d createRelativeTransform(const double joint_value) const;
+  template<typename T>
+  Isometry3<T> createRelativeTransform(const T joint_value) const;
 
   double createRandomJointValue() const;
 
@@ -45,22 +62,6 @@ struct DHTransform
   DHJointType type; /** @brief The type of actuation of the joint */
   double max = M_PI; /** @brief Joint max */
   double min = -M_PI; /** @brief Joint min */
-};
-
-/**
- * @brief Override of the @ref DHTransform class to provide Gaussian noise for the joint value when calculating forward kinematics
- */
-struct GaussianNoiseDHTransform : public DHTransform
-{
-  GaussianNoiseDHTransform(std::array<double, 4> params_,
-                           DHJointType type_,
-                           double mean_,
-                           double std_dev_);
-
-  virtual Eigen::Isometry3d createRelativeTransform(const double joint) const override;
-
-  double mean;
-  double std_dev;
 };
 
 /**
@@ -78,17 +79,29 @@ public:
    * @return
    * @throws Exception if the size of joint values is larger than the number of DH transforms in the robot
    */
-  Eigen::Isometry3d getFK(const std::vector<double> &joint_values) const;
+  template<typename T>
+  Isometry3<T> getFK(const Eigen::Matrix<T, Eigen::Dynamic, 1> &joint_values) const;
 
   /**
    * @brief Override function of @ref getFK but using a data pointer for easier integration with Ceres
    * @param joint_values
-   * @param n_joints
+   * @param offsets
    * @return
    */
-  Eigen::Isometry3d getFK(const double *joint_values, const std::size_t n_joints) const;
+  template<typename T>
+  Isometry3<T> getFK(const Eigen::Matrix<T, Eigen::Dynamic, 1>& joint_values,
+                            const T* const* offsets) const;
 
+  /**
+   * @brief Creates a random pose by choosing a random uniformly distributed joint value for each joint in the chain
+   * @return
+   */
   Eigen::Isometry3d createUniformlyRandomPose() const;
+
+  inline std::size_t dof() const
+  {
+    return transforms_.size();
+  }
 
 protected:
   std::vector<DHTransform::Ptr> transforms_;
