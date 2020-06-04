@@ -13,6 +13,7 @@ namespace rct_optimizations
 
  struct NoiseQualParams2D3D
  {
+   //NoiseQualParams2D3D(rct_optimizations::Observation2D3D::Set, rct_optimizations::CameraIntrinsics, Eigen::Isometry3d camera_guess)
    rct_optimizations::Observation2D3D::Set observations;
    rct_optimizations::CameraIntrinsics intr;
    Eigen::Isometry3d camera_guess;

@@ -121,7 +121,7 @@ TEST(PnPTest, 3DValidation)
     for (std::size_t j =0; j < 3; j++)
     {
       Correspondence3D3D c;
-      Eigen::Vector3d world_point =Eigen::Vector3d(double<i>, double<j>, double<(i*j)%3>);
+      Eigen::Vector3d world_point =Eigen::Vector3d(double(i), double(j), double((i*j)%3));
       Eigen::Vector3d camera_point = world_point - Eigen::Vector3d(1.0,1.0,1.0);
       c.in_target = world_point;
       c.in_image = camera_point;

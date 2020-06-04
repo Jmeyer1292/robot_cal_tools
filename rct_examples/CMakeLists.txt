@@ -125,13 +125,13 @@ target_link_libraries(${PROJECT_NAME}_camera_intrinsic_calibration_validation ${
 
 
 #Executable for testing camera noise
-add_executable(${PROJECT_NAME}_noise_test src/noise_qualifier_test.cpp)
+add_executable(${PROJECT_NAME}_noise_test_2d src/verification/noise_qualify_2d.cpp)
 
-set_target_properties(${PROJECT_NAME}_multi_camera_pnp PROPERTIES OUTPUT_NAME solve_multi_camera_pnp_ex PREFIX "")
+set_target_properties(${PROJECT_NAME}_noise_test_2d PROPERTIES OUTPUT_NAME solve_multi_camera_pnp_ex PREFIX "")
 
-add_dependencies(${PROJECT_NAME}_multi_camera_pnp ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME}_noise_test_2d ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(${PROJECT_NAME}_noise_test ${catkin_LIBRARIES} rct::rct_optimizations)
+target_link_libraries(${PROJECT_NAME}_noise_test_2d ${catkin_LIBRARIES} rct::rct_optimizations)
 
 #############
 ## Testing ##

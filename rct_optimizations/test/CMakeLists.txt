@@ -70,7 +70,7 @@ add_dependencies(run_tests ${PROJECT_NAME}_camera_intrinsic_validation_tests)
 add_executable(${PROJECT_NAME}_noise_tests noise_qualification_utest.cpp)
 target_link_libraries(${PROJECT_NAME}_noise_tests PRIVATE ${PROJECT_NAME}_test_support GTest::GTest GTest::Main)
 rct_gtest_discover_tests(${PROJECT_NAME}_noise_tests)
-#add_dependencies(${PROJECT_NAME}_noise_tests ${PROJECT_NAME})
+add_dependencies(${PROJECT_NAME}_noise_tests ${PROJECT_NAME})
 add_dependencies(run_tests ${PROJECT_NAME}_noise_tests)
 
 # Install the test executables so they can be run independently later if needed

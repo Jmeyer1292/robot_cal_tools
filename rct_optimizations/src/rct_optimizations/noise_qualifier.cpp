@@ -18,6 +18,8 @@ namespace rct_optimizations
  {
 
   rct_optimizations::NoiseStatistics output;
+  Eigen::VectorXd tempmean(6);
+  Eigen::VectorXd tempdev(6);
 
   std::vector<Eigen::Isometry3d> solution_transforms;
 
@@ -60,21 +62,23 @@ namespace rct_optimizations
 
   }
 
-  output.mean(0) = boost::accumulators::mean(x_acc);
-  output.mean(1) = boost::accumulators::mean(y_acc);
-  output.mean(2) = boost::accumulators::mean(z_acc);
-  output.mean(3) = boost::accumulators::mean(r_acc);
-  output.mean(4) = boost::accumulators::mean(p_acc);
-  output.mean(5) = boost::accumulators::mean(yw_acc);
+  tempmean(0) = boost::accumulators::mean(x_acc);
+  tempmean(1) = boost::accumulators::mean(y_acc);
+  tempmean(2) = boost::accumulators::mean(z_acc);
+  tempmean(3) = boost::accumulators::mean(r_acc);
+  tempmean(4) = boost::accumulators::mean(p_acc);
+  tempmean(5) = boost::accumulators::mean(yw_acc);
 
-  output.std_dev(0) = sqrt(boost::accumulators::variance(x_acc));
-  output.std_dev(1) = sqrt(boost::accumulators::variance(y_acc));
-  output.std_dev(2) = sqrt(boost::accumulators::variance(z_acc));
-  output.std_dev(3) = sqrt(boost::accumulators::variance(r_acc));
-  output.std_dev(4) = sqrt(boost::accumulators::variance(p_acc));
-  output.std_dev(5) = sqrt(boost::accumulators::variance(yw_acc));
+  tempdev(0) = sqrt(boost::accumulators::variance(x_acc));
+  tempdev(1) = sqrt(boost::accumulators::variance(y_acc));
+  tempdev(2) = sqrt(boost::accumulators::variance(z_acc));
+  tempdev(3) = sqrt(boost::accumulators::variance(r_acc));
+  tempdev(4) = sqrt(boost::accumulators::variance(p_acc));
+  tempdev(5) = sqrt(boost::accumulators::variance(yw_acc));
 
   //Output: mean & standard deviation of x,y,z,roll,pitch,yaw
+  output.mean = tempmean;
+  output.std_dev = tempdev;
   return output;
 }
 

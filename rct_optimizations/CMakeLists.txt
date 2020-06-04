@@ -48,7 +48,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 
 if(RCT_BUILD_TESTS)
   enable_testing()
-  rct_add_run_tests_target()
+  #rct_add_run_tests_target()
   add_subdirectory(test)
 endif()
 
