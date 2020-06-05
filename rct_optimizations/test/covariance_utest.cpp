@@ -173,19 +173,6 @@ protected:
   }
 };
 
-class CircleFitUnit_ParallelLines : public CircleFitUnit_PerfectObservations_RandomGuess
-{
-protected:
-  void setObservations() override
-  {
-    for (std::double_t y = -2.0; y <= 2.0; y += 0.2)
-    {
-      observations.emplace_back(Eigen::Vector2d(-1.0, y));
-      observations.emplace_back(Eigen::Vector2d(1.0, y));
-    }
-  }
-};
-
 class CircleFitUnit_TwoObsX : public CircleFitUnit_PerfectObservations_RandomGuess
 {
 protected:
@@ -313,27 +300,6 @@ TEST_F(CircleFitUnit_ClusteredObservationsPerturbed, FitCircleToClusteredObsPert
 
   // std dev of Y-coord should be greater than std dev of X-coord
   EXPECT_GT(result.covariance(1, 1), result.covariance(0, 0));
-}
-
-TEST_F(CircleFitUnit_ParallelLines, FitCircleToParallelLines)
-{
-  rct_optimizations::CircleFitResult result;
-  EXPECT_NO_THROW(result = rct_optimizations::optimize(problem));
-  printResults(result);
-
-  // assert 3x3 covariance matrix
-  ASSERT_EQ(result.covariance.rows(), 3);
-  ASSERT_EQ(result.covariance.cols(), 3);
-
-  // expect matrix to be symmetric
-  EXPECT_NEAR(result.covariance(0, 1), result.covariance(1, 0), std::numeric_limits<double>::epsilon());
-  EXPECT_NEAR(result.covariance(0, 2), result.covariance(2, 0), std::numeric_limits<double>::epsilon());
-  EXPECT_NEAR(result.covariance(1, 2), result.covariance(2, 1), std::numeric_limits<double>::epsilon());
-
-  // expect diagonal elements to be positive
-  EXPECT_GE(result.covariance(0, 0), 0.0);
-  EXPECT_GE(result.covariance(1, 1), 0.0);
-  EXPECT_GE(result.covariance(2, 2), 0.0);
 }
 
 // Do optimization to fit a circle to two observed points.
