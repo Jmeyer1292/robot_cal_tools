@@ -89,36 +89,6 @@ inline DHChain createABBIRB2400()
   return DHChain(std::move(joints));
 }
 
-/**
- * @brief Creates a DH parameter-based robot representation of an ABB IRB2400 with random joint noise
- * @return
- */
-inline DHChain createABBIRB2400WithNoise()
-{
-  std::vector<DHTransform::Ptr> joints;
-  joints.reserve(6);
-
-  // Noise parameters: 1.0 degree standard deviation per joint, centered on 0.0
-  double mean = 0.0;
-  double std_dev = 1.0 * M_PI / 180.0;
-
-  std::array<double, 4> t1 = {0.615, 0.0, 0.100, -M_PI / 2.0};
-  std::array<double, 4> t2 = {0.0, -M_PI / 2.0, 0.705, 0.0};
-  std::array<double, 4> t3 = {0.0, 0.0, 0.135, -M_PI / 2.0};
-  std::array<double, 4> t4 = {0.755, 0.0, 0.0, M_PI / 2.0};
-  std::array<double, 4> t5 = {0.0, 0.0, 0.0, -M_PI / 2.0};
-  std::array<double, 4> t6 = {0.085, M_PI, 0.0, 0.0};
-
-  joints.push_back(std::make_unique<GaussianNoiseDHTransform>(t1, DHJointType::REVOLUTE, mean, std_dev));
-  joints.push_back(std::make_unique<GaussianNoiseDHTransform>(t2, DHJointType::REVOLUTE, mean, std_dev));
-  joints.push_back(std::make_unique<GaussianNoiseDHTransform>(t3, DHJointType::REVOLUTE, mean, std_dev));
-  joints.push_back(std::make_unique<GaussianNoiseDHTransform>(t4, DHJointType::REVOLUTE, mean, std_dev));
-  joints.push_back(std::make_unique<GaussianNoiseDHTransform>(t5, DHJointType::REVOLUTE, mean, std_dev));
-  joints.push_back(std::make_unique<GaussianNoiseDHTransform>(t6, DHJointType::REVOLUTE, mean, std_dev));
-
-  return DHChain(std::move(joints));
-}
-
 } // namespace test
 } // namespace rct_optimizations
 

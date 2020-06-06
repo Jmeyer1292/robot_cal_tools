@@ -21,13 +21,13 @@ namespace test
  * @param n - Number of samples
  * @return A vector of 3D-3D observations
  */
-Observation3D3D::Set createObservations(const DHChain& to_camera_chain,
-                            const DHChain& to_target_chain,
-                            const Eigen::Isometry3d& true_mount_to_camera,
-                            const Eigen::Isometry3d& true_mount_to_target,
-                            const Eigen::Isometry3d &camera_base_to_target_base,
-                            const Target &target,
-                            const std::size_t n);
+Observation3D3D::Set createObservations(const DHChain &to_camera_chain,
+                                        const DHChain &to_target_chain,
+                                        const Eigen::Isometry3d &true_mount_to_camera,
+                                        const Eigen::Isometry3d &true_mount_to_target,
+                                        const Eigen::Isometry3d &camera_base_to_target_base,
+                                        const Target &target,
+                                        const std::size_t n);
 /**
  * @brief Creates a number of 2D-3D observations by randomly actuating kinematic chains to which the camera and target are fixed
  * This method creates many random poses and creates correspondences for those in which the target is observed
@@ -41,14 +41,14 @@ Observation3D3D::Set createObservations(const DHChain& to_camera_chain,
  * @param n - Number of samples
  * @return
  */
-Observation2D3D::Set createObservations(const DHChain& to_camera_chain,
-                            const DHChain& to_target_chain,
-                            const Eigen::Isometry3d& true_mount_to_camera,
-                            const Eigen::Isometry3d& true_mount_to_target,
-                            const Eigen::Isometry3d &camera_base_to_target_base,
-                            const Target &target,
-                            const Camera &camera,
-                            const std::size_t n);
+Observation2D3D::Set createObservations(const DHChain &to_camera_chain,
+                                        const DHChain &to_target_chain,
+                                        const Eigen::Isometry3d &true_mount_to_camera,
+                                        const Eigen::Isometry3d &true_mount_to_target,
+                                        const Eigen::Isometry3d &camera_base_to_target_base,
+                                        const Target &target,
+                                        const Camera &camera,
+                                        const std::size_t n);
 
 } // namespace test
 } // namespace rct_optimizations
