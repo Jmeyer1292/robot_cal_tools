@@ -1,4 +1,4 @@
-#include <rct_optimizations/dh_chain.h>
+#include <rct_optimizations/impl/dh_chain.hpp>
 #include <rct_optimizations_tests/dh_chain_observation_creator.h>
 #include <gtest/gtest.h>
 
@@ -7,7 +7,7 @@ using namespace rct_optimizations;
 TEST(DHChain, FKTest)
 {
   DHChain robot = test::createABBIRB2400();
-  Eigen::Isometry3d transform = robot.getFK(std::vector<double>(6, 0.0));
+  Eigen::Isometry3d transform = robot.getFK<double>(Eigen::VectorXd::Zero(6));
   std::cout << transform.matrix() << std::endl;
 
   Eigen::Isometry3d desired(Eigen::Isometry3d::Identity());
@@ -20,8 +20,26 @@ TEST(DHChain, FKTest)
 
 TEST(DHChain, NoisyFKTest)
 {
-  DHChain robot = test::createABBIRB2400WithNoise();
-  Eigen::Isometry3d transform = robot.getFK(std::vector<double>(6, 0.0));
+  DHChain robot = test::createABBIRB2400();
+
+  // Create random gaussian-distributed DH offsets
+  std::mt19937 mt_rand(std::random_device{}());
+  std::uniform_real_distribution<double> dist(-0.01, 0.01);
+
+  auto create_random_offset = [&dist, &mt_rand]() -> std::array<double, 4> {
+    std::array<double, 4> offset;
+    std::fill(offset.begin(), offset.end(), dist(mt_rand));
+    return offset;
+  };
+
+  std::vector<double *> offsets;
+  offsets.reserve(robot.dof());
+  for (std::size_t i = 0; i < robot.dof(); ++i)
+  {
+    offsets.push_back(create_random_offset().data());
+  }
+
+  Eigen::Isometry3d transform = robot.getFK<double>(Eigen::VectorXd::Zero(6), offsets.data());
   std::cout << "FK transform with noise\n" << transform.matrix() << std::endl;
 
   Eigen::Isometry3d desired(Eigen::Isometry3d::Identity());
@@ -37,21 +55,9 @@ TEST(DHChain, FKWithJointSubsetTest)
   DHChain robot = test::createABBIRB2400();
   for (std::size_t i = 0; i < 6; ++i)
   {
-    EXPECT_NO_THROW(robot.getFK(std::vector<double>(i, 0.0)));
+    EXPECT_NO_THROW(robot.getFK<double>(Eigen::VectorXd::Zero(i)));
   }
-  EXPECT_THROW(robot.getFK(std::vector<double>(7, 0.0)), std::out_of_range);
-}
-
-TEST(DHChain, FKWithJointSubsetPointerTest)
-{
-  DHChain robot = test::createABBIRB2400();
-  for (std::size_t i = 0; i < 6; ++i)
-  {
-    std::vector<double> joints(i, 0.0);
-    EXPECT_NO_THROW(robot.getFK(joints.data(), joints.size()));
-  }
-  std::vector<double> joints(7, 0.0);
-  EXPECT_THROW(robot.getFK(joints.data(), joints.size()), std::out_of_range);
+  EXPECT_THROW(robot.getFK<double>(Eigen::VectorXd::Zero(7)), std::out_of_range);
 }
 
 TEST(DHChain, generateObservations3D)
@@ -73,7 +79,7 @@ TEST(DHChain, generateObservations2D)
   DHChain target_robot({});
 
   // Create a transform to the tool0 of the robot at it's all-zero position
-  Eigen::Isometry3d camera_base_to_target_base = camera_robot.getFK(std::vector<double>(6, 0.0));
+  Eigen::Isometry3d camera_base_to_target_base = camera_robot.getFK<double>(Eigen::VectorXd::Zero(6));
 
   // Place the target 0.5m in front of the robot's all-zero position, facing back at the robot
   camera_base_to_target_base.translate(Eigen::Vector3d(0.0, 0.0, 0.5));
