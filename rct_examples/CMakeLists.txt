@@ -125,7 +125,7 @@ target_link_libraries(${PROJECT_NAME}_camera_intrinsic_calibration_validation ${
 
 
 #Executable for testing camera noise
-add_executable(${PROJECT_NAME}_noise_test_2d src/verification/noise_qualify_2d.cpp)
+add_executable(${PROJECT_NAME}_noise_test_2d src/validation/noise_qualify_2d.cpp)
 
 set_target_properties(${PROJECT_NAME}_noise_test_2d PROPERTIES OUTPUT_NAME solve_multi_camera_pnp_ex PREFIX "")
 

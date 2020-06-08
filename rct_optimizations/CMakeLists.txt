@@ -4,12 +4,6 @@ project(rct_optimizations VERSION 0.1.0 LANGUAGES CXX)
 find_package(rct_common REQUIRED)
 find_package(Ceres REQUIRED)
 
-find_package(catkin REQUIRED COMPONENTS
-  rct_common
-)
-
-#catkin_package(INCLUDE_DIRS include)
-
 add_library(${PROJECT_NAME} SHARED
   # Utilities
   src/${PROJECT_NAME}/eigen_conversions.cpp
@@ -31,7 +25,7 @@ add_library(${PROJECT_NAME} SHARED
   # Validation Tools
   src/${PROJECT_NAME}/validation/camera_intrinsic_calibration_validation.cpp
   #Noise Qualification
-  src/${PROJECT_NAME}/noise_qualifier.cpp
+  src/validation/noise_qualifier.cpp
 )
 
 target_compile_options(${PROJECT_NAME} PUBLIC -std=c++14)
@@ -48,7 +42,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 
 if(RCT_BUILD_TESTS)
   enable_testing()
-  #rct_add_run_tests_target()
+  rct_add_run_tests_target()
   add_subdirectory(test)
 endif()
 

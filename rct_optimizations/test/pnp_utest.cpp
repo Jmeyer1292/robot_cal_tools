@@ -110,31 +110,29 @@ TEST(PnPTest, 3DValidation)
   //setup params
   PnPProblem3D setup;
 
-  //testing with only one observation
-  Correspondence3D3D::Set corrs;
-  corrs.reserve(9);
+  //testing with only one observation of a 3x3 target
+
+  //make target
+  test::Target target(3, 3, 0.025);
 
   Eigen::Vector3d origin(0.0,0.0,0.0);
 
-  for(std::size_t i=0; i < 3; ++i)
-  {
-    for (std::size_t j =0; j < 3; j++)
-    {
-      Correspondence3D3D c;
-      Eigen::Vector3d world_point =Eigen::Vector3d(double(i), double(j), double((i*j)%3));
-      Eigen::Vector3d camera_point = world_point;
-      c.in_target = world_point;
-      c.in_image = camera_point;
+  Eigen::Isometry3d target_point = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d camera_point = target_point;
+  camera_point.translate(Eigen::Vector3d(1.0,0.0,0.0));
+  camera_point = test::lookAt(camera_point.translation(), target_point.translation(), Eigen::Vector3d(1.0,0.0,0.0));
 
-      corrs.push_back(c);
-    }
-  }
+  setup.correspondences = getCorrespondences(camera_point,
+                                             target_point,
+                                             target);
 
-  setup.correspondences = corrs;
   setup.camera_to_target_guess = Eigen::Isometry3d::Identity();
 
   PnPResult res = rct_optimizations::optimize(setup);
   EXPECT_TRUE(res.converged);
+  EXPECT_TRUE(res.initial_cost_per_obs < 1.0e-14);
+  EXPECT_TRUE(res.final_cost_per_obs < 1.0e-14);
+  EXPECT_TRUE(res.camera_to_target.isApprox(setup.camera_to_target_guess));
 }
 
 int main(int argc, char **argv)

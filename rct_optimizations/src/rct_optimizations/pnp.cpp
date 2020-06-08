@@ -68,7 +68,6 @@ public:
     rct_optimizations::transformPoint(target_angle_axis, target_position, target_pt, camera_point);
 
     T xyz_image[3];
-    //rct_optimizations::projectPoint(intr_, camera_point, xyz_image); //Does this really need to go?
 
     residual[0] = xyz_image[0] - in_image_.x();
     residual[1] = xyz_image[1] - in_image_.y();
