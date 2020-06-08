@@ -13,6 +13,7 @@ jobs:
              ROS_DISTRO: melodic,
              ROS_REPO: main,
              ADDITIONAL_DEBS: git,
+             VERBOSE_TESTS: true,
              TARGET_CMAKE_ARGS: "-DRCT_BUILD_TESTS=True -DRCT_RUN_TESTS=True",
              BADGE: bionic}
           - {OS_NAME: ubuntu,
@@ -20,6 +21,7 @@ jobs:
              ROS_DISTRO: kinetic,
              ROS_REPO: main,
              ADDITIONAL_DEBS: git,
+             VERBOSE_TESTS: true,
              TARGET_CMAKE_ARGS: "-DRCT_BUILD_TESTS=True -DRCT_RUN_TESTS=True",
              BADGE: xenial}
     runs-on: ubuntu-latest
