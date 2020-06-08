@@ -13,7 +13,7 @@
 
 #include <opencv2/imgproc.hpp>
 #include <rct_optimizations/ceres_math_utilities.h>
-#include <rct_optimizations/experimental/pnp.h>
+#include <rct_optimizations/pnp.h>
 
 static void reproject(const Eigen::Isometry3d& wrist_to_target, const Eigen::Isometry3d& base_to_camera,
                       const rct_optimizations::Observation2D3D& obs, const rct_optimizations::CameraIntrinsics& intr,

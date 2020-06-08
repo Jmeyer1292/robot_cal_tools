@@ -10,7 +10,7 @@
 
 #include <rct_image_tools/image_observation_finder.h>
 #include <rct_image_tools/image_utils.h>
-#include <rct_optimizations/experimental/pnp.h>
+#include <rct_optimizations/pnp.h>
 #include <rct_ros_tools/parameter_loaders.h>
 #include <rct_ros_tools/print_utils.h>
 

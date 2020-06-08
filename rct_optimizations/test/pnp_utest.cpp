@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <rct_optimizations/experimental/pnp.h>
+#include <rct_optimizations/pnp.h>
 #include <rct_optimizations_tests/observation_creator.h>
 #include <rct_optimizations_tests/utilities.h>
 
