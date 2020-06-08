@@ -6,8 +6,8 @@ namespace rct_optimizations
 {
 // DH Transform
 
-inline DHTransform::DHTransform(std::array<double, 4> params_, DHJointType type_)
-  : params(std::move(params_))
+inline DHTransform::DHTransform(const Eigen::Vector4d& params_, DHJointType type_)
+  : params(params_)
   , type(type_)
 {
 }
@@ -18,29 +18,28 @@ Isometry3<T> DHTransform::createRelativeTransform(const T joint_value,
 {
   Isometry3<T> transform(Isometry3<T>::Identity());
 
-  // Create aliases for the d and theta parameters such that the joint value could be added to them appropriately
-  T d = T(params[0]) + offsets[0];
-  T theta = T(params[1]) + offsets[1];
-  T r = T(params[2]) + offsets[2];
-  T alpha = T(params[3]) + offsets[3];
+  // Create an DH parameter vector with offsets ([d, theta, r, alpha]
+  Vector4<T> updated_params = params.cast<T>() + offsets.transpose();
+
   switch (type)
   {
   case DHJointType::LINEAR:
-    d += joint_value;
+    // Add the joint value to d (index 0) if the joint is linear
+    updated_params(0) += joint_value;
     break;
   case DHJointType::REVOLUTE:
-    theta += joint_value;
+    // Add the joint value to theta (index 1) if the joint is revolute
+    updated_params(1) += joint_value;
     break;
   default:
     break;
   }
 
   // Perform the DH transformations
-  using Vector3 = Eigen::Matrix<T, 3, 1>;
-  transform *= Eigen::Translation<T, 3>(T(0.0), T(0.0), d);
-  transform.rotate(Eigen::AngleAxis<T>(theta, Vector3::UnitZ()));
-  transform *= Eigen::Translation<T, 3>(r, T(0.0), T(0.0));
-  transform.rotate(Eigen::AngleAxis<T>(alpha, Vector3::UnitX()));
+  transform *= Eigen::Translation<T, 3>(T(0.0), T(0.0), updated_params(0));
+  transform.rotate(Eigen::AngleAxis<T>(updated_params(1), Vector3<T>::UnitZ()));
+  transform *= Eigen::Translation<T, 3>(updated_params(2), T(0.0), T(0.0));
+  transform.rotate(Eigen::AngleAxis<T>(updated_params(3), Vector3<T>::UnitX()));
 
   return transform;
 }
@@ -89,14 +88,14 @@ Isometry3<T> DHChain::getFK(const Eigen::Matrix<T, Eigen::Dynamic, 1>& joint_val
   return transform;
 }
 
-inline Eigen::Isometry3d DHChain::createUniformlyRandomPose() const
+inline Eigen::VectorXd DHChain::createUniformlyRandomPose() const
 {
   Eigen::VectorXd joints(transforms_.size());
   for (std::size_t i = 0; i < transforms_.size(); ++i)
   {
     joints[i] = transforms_[i]->createRandomJointValue();
   }
-  return getFK(joints);
+  return joints;
 }
 
 } // namespace rct_optimizations

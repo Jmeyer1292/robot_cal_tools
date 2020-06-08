@@ -18,6 +18,9 @@ template<typename T>
 using Isometry3 = Eigen::Transform<T, 3, Eigen::Isometry>;
 
 template<typename T>
+using Vector4 = Eigen::Matrix<T, 4, 1>;
+
+template<typename T>
 using Vector3 = Eigen::Matrix<T, 3, 1>;
 
 template<typename T>
@@ -32,7 +35,7 @@ struct DHTransform
 {
   using Ptr = std::unique_ptr<DHTransform>;
 
-  DHTransform(std::array<double, 4> params_, DHJointType type_);
+  DHTransform(const Eigen::Vector4d& params_, DHJointType type_);
   virtual ~DHTransform() = default;
 
   /**
@@ -58,7 +61,7 @@ struct DHTransform
    *  r: The linear offset in X
    *  alpha: The rotational offset about X
    */
-  std::array<double, 4> params;
+  Eigen::Vector4d params;
   DHJointType type; /** @brief The type of actuation of the joint */
   double max = M_PI; /** @brief Joint max */
   double min = -M_PI; /** @brief Joint min */
@@ -93,14 +96,39 @@ public:
                      const Eigen::Matrix<T, Eigen::Dynamic, 4>& offsets) const;
 
   /**
-   * @brief Creates a random pose by choosing a random uniformly distributed joint value for each joint in the chain
+   * @brief Creates a random joint pose by choosing a random uniformly distributed joint value for each joint in the chain
    * @return
    */
-  Eigen::Isometry3d createUniformlyRandomPose() const;
+  Eigen::VectorXd createUniformlyRandomPose() const;
 
+  /**
+   * @brief Returns the number of degrees of freedom (i.e. DH transforms) of the chain
+   * @return
+   */
   inline std::size_t dof() const
   {
     return transforms_.size();
+  }
+
+  inline Eigen::MatrixX4d getDHTable() const
+  {
+    Eigen::MatrixX4d out(dof(), 4);
+    for (std::size_t i = 0; i < transforms_.size(); ++i)
+    {
+      out.row(i) = transforms_[i]->params.transpose();
+    }
+    return out;
+  }
+
+  inline std::vector<DHJointType> getJointTypes() const
+  {
+    std::vector<DHJointType> out;
+    out.reserve(transforms_.size());
+    for (const auto &t : transforms_)
+    {
+      out.push_back(t->type);
+    }
+    return out;
   }
 
 protected:

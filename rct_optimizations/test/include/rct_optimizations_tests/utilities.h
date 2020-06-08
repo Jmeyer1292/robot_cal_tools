@@ -38,6 +38,8 @@ struct Target
   Target() = default;
 
   Target(const unsigned rows, const unsigned cols, const double spacing)
+    : origin_idx((rows - 1) * cols)
+    , center(double(rows - 1) * spacing / 2.0, double(cols - 1) * spacing / 2.0, 0.0)
   {
     points.reserve(rows * cols);
 
@@ -51,9 +53,13 @@ struct Target
         points.push_back(point);
       }
     }
+
+    origin_idx = (rows - 1) * cols;
   }
 
   std::vector<Eigen::Vector3d> points;
+  std::size_t origin_idx;
+  Eigen::Vector3d center;
 };
 
 /**
@@ -76,13 +82,14 @@ inline DHChain createABBIRB2400()
   std::vector<DHTransform::Ptr> joints;
   joints.reserve(6);
 
+  Eigen::Vector4d t1, t2, t3, t4, t5, t6;
 
-  std::array<double, 4> t1 = {0.615, 0.0, 0.100, -M_PI / 2.0};
-  std::array<double, 4> t2 = {0.0, -M_PI / 2.0, 0.705, 0.0};
-  std::array<double, 4> t3 = {0.0, 0.0, 0.135, -M_PI / 2.0};
-  std::array<double, 4> t4 = {0.755, 0.0, 0.0, M_PI / 2.0};
-  std::array<double, 4> t5 = {0.0, 0.0, 0.0, -M_PI / 2.0};
-  std::array<double, 4> t6 = {0.085, M_PI, 0.0, 0.0};
+  t1 << 0.615, 0.0, 0.100, -M_PI / 2.0;
+  t2 << 0.0, -M_PI / 2.0, 0.705, 0.0;
+  t3 << 0.0, 0.0, 0.135, -M_PI / 2.0;
+  t4 << 0.755, 0.0, 0.0, M_PI / 2.0;
+  t5 << 0.0, 0.0, 0.0, -M_PI / 2.0;
+  t6 << 0.085, M_PI, 0.0, 0.0;
 
   joints.push_back(std::make_unique<DHTransform>(t1, DHJointType::REVOLUTE));
   joints.push_back(std::make_unique<DHTransform>(t2, DHJointType::REVOLUTE));
@@ -92,6 +99,27 @@ inline DHChain createABBIRB2400()
   joints.push_back(std::make_unique<DHTransform>(t6, DHJointType::REVOLUTE));
 
   return DHChain(std::move(joints));
+}
+
+inline DHChain perturbDHCHain(const DHChain &in, const double stddev)
+{
+  std::mt19937 mt_rand(std::random_device{}());
+  std::normal_distribution<double> norm(0.0, stddev);
+
+  // Get the joint types and nominal DH table
+  std::vector<DHJointType> joint_types = in.getJointTypes();
+  Eigen::MatrixX4d dh = in.getDHTable();
+
+  // Perturb each value in the DH table randomly by the input standard deviation
+  dh = dh.unaryExpr([&norm, &mt_rand](const double val) { return val + norm(mt_rand); });
+
+  std::vector<DHTransform::Ptr> transforms;
+  transforms.reserve(joint_types.size());
+  for (std::size_t i = 0; i < joint_types.size(); ++i)
+  {
+    transforms.push_back(std::make_unique<DHTransform>(dh.row(i), joint_types[i]));
+  }
+  return DHChain(std::move(transforms));
 }
 
 } // namespace test
