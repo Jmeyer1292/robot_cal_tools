@@ -14,7 +14,7 @@ inline DHTransform::DHTransform(std::array<double, 4> params_, DHJointType type_
 
 template<typename T>
 Isometry3<T> DHTransform::createRelativeTransform(const T joint_value,
-                                                  const T* offsets) const
+                                                  const Eigen::Matrix<T, 1, 4>& offsets) const
 {
   Isometry3<T> transform(Isometry3<T>::Identity());
 
@@ -48,8 +48,8 @@ Isometry3<T> DHTransform::createRelativeTransform(const T joint_value,
 template<typename T>
 inline Isometry3<T> DHTransform::createRelativeTransform(const T joint) const
 {
-  std::array<T, 4> offsets = {T(0.0), T(0.0), T(0.0), T(0.0)};
-  return DHTransform::createRelativeTransform(joint, offsets.data());
+  Eigen::Matrix<T, 1, 4> offsets = Eigen::Matrix<T, 1, 4>::Zero();
+  return DHTransform::createRelativeTransform(joint, offsets);
 }
 
 inline double DHTransform::createRandomJointValue() const
@@ -78,12 +78,13 @@ Isometry3<T> DHChain::getFK(const Eigen::Matrix<T, Eigen::Dynamic, 1> &joint_val
 
 template<typename T>
 Isometry3<T> DHChain::getFK(const Eigen::Matrix<T, Eigen::Dynamic, 1>& joint_values,
-                                   const T* const* offsets) const
+                            const Eigen::Matrix<T, Eigen::Dynamic, 4>& offsets) const
 {
   Isometry3<T> transform(Isometry3<T>::Identity());
-  for (std::size_t i = 0; i < joint_values.size(); ++i)
+  for (Eigen::Index i = 0; i < joint_values.size(); ++i)
   {
-    transform = transform * transforms_.at(i)->createRelativeTransform(joint_values[i], offsets[i]);
+    const Eigen::Matrix<T, 1, 4> &offset = offsets.row(i);
+    transform = transform * transforms_.at(i)->createRelativeTransform(joint_values[i], offset);
   }
   return transform;
 }

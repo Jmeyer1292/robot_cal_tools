@@ -40,7 +40,7 @@ struct DHTransform
    */
   template<typename T>
   Isometry3<T> createRelativeTransform(const T joint_value,
-                                              const T* offsets) const;
+                                       const Eigen::Matrix<T, 1, 4>& offsets) const;
 
   /**
    * @brief Creates the homogoneous transformation from the previous link to the current link
@@ -90,7 +90,7 @@ public:
    */
   template<typename T>
   Isometry3<T> getFK(const Eigen::Matrix<T, Eigen::Dynamic, 1>& joint_values,
-                            const T* const* offsets) const;
+                     const Eigen::Matrix<T, Eigen::Dynamic, 4>& offsets) const;
 
   /**
    * @brief Creates a random pose by choosing a random uniformly distributed joint value for each joint in the chain
