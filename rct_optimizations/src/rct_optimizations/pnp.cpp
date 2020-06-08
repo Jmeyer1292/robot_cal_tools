@@ -6,32 +6,32 @@
 
 namespace
 {
-
 struct SolvePnPCostFunc
 {
-public:
-  SolvePnPCostFunc(const rct_optimizations::CameraIntrinsics& intr, const Eigen::Vector3d& pt_in_target,
+  public:
+  SolvePnPCostFunc(const rct_optimizations::CameraIntrinsics& intr,
+                   const Eigen::Vector3d& pt_in_target,
                    const Eigen::Vector2d& pt_in_image)
     : intr_(intr), in_target_(pt_in_target), in_image_(pt_in_image)
-  {}
+  {
+  }
 
   template<typename T>
-  bool operator()(const T* const target_pose, T* const residual) const
+  bool operator()(const T *const target_q, const T *const target_t, T *const residual) const
   {
-    const T* target_angle_axis = target_pose + 0;
-    const T* target_position = target_pose + 3;
+    using Isometry3 = Eigen::Transform<T, 3, Eigen::Isometry>;
+    using Vector3 = Eigen::Matrix<T, 3, 1>;
+    using Vector2 = Eigen::Matrix<T, 2, 1>;
+
+    Eigen::Map<const Eigen::Quaternion<T>> q(target_q);
+    Eigen::Map<const Vector3> t(target_t);
+    Isometry3 camera_to_target = Isometry3::Identity();
+    camera_to_target = Eigen::Translation<T, 3>(t) * q;
 
     // Transform points into camera coordinates
-    T target_pt[3];
-    target_pt[0] = T(in_target_(0));
-    target_pt[1] = T(in_target_(1));
-    target_pt[2] = T(in_target_(2));
+    Vector3 camera_pt = camera_to_target * in_target_.cast<T>();
 
-    T camera_point[3];  // Point in camera coordinates
-    rct_optimizations::transformPoint(target_angle_axis, target_position, target_pt, camera_point);
-
-    T xy_image[2];
-    rct_optimizations::projectPoint(intr_, camera_point, xy_image);
+    Vector2 xy_image = projectPoint(intr_, camera_pt);
 
     residual[0] = xy_image[0] - in_image_.x();
     residual[1] = xy_image[1] - in_image_.y();
@@ -44,39 +44,48 @@ public:
   Eigen::Vector2d in_image_;
 };
 
-}
+} // namespace anonymous
 
-rct_optimizations::PnPResult rct_optimizations::optimize(const rct_optimizations::PnPProblem& params)
+namespace rct_optimizations
 {
-  using namespace rct_optimizations;
-  Pose6d internal_camera_to_target = poseEigenToCal(params.camera_to_target_guess);
+PnPResult optimize(const PnPProblem &params)
+{
+  // Create the optimization variables from the input guess
+  Eigen::Quaterniond q(params.camera_to_target_guess.rotation());
+  Eigen::Vector3d t(params.camera_to_target_guess.translation());
 
   ceres::Problem problem;
 
-  for (std::size_t i = 0; i < params.correspondences.size(); ++i) // For each 3D point seen in the 2D image
+  // For each 3D point seen in the 2D image
+  for (std::size_t i = 0; i < params.correspondences.size(); ++i)
   {
     // Define
-    const auto& img_obs = params.correspondences[i].in_image;
-    const auto& point_in_target = params.correspondences[i].in_target;
+    const auto &img_obs = params.correspondences[i].in_image;
+    const auto &point_in_target = params.correspondences[i].in_target;
 
     // Allocate Ceres data structures - ownership is taken by the ceres
     // Problem data structure
-    auto* cost_fn = new SolvePnPCostFunc(params.intr, point_in_target, img_obs);
+    auto *cost_fn = new SolvePnPCostFunc(params.intr, point_in_target, img_obs);
 
-    auto* cost_block = new ceres::AutoDiffCostFunction<SolvePnPCostFunc, 2, 6>(cost_fn);
+    auto *cost_block = new ceres::AutoDiffCostFunction<SolvePnPCostFunc, 2, 4, 3>(cost_fn);
 
-    problem.AddResidualBlock(cost_block, NULL, internal_camera_to_target.values.data());
+    problem.AddResidualBlock(cost_block, nullptr, q.coeffs().data(), t.data());
   }
 
-  ceres::Solver::Options options;
+  problem.SetParameterization(q.coeffs().data(), new ceres::EigenQuaternionParameterization());
+
   ceres::Solver::Summary summary;
+  ceres::Solver::Options options;
   ceres::Solve(options, &problem, &summary);
 
   PnPResult result;
   result.converged = summary.termination_type == ceres::CONVERGENCE;
   result.initial_cost_per_obs = summary.initial_cost / summary.num_residuals;
   result.final_cost_per_obs = summary.final_cost / summary.num_residuals;
-  result.camera_to_target = poseCalToEigen(internal_camera_to_target);
+  result.camera_to_target = Eigen::Translation3d(t) * q;
 
   return result;
 }
+
+} // namespace rct_optimizations
+
