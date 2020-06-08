@@ -26,20 +26,9 @@ TEST(DHChain, NoisyFKTest)
   std::mt19937 mt_rand(std::random_device{}());
   std::uniform_real_distribution<double> dist(-0.01, 0.01);
 
-  auto create_random_offset = [&dist, &mt_rand]() -> std::array<double, 4> {
-    std::array<double, 4> offset;
-    std::fill(offset.begin(), offset.end(), dist(mt_rand));
-    return offset;
-  };
+  Eigen::MatrixX4d dh_offsets = Eigen::MatrixX4d(robot.dof(), 4).unaryExpr([&](float) { return dist(mt_rand); });
 
-  std::vector<double *> offsets;
-  offsets.reserve(robot.dof());
-  for (std::size_t i = 0; i < robot.dof(); ++i)
-  {
-    offsets.push_back(create_random_offset().data());
-  }
-
-  Eigen::Isometry3d transform = robot.getFK<double>(Eigen::VectorXd::Zero(6), offsets.data());
+  Eigen::Isometry3d transform = robot.getFK<double>(Eigen::VectorXd::Zero(6), dh_offsets);
   std::cout << "FK transform with noise\n" << transform.matrix() << std::endl;
 
   Eigen::Isometry3d desired(Eigen::Isometry3d::Identity());
