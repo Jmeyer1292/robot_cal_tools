@@ -19,7 +19,9 @@ namespace rct_optimizations
   * @brief qualifyNoise2D This function qualifies 2d sensor noise by
   * comparing PnP results from images taken with the same poses.
   * Sensor noise can be understood by inspecting the returned standard
-  * deviations
+  * deviations. Position and orientation is returned, but orientation
+  * is expressed in Euler angles and may not be consistent for
+  * similar positions.
   * @param Sets of PnP 2D problem parameters
   * @return Noise Statistics: a vector of means & std devs
   */
@@ -29,7 +31,9 @@ namespace rct_optimizations
   * @brief qualifyNoise3D This function qualifies 3d sensor noise by
   * comparing PnP results from scans taken with the same poses.
   * Sensor noise can be understood by inspecting the returned standard
-  * deviations
+  * deviations. Position and orientation is returned, but orientation
+  * is expressed in Euler angles and may not be consistent for
+  * similar positions.
   * @param params 3D image parameters
   * @return Noise Statiscics: a vector of standard deviations and the mean pos
   */
