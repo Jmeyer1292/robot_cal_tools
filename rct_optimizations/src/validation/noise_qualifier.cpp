@@ -34,14 +34,8 @@ namespace rct_optimizations
   for (auto& prob : params)
   {
     rct_optimizations::PnPResult result;
-    rct_optimizations::PnPProblem pnpParams;
-    pnpParams.intr = prob.intr;
 
-
-    pnpParams.correspondences = prob.correspondences;
-    pnpParams.camera_to_target_guess = prob.camera_to_target_guess;
-
-    result = rct_optimizations::optimize(pnpParams);
+    result = rct_optimizations::optimize(prob);
 
     if (result.converged)
     {
@@ -97,12 +91,8 @@ namespace rct_optimizations
   for (auto& prob : params)
   {
     rct_optimizations::PnPResult result;
-    rct_optimizations::PnPProblem3D pnpParams;
 
-    pnpParams.correspondences = prob.correspondences;
-    pnpParams.camera_to_target_guess = prob.camera_to_target_guess;
-
-    result = rct_optimizations::optimize(pnpParams);
+    result = rct_optimizations::optimize(prob);
 
     if (result.converged)
     {

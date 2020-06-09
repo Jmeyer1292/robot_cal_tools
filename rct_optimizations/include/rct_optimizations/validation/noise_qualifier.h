@@ -16,14 +16,20 @@ namespace rct_optimizations
  };
 
  /**
-  * @brief qualifyNoise2D This function qualifies 2d sensor noise
-  * @param params 2D image parameters
-  * @return Noise Statiscics: a vector of standard deviations and the mean pos
+  * @brief qualifyNoise2D This function qualifies 2d sensor noise by
+  * comparing PnP results from images taken with the same poses.
+  * Sensor noise can be understood by inspecting the returned standard
+  * deviations
+  * @param Sets of PnP 2D problem parameters
+  * @return Noise Statistics: a vector of means & std devs
   */
  std::vector<NoiseStatistics> qualifyNoise2D(const std::vector<PnPProblem>& params);
 
  /**
-  * @brief qualifyNoise3D This function qualifies 3d sensor noise
+  * @brief qualifyNoise3D This function qualifies 3d sensor noise by
+  * comparing PnP results from scans taken with the same poses.
+  * Sensor noise can be understood by inspecting the returned standard
+  * deviations
   * @param params 3D image parameters
   * @return Noise Statiscics: a vector of standard deviations and the mean pos
   */
