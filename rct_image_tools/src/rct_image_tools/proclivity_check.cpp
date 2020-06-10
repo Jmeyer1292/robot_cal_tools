@@ -92,10 +92,10 @@ bool checkObservationProclivity(const rct_image_tools::ProclivityParams& params)
   if (params.max_residual<= 0)
   {
     //calculate interquartile range, check that top value is not more than that 1.5 that value
-    std::sort(errorU.start(), errorU.end());
-    std::sort(errorV.start(), errorV.end());
+    std::sort(errorU.begin(), errorU.end());
+    std::sort(errorV.begin(), errorV.end());
 
-    ASSERT(errorU.size() == params.ob.correspondence_set.size() && errorV.size() == params.ob.correspondence_set.size());
+    assert(errorU.size() == params.ob.correspondence_set.size() && errorV.size() == params.ob.correspondence_set.size());
     //will have as many error vector entries as correspondences
 
     std::size_t Q1i = params.ob.correspondence_set.size()/4;
