@@ -330,6 +330,7 @@ TEST_F(CircleFitUnit_TwoObsX, FitCircleToTwoPoints)
   // expect covariance between X and R to be somewhat close to 0
   // TODO: fix, not always close to zero due to random initial conditions of problem
 //  EXPECT_NEAR(result.covariance(0, 2), 0.0, 1e-2);
+
 }
 
 // Do optimization to fit a circle to two observed points.
