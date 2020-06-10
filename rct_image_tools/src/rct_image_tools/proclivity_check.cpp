@@ -53,7 +53,8 @@ bool checkObservationProclivity(const rct_image_tools::ProclivityParams& params)
   // check the proclivity of every observation
   bool rtn = true;
   double ave_error = 0.0;
-  Eigen::MatrixXd errors(params.ob.correspondence_set.size(), 2);
+  std::vector<double> errorU, errorV;
+  //Eigen::MatrixXd errors(params.ob.correspondence_set.size(), 2);
   for(int i=0; i<(int) params.ob.correspondence_set.size(); i++)
   {
     //int pi = CO[i].point_id;
@@ -77,23 +78,38 @@ bool checkObservationProclivity(const rct_image_tools::ProclivityParams& params)
     if (params.max_residual > 0) //pass negative residual_threshold to do outlier detection
     {
       if(fabs(EU)>params.max_residual || fabs(EV)>params.max_residual)
-        {
-        //have some error handling here
+      {
         rtn = false;
       }
     }
     else
     {
-      errors.row(i) << EU,EV;
+      errorU.push_back(EU);
+      errorV.push_back(EV);
     }
   }
-  //use check for outlier with interquartile range
+  //use check for outlier with interquartile range if no threshhold provided
   if (params.max_residual<= 0)
   {
-    int pass = 1;
-    //calculate interquartile range, check that top value is not more than that 1*5 that value
+    //calculate interquartile range, check that top value is not more than that 1.5 that value
+    std::sort(errorU.start(), errorU.end());
+    std::sort(errorV.start(), errorV.end());
+
+    ASSERT(errorU.size() == params.ob.correspondence_set.size() && errorV.size() == params.ob.correspondence_set.size());
+    //will have as many error vector entries as correspondences
+
+    std::size_t Q1i = params.ob.correspondence_set.size()/4;
+    std::size_t Q3i = (params.ob.correspondence_set.size() * 3) /4;
+
+    double IQRU = errorU[Q3i] - errorU[Q1i];
+    double IQRV = errorV[Q3i] - errorV[Q1i];
+
+    //if the max value is larger than 1.5 x the IQR, it is likely an outlier
+    if (errorU.back() > IQRU * 1.5 || errorV.back() > IQRV * 1.5)
+    {
+      rtn = false;
+    }
   }
   ave_error = ave_error/(int) params.ob.correspondence_set.size();
-  //ROS_WARN("average proclivity error = %8.3lf",ave_error);
-  return(rtn);
+    return(rtn);
 };
