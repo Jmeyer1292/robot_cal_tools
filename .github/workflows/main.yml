@@ -8,20 +8,24 @@ jobs:
       fail-fast: false
       matrix:
         env:
-          - {OS_NAME: ubuntu,
+          - {BADGE: bionic,
+             OS_NAME: ubuntu,
              OS_CODE_NAME: bionic,
              ROS_DISTRO: melodic,
              ROS_REPO: main,
              ADDITIONAL_DEBS: git,
-             TARGET_CMAKE_ARGS: "-DRCT_BUILD_TESTS=True -DRCT_RUN_TESTS=True",
-             BADGE: bionic}
-          - {OS_NAME: ubuntu,
+             VERBOSE_TESTS: true,
+             TARGET_CMAKE_ARGS: "-DRCT_BUILD_TESTS=ON",
+             AFTER_SCRIPT: 'catkin build -w $target_ws --no-deps --verbose rct_optimizations --make-args test'}
+          - {BADGE: xenial,
+             OS_NAME: ubuntu,
              OS_CODE_NAME: xenial,
              ROS_DISTRO: kinetic,
              ROS_REPO: main,
              ADDITIONAL_DEBS: git,
-             TARGET_CMAKE_ARGS: "-DRCT_BUILD_TESTS=True -DRCT_RUN_TESTS=True",
-             BADGE: xenial}
+             VERBOSE_TESTS: true,
+             TARGET_CMAKE_ARGS: "-DRCT_BUILD_TESTS=ON",
+             AFTER_SCRIPT: 'catkin build -w $target_ws --no-deps --verbose rct_optimizations --make-args test'}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
