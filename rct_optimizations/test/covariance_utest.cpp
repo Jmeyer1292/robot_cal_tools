@@ -325,7 +325,7 @@ TEST_F(CircleFitUnit_TwoObsX, FitCircleToTwoPoints)
   EXPECT_GE(result.covariance(2, 2), 0.0);
 
   // expect covariance between Y and R to be close to 1
-  EXPECT_NEAR(abs(result.covariance(1, 2)), 1.0, 1e-10);
+  EXPECT_NEAR(abs(result.covariance(1, 2)), 1.0, 1e-5);
 
   // expect covariance between X and R to be somewhat close to 0
   // TODO: fix, not always close to zero due to random initial conditions of problem
@@ -355,7 +355,7 @@ TEST_F(CircleFitUnit_TwoObsY, FitCircleToTwoPoints)
   EXPECT_GE(result.covariance(2, 2), 0.0);
 
   // expect covariance between X and R to be close to 1
-  EXPECT_NEAR(abs(result.covariance(0, 2)), 1.0, 1e-10);
+  EXPECT_NEAR(abs(result.covariance(0, 2)), 1.0, 1e-5);
 
   // expect covariance between Y and R to be somewhat close to 0
   // TODO: fix, not always close to zero due to random initial conditions of problem
