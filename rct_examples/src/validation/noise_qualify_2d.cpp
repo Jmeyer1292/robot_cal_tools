@@ -88,8 +88,9 @@ int main(int argc, char** argv)
   ROS_INFO_STREAM("The standard deviation is : x: " << output.x.std_dev <<
                                            "\n y: " << output.y.std_dev <<
                                            "\n z: " << output.z.std_dev <<
-                                        "\n roll: " << output.r.std_dev <<
-                                       "\n pitch: " << output.p.std_dev <<
-                                         "\n yaw: " << output.yw.std_dev <<
+                                           "\n i: " << output.i.std_dev <<
+                                           "\n j: " << output.j.std_dev <<
+                                           "\n k: " << output.k.std_dev <<
+                                           "\n w: " << output.w.std_dev <<
                                                                       "\n");
 }

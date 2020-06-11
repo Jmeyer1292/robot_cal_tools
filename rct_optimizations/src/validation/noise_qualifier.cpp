@@ -24,9 +24,10 @@ namespace rct_optimizations
   accumulator_set<double, stats<tag::mean, tag::variance>> x_acc;
   accumulator_set<double, stats<tag::mean, tag::variance>> y_acc;
   accumulator_set<double, stats<tag::mean, tag::variance>> z_acc;
-  accumulator_set<double, stats<tag::mean, tag::variance>> r_acc;
-  accumulator_set<double, stats<tag::mean, tag::variance>> p_acc;
-  accumulator_set<double, stats<tag::mean, tag::variance>> yw_acc;
+  accumulator_set<double, stats<tag::mean, tag::variance>> i_acc;
+  accumulator_set<double, stats<tag::mean, tag::variance>> j_acc;
+  accumulator_set<double, stats<tag::mean, tag::variance>> k_acc;
+  accumulator_set<double, stats<tag::mean, tag::variance>> w_acc;
 
 
   for (auto& prob : params)
@@ -45,32 +46,34 @@ namespace rct_optimizations
       y_acc(result.camera_to_target.translation()(1));
       z_acc(result.camera_to_target.translation()(2));
 
-      //Eigen::Vector3d ea = result.camera_to_target.linear().eulerAngles(0,1,2);
-      Eigen::AngleAxisd aa;
+      Eigen::Quaterniond q;
       Eigen::Matrix3d m = result.camera_to_target.rotation();
-      aa = m;
+      q = m;
 
-      r_acc(aa.axis()(0));
-      p_acc(aa.axis()(1));
-      yw_acc(aa.axis()(2));
+      i_acc(q.x());
+      j_acc(q.y());
+      k_acc(q.z());
+      w_acc(q.w());
     }
   }
 
   output.x.mean = boost::accumulators::mean(x_acc);
   output.y.mean = boost::accumulators::mean(y_acc);
   output.z.mean = boost::accumulators::mean(z_acc);
-  output.r.mean = boost::accumulators::mean(r_acc);
-  output.p.mean = boost::accumulators::mean(p_acc);
-  output.yw.mean = boost::accumulators::mean(yw_acc);
+  output.i.mean = boost::accumulators::mean(i_acc);
+  output.j.mean = boost::accumulators::mean(j_acc);
+  output.k.mean = boost::accumulators::mean(k_acc);
+  output.w.mean = boost::accumulators::mean(w_acc);
 
   output.x.std_dev = sqrt(boost::accumulators::variance(x_acc));
   output.y.std_dev = sqrt(boost::accumulators::variance(y_acc));
   output.z.std_dev = sqrt(boost::accumulators::variance(z_acc));
-  output.r.std_dev = sqrt(boost::accumulators::variance(r_acc));
-  output.p.std_dev = sqrt(boost::accumulators::variance(p_acc));
-  output.yw.std_dev = sqrt(boost::accumulators::variance(yw_acc));
+  output.i.std_dev = sqrt(boost::accumulators::variance(i_acc));
+  output.j.std_dev = sqrt(boost::accumulators::variance(j_acc));
+  output.k.std_dev = sqrt(boost::accumulators::variance(k_acc));
+  output.w.std_dev = sqrt(boost::accumulators::variance(w_acc));
 
-  //Output: mean & standard deviation of x,y,z,roll,pitch,yaw
+  //Output: mean & standard deviation of x,y,z,i,j,k,w
   return output;
 }
 
@@ -85,9 +88,10 @@ namespace rct_optimizations
   accumulator_set<double, stats<tag::mean, tag::variance>> x_acc;
   accumulator_set<double, stats<tag::mean, tag::variance>> y_acc;
   accumulator_set<double, stats<tag::mean, tag::variance>> z_acc;
-  accumulator_set<double, stats<tag::mean, tag::variance>> r_acc;
-  accumulator_set<double, stats<tag::mean, tag::variance>> p_acc;
-  accumulator_set<double, stats<tag::mean, tag::variance>> yw_acc;
+  accumulator_set<double, stats<tag::mean, tag::variance>> i_acc;
+  accumulator_set<double, stats<tag::mean, tag::variance>> j_acc;
+  accumulator_set<double, stats<tag::mean, tag::variance>> k_acc;
+  accumulator_set<double, stats<tag::mean, tag::variance>> w_acc;
 
 
   for (auto& prob : params)
@@ -105,31 +109,34 @@ namespace rct_optimizations
       y_acc(result.camera_to_target.translation()(1));
       z_acc(result.camera_to_target.translation()(2));
 
-      Eigen::AngleAxisd aa;
+      Eigen::Quaterniond q;
       Eigen::Matrix3d m = result.camera_to_target.rotation();
-      aa = m;
+      q = m;
 
-      r_acc(aa.axis()(0));
-      p_acc(aa.axis()(1));
-      yw_acc(aa.axis()(2));
+      i_acc(q.x());
+      j_acc(q.y());
+      k_acc(q.z());
+      w_acc(q.w());
     }
   }
 
   output.x.mean = boost::accumulators::mean(x_acc);
   output.y.mean = boost::accumulators::mean(y_acc);
   output.z.mean = boost::accumulators::mean(z_acc);
-  output.r.mean = boost::accumulators::mean(r_acc);
-  output.p.mean = boost::accumulators::mean(p_acc);
-  output.yw.mean = boost::accumulators::mean(yw_acc);
+  output.i.mean = boost::accumulators::mean(i_acc);
+  output.j.mean = boost::accumulators::mean(j_acc);
+  output.k.mean = boost::accumulators::mean(k_acc);
+  output.w.mean = boost::accumulators::mean(w_acc);
 
   output.x.std_dev = sqrt(boost::accumulators::variance(x_acc));
   output.y.std_dev = sqrt(boost::accumulators::variance(y_acc));
   output.z.std_dev = sqrt(boost::accumulators::variance(z_acc));
-  output.r.std_dev = sqrt(boost::accumulators::variance(r_acc));
-  output.p.std_dev = sqrt(boost::accumulators::variance(p_acc));
-  output.yw.std_dev = sqrt(boost::accumulators::variance(yw_acc));
+  output.i.std_dev = sqrt(boost::accumulators::variance(i_acc));
+  output.j.std_dev = sqrt(boost::accumulators::variance(j_acc));
+  output.k.std_dev = sqrt(boost::accumulators::variance(k_acc));
+  output.w.std_dev = sqrt(boost::accumulators::variance(w_acc));
 
-  //Output: mean & standard deviation of x,y,z,roll,pitch,yaw
+  //Output: mean & standard deviation of x,y,z,i,j,k,w
   return output;
 }
 

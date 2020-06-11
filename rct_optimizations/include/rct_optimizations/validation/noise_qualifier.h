@@ -17,16 +17,17 @@ namespace rct_optimizations
 
  /**
   * @brief The PnPNoiseStat struct A collection of NoiseStatistics in a form
-  * relevant to a position & orientation
+  * relevant to a position & orientation; xyz, quaternion
   */
  struct PnPNoiseStat
  {
    NoiseStatistics x;
    NoiseStatistics y;
    NoiseStatistics z;
-   NoiseStatistics r;
-   NoiseStatistics p;
-   NoiseStatistics yw;
+   NoiseStatistics i;
+   NoiseStatistics j;
+   NoiseStatistics k;
+   NoiseStatistics w;
  };
 
  /**
