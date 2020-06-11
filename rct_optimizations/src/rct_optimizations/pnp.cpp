@@ -29,7 +29,7 @@ struct SolvePnPCostFunc
     camera_to_target = Eigen::Translation<T, 3>(t) * q;
 
     // Transform points into camera coordinates
-    Vector3 camera_pt = camera_to_target * in_target_.cast<T>();
+    Vector3 camera_pt = camera_to_target.inverse() * in_target_.cast<T>();
 
     Vector2 xy_image = projectPoint(intr_, camera_pt);
 
