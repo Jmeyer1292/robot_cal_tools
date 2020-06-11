@@ -9,8 +9,6 @@
 #include <boost/accumulators/statistics/mean.hpp>
 #include <boost/accumulators/statistics/variance.hpp>
 
-
-
 namespace rct_optimizations
 {
 
@@ -47,16 +45,14 @@ namespace rct_optimizations
       y_acc(result.camera_to_target.translation()(1));
       z_acc(result.camera_to_target.translation()(2));
 
-      Eigen::Vector3d ea = result.camera_to_target.linear().eulerAngles(0,1,2);
-      //use angle axis to store rotration
-      //Eigen::Quaterniond quat
+      //Eigen::Vector3d ea = result.camera_to_target.linear().eulerAngles(0,1,2);
       Eigen::AngleAxisd aa;
       Eigen::Matrix3d m = result.camera_to_target.rotation();
       aa = m;
 
-      r_acc(ea(0));
-      p_acc(ea(1));
-      yw_acc(ea(2));
+      r_acc(aa.axis()(0));
+      p_acc(aa.axis()(1));
+      yw_acc(aa.axis()(2));
     }
   }
 
@@ -109,11 +105,13 @@ namespace rct_optimizations
       y_acc(result.camera_to_target.translation()(1));
       z_acc(result.camera_to_target.translation()(2));
 
-      //similar transforms should give similar eas (caveat: tranforms near singularities are vulnerable)
-      Eigen::Vector3d ea = result.camera_to_target.linear().eulerAngles(0,1,2);
-      r_acc(ea(0));
-      p_acc(ea(1));
-      yw_acc(ea(2));
+      Eigen::AngleAxisd aa;
+      Eigen::Matrix3d m = result.camera_to_target.rotation();
+      aa = m;
+
+      r_acc(aa.axis()(0));
+      p_acc(aa.axis()(1));
+      yw_acc(aa.axis()(2));
     }
   }
 

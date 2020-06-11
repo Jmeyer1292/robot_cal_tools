@@ -23,10 +23,14 @@ TEST(NoiseTest, 2DPerfectTest)
   ideal_problem_set.reserve(obs_cnt);
 
   Eigen::Isometry3d target_loc = Eigen::Isometry3d::Identity();
-  target_loc.translate(Eigen::Vector3d(0.5,0.5,-1.0));
   Eigen::Isometry3d camera_loc = Eigen::Isometry3d::Identity();
 
-  camera_loc = test::lookAt(camera_loc.translation(), target_loc.translation(), Eigen::Vector3d(1.0,0.0,0.0));
+  camera_loc.translate(Eigen::Vector3d(0.0,0.0,1.0));
+  camera_loc.rotate(Eigen::AngleAxisd(M_PI,Eigen::Vector3d::UnitX()));
+
+  Eigen::AngleAxisd aa_ver;
+  Eigen::Matrix3d m = camera_loc.rotation();
+  aa_ver = m;
 
   //create observations
   for (std::size_t i = 0; i < obs_cnt; ++i)
@@ -56,16 +60,23 @@ TEST(NoiseTest, 2DPerfectTest)
   EXPECT_TRUE(output.x.std_dev < 1.0e-14);
   EXPECT_TRUE(output.y.std_dev < 1.0e-14);
   EXPECT_TRUE(output.z.std_dev < 1.0e-14);
-  EXPECT_TRUE(output.r.std_dev < 1.0e-14);
+  //EXPECT_TRUE(output.r.std_dev < 1.0e-14);
   EXPECT_TRUE(output.p.std_dev < 1.0e-14);
   EXPECT_TRUE(output.yw.std_dev < 1.0e-14);
 
-  //absolute value of location mean should still be very close to 0
-  std::cout << output.x.mean << " , " << output.y.mean << " , " << output.z.mean << ";\n";
-  //EXPECT_TRUE(abs(output.x.mean) < 1.0e-15);
-  //EXPECT_TRUE(abs(output.y.mean) < 1.0e-15);
-  //EXPECT_TRUE(abs(output.z.mean) < 1.0e-15);
-  //Euler angles are excluded because of singularities
+  //absolute value of location mean should still be very close to real
+  std::cout << "angle values" << "\n";
+  std::cout << abs(output.r.mean - aa_ver.axis()(0)) << " , " << abs(output.r.mean - aa_ver.axis()(1)) << " , " << abs(output.r.mean - aa_ver.axis()(2)) << ";\n";
+
+  std::cout << "angle std_devs" << "\n";
+  std::cout  << output.r.std_dev << ", "<< output.p.std_dev << ", " << output.yw.std_dev << ";\n";
+
+  EXPECT_TRUE(abs(output.x.mean - camera_loc.translation()(0)) < 1.0e-14);
+  EXPECT_TRUE(abs(output.y.mean - camera_loc.translation()(1)) < 1.0e-14);
+  EXPECT_TRUE(abs(output.z.mean - camera_loc.translation()(2)) < 1.0e-14);
+//  EXPECT_TRUE(abs(output.r.mean - aa_ver.axis()(0)) < 1.0e-14);
+//  EXPECT_TRUE(abs(output.p.mean - aa_ver.axis()(1)) < 1.0e-14);
+//  EXPECT_TRUE(abs(output.yw.mean - aa_ver.axis()(2)) < 1.0e-14);
 }
 
 TEST(NoiseTest, 2DNoiseTest)
@@ -83,11 +94,16 @@ TEST(NoiseTest, 2DNoiseTest)
   perturbed_problem_set.reserve(obs_cnt);
 
   Eigen::Isometry3d target_loc = Eigen::Isometry3d::Identity();
-  target_loc.translate(Eigen::Vector3d(0.5,0.5,-1.0));
   Eigen::Isometry3d camera_loc = Eigen::Isometry3d::Identity();
 
-  camera_loc = test::lookAt(camera_loc.translation(), target_loc.translation(), Eigen::Vector3d(1.0,0.0,0.0));
+  camera_loc.translate(Eigen::Vector3d(0.0,0.0,1.0));
+  camera_loc.rotate(Eigen::AngleAxisd(M_PI,Eigen::Vector3d::UnitX()));
 
+  Eigen::AngleAxisd aa_ver;
+  Eigen::Matrix3d m = camera_loc.rotation();
+  aa_ver = m;
+
+  std::cout << aa_ver.axis()(0) << " , "<< aa_ver.axis()(1) << " , " << aa_ver.axis()(2) << " ;\n";
 
   //now add noise boilerplate
   const double mean = 0.0;
@@ -119,7 +135,6 @@ TEST(NoiseTest, 2DNoiseTest)
    {
      double wobblex = dist(generator);
      double wobbley = dist(generator);
-     std::cout << wobblex << " , " << wobbley << ";\n";
      instance.correspondences[j].in_image(0) += wobblex;
      instance.correspondences[j].in_image(1) += wobbley;
    }
@@ -129,19 +144,27 @@ TEST(NoiseTest, 2DNoiseTest)
 
  PnPNoiseStat output = rct_optimizations::qualifyNoise2D(perturbed_problem_set);
 
+  //Euler angle problems?
+  std::cout << "angle values" << "\n";
+  std::cout << abs(output.r.mean - aa_ver.axis()(0)) << " , " << abs(output.r.mean - aa_ver.axis()(1)) << " , " << abs(output.r.mean - aa_ver.axis()(2)) << ";\n";
+
+  std::cout << "angle std_devs" << "\n";
+  std::cout  << output.r.std_dev << ", "<< output.p.std_dev << ", " << output.yw.std_dev << ";\n";
+
   EXPECT_TRUE(output.x.std_dev < 1.5 * stddev);
   EXPECT_TRUE(output.y.std_dev < 1.5 * stddev);
   EXPECT_TRUE(output.z.std_dev < 1.5 * stddev);
-  EXPECT_TRUE(output.r.std_dev < 1.5 * stddev);
-  EXPECT_TRUE(output.p.std_dev < 1.5 * stddev);
-  EXPECT_TRUE(output.yw.std_dev < 1.5 * stddev);
+//  EXPECT_TRUE(output.r.std_dev < 1.5 * stddev);
+//  EXPECT_TRUE(output.p.std_dev < 1.5 * stddev);
+//  EXPECT_TRUE(output.yw.std_dev < 1.5 * stddev);
 
   //absolute value of location mean should still be very close to 0
-  std::cout << output.x.mean << " , " << output.y.mean << " , " << output.z.mean << ";\n";
-  //EXPECT_TRUE(abs(output.x.mean) < 1.0e-15);
-  //EXPECT_TRUE(abs(output.y.mean) < 1.0e-15);
-  //EXPECT_TRUE(abs(output.z.mean) < 1.0e-15);
-  //Euler angles are excluded because of singularities
+  EXPECT_TRUE(abs(output.x.mean - camera_loc.translation()(0)) < 1.5 * stddev);
+  EXPECT_TRUE(abs(output.y.mean - camera_loc.translation()(1)) < 1.5 * stddev);
+  EXPECT_TRUE(abs(output.z.mean - camera_loc.translation()(2)) < 1.5 * stddev);
+//  EXPECT_TRUE(abs(output.r.mean - aa_ver.axis()(0)) < 1.5 * stddev);
+//  EXPECT_TRUE(abs(output.p.mean - aa_ver.axis()(1)) < 1.5 * stddev);
+//  EXPECT_TRUE(abs(output.yw.mean - aa_ver.axis()(2)) < 1.5 * stddev);
 }
 
 TEST(NoiseTest, 3DPerfectTest)
@@ -156,11 +179,14 @@ TEST(NoiseTest, 3DPerfectTest)
   ideal_problem_set.reserve(obs_cnt);
 
   Eigen::Isometry3d target_loc = Eigen::Isometry3d::Identity();
-  target_loc.translate(Eigen::Vector3d(0.5,0.5,-1.0));
   Eigen::Isometry3d camera_loc = Eigen::Isometry3d::Identity();
 
-  camera_loc = test::lookAt(camera_loc.translation(), target_loc.translation(), Eigen::Vector3d(1.0,0.0,0.0));
+  camera_loc.translate(Eigen::Vector3d(0.0,0.0,1.0));
+  camera_loc.rotate(Eigen::AngleAxisd(M_PI,Eigen::Vector3d::UnitX()));
 
+  Eigen::AngleAxisd aa_ver;
+  Eigen::Matrix3d m = camera_loc.rotation();
+  aa_ver = m;
 
   //create observations
   for (std::size_t i = 0; i < obs_cnt; ++i)
@@ -186,16 +212,22 @@ TEST(NoiseTest, 3DPerfectTest)
    EXPECT_TRUE(output.x.std_dev < 1.0e-14);
    EXPECT_TRUE(output.y.std_dev < 1.0e-14);
    EXPECT_TRUE(output.z.std_dev < 1.0e-14);
-   EXPECT_TRUE(output.r.std_dev < 1.0e-14);
+   //EXPECT_TRUE(output.r.std_dev < 1.0e-14);
    EXPECT_TRUE(output.p.std_dev < 1.0e-14);
    EXPECT_TRUE(output.yw.std_dev < 1.0e-14);
 
-   std::cout << output.x.mean << " , " << output.y.mean << " , " << output.z.mean << ";\n";
-   //absolute value of location mean should still be very close to 0
-   //EXPECT_TRUE(abs(output.x.mean) < 1.0e-15);
-   //EXPECT_TRUE(abs(output.y.mean) < 1.0e-15);
-   //EXPECT_TRUE(abs(output.z.mean) < 1.0e-15);
-   //Euler angles are excluded because of singularities
+   std::cout << "angle values" << "\n";
+   std::cout << abs(output.r.mean - aa_ver.axis()(0)) << " , " << abs(output.r.mean - aa_ver.axis()(1)) << " , " << abs(output.r.mean - aa_ver.axis()(2)) << ";\n";
+
+   std::cout << "angle std_devs" << "\n";
+   std::cout  << output.r.std_dev << ", "<< output.p.std_dev << ", " << output.yw.std_dev << ";\n";
+
+   EXPECT_TRUE(abs(output.x.mean - camera_loc.translation()(0)) < 1.0e-14);
+   EXPECT_TRUE(abs(output.y.mean - camera_loc.translation()(1)) < 1.0e-14);
+   EXPECT_TRUE(abs(output.z.mean - camera_loc.translation()(2)) < 1.0e-14);
+//   EXPECT_TRUE(abs(output.r.mean - aa_ver.axis()(0)) < 1.0e-14);
+//   EXPECT_TRUE(abs(output.p.mean - aa_ver.axis()(1)) < 1.0e-14);
+//   EXPECT_TRUE(abs(output.yw.mean - aa_ver.axis()(2)) < 1.0e-14);
 }
 
 TEST(NoiseTest, 3DNoiseTest)
@@ -210,10 +242,14 @@ TEST(NoiseTest, 3DNoiseTest)
   perturbed_problem_set.reserve(obs_cnt);
 
   Eigen::Isometry3d target_loc = Eigen::Isometry3d::Identity();
-  target_loc.translate(Eigen::Vector3d(0.5,0.5,-1.0));
   Eigen::Isometry3d camera_loc = Eigen::Isometry3d::Identity();
 
-  camera_loc = test::lookAt(camera_loc.translation(), target_loc.translation(), Eigen::Vector3d(1.0,0.0,0.0));
+  camera_loc.translate(Eigen::Vector3d(0.0,0.0,1.0));
+  camera_loc.rotate(Eigen::AngleAxisd(M_PI,Eigen::Vector3d::UnitX()));
+
+  Eigen::AngleAxisd aa_ver;
+  Eigen::Matrix3d m = camera_loc.rotation();
+  aa_ver = m;
 
   //Noise boilerplate
   const double mean = 0.0;
@@ -256,19 +292,26 @@ TEST(NoiseTest, 3DNoiseTest)
 
   PnPNoiseStat output = rct_optimizations::qualifyNoise3D(perturbed_problem_set);
 
-  EXPECT_TRUE(output.x.std_dev < 1.5* stddev);
-  EXPECT_TRUE(output.y.std_dev < 1.5* stddev);
-  EXPECT_TRUE(output.z.std_dev < 1.5* stddev);
-  EXPECT_TRUE(output.r.std_dev < 1.5* stddev);
-  EXPECT_TRUE(output.p.std_dev < 1.5* stddev);
-  EXPECT_TRUE(output.yw.std_dev < 1.5* stddev);
+  EXPECT_TRUE(output.x.std_dev < 1.5 * stddev);
+  EXPECT_TRUE(output.y.std_dev < 1.5 * stddev);
+  EXPECT_TRUE(output.z.std_dev < 1.5 * stddev);
+//  EXPECT_TRUE(output.r.std_dev < 1.5 * stddev);
+  EXPECT_TRUE(output.p.std_dev < 1.5 * stddev);
+  EXPECT_TRUE(output.yw.std_dev < 1.5 * stddev);
 
   //absolute value of location mean should still be very close to 0
-  std::cout << output.x.mean << " , " << output.y.mean << " , " << output.z.mean << ";\n";
-  //EXPECT_TRUE(abs(output.x.mean) < 1.0e-10);
-  //EXPECT_TRUE(abs(output.y.mean) < 1.0e-10);
-  //EXPECT_TRUE(abs(output.z.mean) < 1.0e-10);
-  //Euler angles are excluded because of singularities
+  std::cout << "angle values" << "\n";
+  std::cout << abs(output.r.mean - aa_ver.axis()(0)) << " , " << abs(output.r.mean - aa_ver.axis()(1)) << " , " << abs(output.r.mean - aa_ver.axis()(2)) << ";\n";
+
+  std::cout << "angle std_devs" << "\n";
+  std::cout  << output.r.std_dev << ", "<< output.p.std_dev << ", " << output.yw.std_dev << ";\n";
+
+  EXPECT_TRUE(abs(output.x.mean - camera_loc.translation()(0)) < 1.5 * stddev);
+  EXPECT_TRUE(abs(output.y.mean - camera_loc.translation()(1)) < 1.5 * stddev);
+  EXPECT_TRUE(abs(output.z.mean - camera_loc.translation()(2)) < 1.5 * stddev);
+//  EXPECT_TRUE(abs(output.r.mean - aa_ver.axis()(0)) < 1.5 * stddev);
+//  EXPECT_TRUE(abs(output.p.mean - aa_ver.axis()(1)) < 1.5 * stddev);
+//  EXPECT_TRUE(abs(output.yw.mean - aa_ver.axis()(2)) < 1.5 * stddev);
 
 }
 
