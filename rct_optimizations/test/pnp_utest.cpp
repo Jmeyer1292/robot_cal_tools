@@ -8,20 +8,23 @@ using namespace rct_optimizations;
 TEST(PNP_2D, PerfectInitialConditions)
 {
   test::Camera camera = test::makeKinectCamera();
-  test::Target target(5, 7, 0.025);
+
+  unsigned target_rows = 5;
+  unsigned target_cols = 7;
+  double spacing = 0.025;
+  test::Target target(target_rows, target_cols, spacing);
 
   Eigen::Isometry3d camera_to_target(Eigen::Isometry3d::Identity());
-  camera_to_target.translate(Eigen::Vector3d(0.0, 0.0, 1.0));
+  double x = static_cast<double>(target_rows - 1) * spacing / 2.0;
+  double y = static_cast<double>(target_cols - 1) * spacing / 2.0;
+  camera_to_target.translate(Eigen::Vector3d(x, y, 1.0));
   camera_to_target.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
 
   PnPProblem problem;
   problem.camera_to_target_guess = camera_to_target;
   problem.intr = camera.intr;
-  problem.correspondences = test::getCorrespondences(camera_to_target,
-                                                     Eigen::Isometry3d::Identity(),
-                                                     camera,
-                                                     target,
-                                                     true);
+  EXPECT_NO_THROW(problem.correspondences =
+                      test::getCorrespondences(camera_to_target, Eigen::Isometry3d::Identity(), camera, target, true));
 
   PnPResult result = optimize(problem);
   EXPECT_TRUE(result.converged);
@@ -33,10 +36,16 @@ TEST(PNP_2D, PerfectInitialConditions)
 TEST(PNP_2D, PerturbedInitialCondition)
 {
   test::Camera camera = test::makeKinectCamera();
-  test::Target target(5, 7, 0.025);
+
+  unsigned target_rows = 5;
+  unsigned target_cols = 7;
+  double spacing = 0.025;
+  test::Target target(target_rows, target_cols, spacing);
 
   Eigen::Isometry3d camera_to_target(Eigen::Isometry3d::Identity());
-  camera_to_target.translate(Eigen::Vector3d(0.0, 0.0, 1.0));
+  double x = static_cast<double>(target_rows) * spacing / 2.0;
+  double y = static_cast<double>(target_cols) * spacing / 2.0;
+  camera_to_target.translate(Eigen::Vector3d(x, y, 1.0));
   camera_to_target.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
 
   PnPProblem problem;
@@ -50,17 +59,23 @@ TEST(PNP_2D, PerturbedInitialCondition)
 
   PnPResult result = optimize(problem);
   EXPECT_TRUE(result.converged);
-  EXPECT_TRUE(result.camera_to_target.isApprox(camera_to_target, 1.0e-7));
-  EXPECT_LT(result.final_cost_per_obs, 1.0e-10);
+  EXPECT_TRUE(result.camera_to_target.isApprox(camera_to_target, 1.0e-8));
+  EXPECT_LT(result.final_cost_per_obs, 1.0e-15);
 }
 
 TEST(PNP_2D, BadIntrinsicParameters)
 {
   test::Camera camera = test::makeKinectCamera();
-  test::Target target(5, 7, 0.025);
+
+  unsigned target_rows = 5;
+  unsigned target_cols = 7;
+  double spacing = 0.025;
+  test::Target target(target_rows, target_cols, spacing);
 
   Eigen::Isometry3d camera_to_target(Eigen::Isometry3d::Identity());
-  camera_to_target.translate(Eigen::Vector3d(0.0, 0.0, 1.0));
+  double x = static_cast<double>(target_rows) * spacing / 2.0;
+  double y = static_cast<double>(target_cols) * spacing / 2.0;
+  camera_to_target.translate(Eigen::Vector3d(x, y, 1.0));
   camera_to_target.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
 
   PnPProblem problem;
