@@ -140,6 +140,8 @@ int main(int argc, char** argv)
   rct_ros_tools::printCameraDistortion(new_dist, "RCT Distortion");
   rct_ros_tools::printNewLine();
 
+  std::cout << "Covariance (intrinsic):\n" << opt_result.covariance_intr.matrix() << std::endl;
+
   // Also try the OpenCV cameraCalibrate function
   rct_ros_tools::printTitle("OpenCV Calibration");
   opencvCameraCalibration(problem_def.image_observations, data_set.images.front().size(),

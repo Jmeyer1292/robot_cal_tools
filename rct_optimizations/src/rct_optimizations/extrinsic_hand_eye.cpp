@@ -1,6 +1,7 @@
 #include "rct_optimizations/extrinsic_hand_eye.h"
 
 #include "rct_optimizations/ceres_math_utilities.h"
+#include "rct_optimizations/covariance_analysis.h"
 #include "rct_optimizations/eigen_conversions.h"
 #include "rct_optimizations/types.h"
 
@@ -210,6 +211,9 @@ ExtrinsicHandEyeResult optimize(const ExtrinsicHandEyeProblem2D3D& params)
   result.camera_mount_to_camera = poseCalToEigen(internal_camera_to_wrist).inverse();
   result.initial_cost_per_obs = summary.initial_cost / summary.num_residuals;
   result.final_cost_per_obs = summary.final_cost / summary.num_residuals;
+  result.covariance_camera_mount_to_camera = rct_optimizations::computePoseCovariance(problem, internal_camera_to_wrist);
+  result.covariance_target_mount_to_target = rct_optimizations::computePoseCovariance(problem, internal_base_to_target);
+  result.covariance_tform_target_to_tform_camera = rct_optimizations::computePose2PoseCovariance(problem, internal_camera_to_wrist, internal_base_to_target);
 
   return result;
 
@@ -253,6 +257,9 @@ ExtrinsicHandEyeResult optimize(const ExtrinsicHandEyeProblem3D3D& params)
   result.camera_mount_to_camera = poseCalToEigen(internal_camera_to_wrist).inverse();
   result.initial_cost_per_obs = summary.initial_cost / summary.num_residuals;
   result.final_cost_per_obs = summary.final_cost / summary.num_residuals;
+  result.covariance_camera_mount_to_camera = rct_optimizations::computePoseCovariance(problem, internal_camera_to_wrist);
+  result.covariance_target_mount_to_target = rct_optimizations::computePoseCovariance(problem, internal_base_to_target);
+  result.covariance_tform_target_to_tform_camera = rct_optimizations::computePose2PoseCovariance(problem, internal_camera_to_wrist, internal_base_to_target);
 
   return result;
 }

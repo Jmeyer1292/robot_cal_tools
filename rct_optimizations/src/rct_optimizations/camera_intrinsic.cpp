@@ -3,6 +3,7 @@
 
 #include <rct_optimizations/ceres_math_utilities.h>
 #include <rct_optimizations/eigen_conversions.h>
+#include <rct_optimizations/covariance_analysis.h>
 
 #include <ceres/ceres.h>
 
@@ -243,6 +244,10 @@ rct_optimizations::optimize(const rct_optimizations::IntrinsicEstimationProblem&
 
   result.initial_cost_per_obs = summary.initial_cost / summary.num_residuals;
   result.final_cost_per_obs = summary.final_cost / summary.num_residuals;
+
+  // TODO: How to handle errors while calculating covariance? Possible for optimization to converge even though the covariance matrix is near rank deficient,
+  // which means the result contains (potentially) valid optimization results but partial or invalid covariance results.
+  result.covariance_intr = rct_optimizations::computeDVCovariance(problem, internal_intrinsics_data.data(), 9);
 
   return result;
 }

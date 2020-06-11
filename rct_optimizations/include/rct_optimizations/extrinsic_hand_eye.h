@@ -45,6 +45,10 @@ struct ExtrinsicHandEyeResult
 
   Eigen::Isometry3d target_mount_to_target;
   Eigen::Isometry3d camera_mount_to_camera;
+
+  Eigen::MatrixXd covariance_target_mount_to_target;
+  Eigen::MatrixXd covariance_camera_mount_to_camera;
+  Eigen::MatrixXd covariance_tform_target_to_tform_camera;
 };
 
 ExtrinsicHandEyeResult optimize(const ExtrinsicHandEyeProblem2D3D &params);
