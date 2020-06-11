@@ -102,7 +102,6 @@ TEST(PNP_2D, BadIntrinsicParameters)
   EXPECT_FALSE(result.camera_to_target.isApprox(target_to_camera.inverse(), 1.0e-3));
   EXPECT_GT(result.final_cost_per_obs, 1.0e-3);
 }
-//TODO: add a 2d vaildation (requires intrinsics for projection)
 
 TEST(PnPTest, 3DValidation)
 {
@@ -119,7 +118,7 @@ TEST(PnPTest, 3DValidation)
 
   Eigen::Isometry3d target_point = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d camera_point = target_point;
-  camera_point.translate(Eigen::Vector3d(1.0,0.0,0.0));
+  camera_point.translate(Eigen::Vector3d(0.0,0.0,1.0));
   camera_point = test::lookAt(camera_point.translation(), target_point.translation(), Eigen::Vector3d(1.0,0.0,0.0));
 
   setup.correspondences = getCorrespondences(camera_point,
@@ -130,8 +129,8 @@ TEST(PnPTest, 3DValidation)
 
   PnPResult res = rct_optimizations::optimize(setup);
   EXPECT_TRUE(res.converged);
-  EXPECT_TRUE(res.initial_cost_per_obs < 1.0e-14);
-  EXPECT_TRUE(res.final_cost_per_obs < 1.0e-14);
+  EXPECT_TRUE(res.initial_cost_per_obs < 1.0e-5);
+  EXPECT_TRUE(res.final_cost_per_obs < 1.0e-5);
   EXPECT_TRUE(res.camera_to_target.isApprox(setup.camera_to_target_guess));
 }
 

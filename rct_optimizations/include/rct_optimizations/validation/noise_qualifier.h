@@ -16,6 +16,20 @@ namespace rct_optimizations
  };
 
  /**
+  * @brief The PnPNoiseStat struct A collection of NoiseStatistics in a form
+  * relevant to a position & orientation
+  */
+ struct PnPNoiseStat
+ {
+   NoiseStatistics x;
+   NoiseStatistics y;
+   NoiseStatistics z;
+   NoiseStatistics r;
+   NoiseStatistics p;
+   NoiseStatistics yw;
+ };
+
+ /**
   * @brief qualifyNoise2D This function qualifies 2d sensor noise by
   * comparing PnP results from images taken with the same poses.
   * Sensor noise can be understood by inspecting the returned standard
@@ -25,7 +39,7 @@ namespace rct_optimizations
   * @param Sets of PnP 2D problem parameters
   * @return Noise Statistics: a vector of means & std devs
   */
- std::vector<NoiseStatistics> qualifyNoise2D(const std::vector<PnPProblem>& params);
+PnPNoiseStat qualifyNoise2D(const std::vector<PnPProblem>& params);
 
  /**
   * @brief qualifyNoise3D This function qualifies 3d sensor noise by
@@ -37,6 +51,6 @@ namespace rct_optimizations
   * @param params 3D image parameters
   * @return Noise Statiscics: a vector of standard deviations and the mean pos
   */
- std::vector<NoiseStatistics> qualifyNoise3D(const std::vector<PnPProblem3D>& params);
+ PnPNoiseStat qualifyNoise3D(const std::vector<PnPProblem3D>& params);
 
 }//rct_optimizations

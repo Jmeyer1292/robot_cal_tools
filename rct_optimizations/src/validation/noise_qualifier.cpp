@@ -14,13 +14,13 @@
 namespace rct_optimizations
 {
 
- std::vector<NoiseStatistics> qualifyNoise2D(const std::vector<PnPProblem>& params)
+ PnPNoiseStat qualifyNoise2D(const std::vector<PnPProblem>& params)
  {
 
-  std::vector<NoiseStatistics> output;
-  output.reserve(6);
+  PnPNoiseStat output;
 
   std::vector<Eigen::Isometry3d> solution_transforms;
+  std::vector<Eigen::Vector3d> translations;
 
   using namespace boost::accumulators;
   accumulator_set<double, stats<tag::mean, tag::variance>> x_acc;
@@ -41,41 +41,47 @@ namespace rct_optimizations
     {
       //we will save the full result here for debugging purposes
       solution_transforms.push_back(result.camera_to_target);
+      translations.push_back(solution_transforms.back().translation());
 
       x_acc(result.camera_to_target.translation()(0));
       y_acc(result.camera_to_target.translation()(1));
       z_acc(result.camera_to_target.translation()(2));
 
       Eigen::Vector3d ea = result.camera_to_target.linear().eulerAngles(0,1,2);
+      //use angle axis to store rotration
+      //Eigen::Quaterniond quat
+      Eigen::AngleAxisd aa;
+      Eigen::Matrix3d m = result.camera_to_target.rotation();
+      aa = m;
+
       r_acc(ea(0));
       p_acc(ea(1));
       yw_acc(ea(2));
     }
   }
 
-  output[0].mean = boost::accumulators::mean(x_acc);
-  output[1].mean = boost::accumulators::mean(y_acc);
-  output[2].mean = boost::accumulators::mean(z_acc);
-  output[3].mean = boost::accumulators::mean(r_acc);
-  output[4].mean = boost::accumulators::mean(p_acc);
-  output[5].mean = boost::accumulators::mean(yw_acc);
+  output.x.mean = boost::accumulators::mean(x_acc);
+  output.y.mean = boost::accumulators::mean(y_acc);
+  output.z.mean = boost::accumulators::mean(z_acc);
+  output.r.mean = boost::accumulators::mean(r_acc);
+  output.p.mean = boost::accumulators::mean(p_acc);
+  output.yw.mean = boost::accumulators::mean(yw_acc);
 
-  output[0].std_dev = sqrt(boost::accumulators::variance(x_acc));
-  output[1].std_dev = sqrt(boost::accumulators::variance(y_acc));
-  output[2].std_dev = sqrt(boost::accumulators::variance(z_acc));
-  output[3].std_dev = sqrt(boost::accumulators::variance(r_acc));
-  output[4].std_dev = sqrt(boost::accumulators::variance(p_acc));
-  output[5].std_dev = sqrt(boost::accumulators::variance(yw_acc));
+  output.x.std_dev = sqrt(boost::accumulators::variance(x_acc));
+  output.y.std_dev = sqrt(boost::accumulators::variance(y_acc));
+  output.z.std_dev = sqrt(boost::accumulators::variance(z_acc));
+  output.r.std_dev = sqrt(boost::accumulators::variance(r_acc));
+  output.p.std_dev = sqrt(boost::accumulators::variance(p_acc));
+  output.yw.std_dev = sqrt(boost::accumulators::variance(yw_acc));
 
   //Output: mean & standard deviation of x,y,z,roll,pitch,yaw
   return output;
 }
 
- std::vector<NoiseStatistics> qualifyNoise3D(const std::vector<PnPProblem3D>& params)
+ PnPNoiseStat qualifyNoise3D(const std::vector<PnPProblem3D>& params)
  {
 
-  std::vector<NoiseStatistics> output;
-  output.reserve(6);
+  PnPNoiseStat output;
 
   std::vector<Eigen::Isometry3d> solution_transforms;
 
@@ -111,19 +117,19 @@ namespace rct_optimizations
     }
   }
 
-  output[0].mean = boost::accumulators::mean(x_acc);
-  output[1].mean = boost::accumulators::mean(y_acc);
-  output[2].mean = boost::accumulators::mean(z_acc);
-  output[3].mean = boost::accumulators::mean(r_acc);
-  output[4].mean = boost::accumulators::mean(p_acc);
-  output[5].mean = boost::accumulators::mean(yw_acc);
+  output.x.mean = boost::accumulators::mean(x_acc);
+  output.y.mean = boost::accumulators::mean(y_acc);
+  output.z.mean = boost::accumulators::mean(z_acc);
+  output.r.mean = boost::accumulators::mean(r_acc);
+  output.p.mean = boost::accumulators::mean(p_acc);
+  output.yw.mean = boost::accumulators::mean(yw_acc);
 
-  output[0].std_dev = sqrt(boost::accumulators::variance(x_acc));
-  output[1].std_dev = sqrt(boost::accumulators::variance(y_acc));
-  output[2].std_dev = sqrt(boost::accumulators::variance(z_acc));
-  output[3].std_dev = sqrt(boost::accumulators::variance(r_acc));
-  output[4].std_dev = sqrt(boost::accumulators::variance(p_acc));
-  output[5].std_dev = sqrt(boost::accumulators::variance(yw_acc));
+  output.x.std_dev = sqrt(boost::accumulators::variance(x_acc));
+  output.y.std_dev = sqrt(boost::accumulators::variance(y_acc));
+  output.z.std_dev = sqrt(boost::accumulators::variance(z_acc));
+  output.r.std_dev = sqrt(boost::accumulators::variance(r_acc));
+  output.p.std_dev = sqrt(boost::accumulators::variance(p_acc));
+  output.yw.std_dev = sqrt(boost::accumulators::variance(yw_acc));
 
   //Output: mean & standard deviation of x,y,z,roll,pitch,yaw
   return output;

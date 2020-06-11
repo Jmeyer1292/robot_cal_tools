@@ -82,14 +82,14 @@ int main(int argc, char** argv)
 
   //start with a good guess
 
-  std::vector<rct_optimizations::NoiseStatistics> output = rct_optimizations::qualifyNoise2D(problem_set);
+  rct_optimizations::PnPNoiseStat output = rct_optimizations::qualifyNoise2D(problem_set);
 
 
-  ROS_INFO_STREAM("The standard deviation is : x: " << output[0].std_dev <<
-                                           "\n y: " << output[1].std_dev <<
-                                           "\n z: " << output[2].std_dev <<
-                                        "\n roll: " << output[3].std_dev <<
-                                       "\n pitch: " << output[4].std_dev <<
-                                         "\n yaw: " << output[5].std_dev <<
+  ROS_INFO_STREAM("The standard deviation is : x: " << output.x.std_dev <<
+                                           "\n y: " << output.y.std_dev <<
+                                           "\n z: " << output.z.std_dev <<
+                                        "\n roll: " << output.r.std_dev <<
+                                       "\n pitch: " << output.p.std_dev <<
+                                         "\n yaw: " << output.yw.std_dev <<
                                                                       "\n");
 }
