@@ -89,7 +89,7 @@ Eigen::MatrixXd computeDVCovariance(ceres::Problem &problem, const double * dptr
     throw CovarianceException("Could not compute covariance in computeDVCovariance()");
 
   double cov[num_vars*num_vars];
-  if(!covariance.GetCovarianceBlock(dptr, dptr, cov))
+  if(!covariance.GetCovarianceBlockInTangentSpace(dptr, dptr, cov))
     throw CovarianceException("GetCovarianceBlock failed in computeDVCovariance()");
 
   return covToEigenCorr(cov, num_vars);
@@ -108,9 +108,9 @@ Eigen::MatrixXd computeDV2DVCovariance(ceres::Problem &P, const double* dptr1, c
     throw CovarianceException("Could not compute covariance in computeDV2DVCovariance()");
 
   double cov_d1d1[num_vars1*num_vars2], cov_d2d2[num_vars2*num_vars2], cov_d1d2[num_vars1*num_vars2];
-  if(!(covariance.GetCovarianceBlock(dptr1, dptr1, cov_d1d1) &&
-       covariance.GetCovarianceBlock(dptr2, dptr2, cov_d2d2) &&
-       covariance.GetCovarianceBlock(dptr1, dptr2, cov_d1d2)))
+  if(!(covariance.GetCovarianceBlockInTangentSpace(dptr1, dptr1, cov_d1d1) &&
+       covariance.GetCovarianceBlockInTangentSpace(dptr2, dptr2, cov_d2d2) &&
+       covariance.GetCovarianceBlockInTangentSpace(dptr1, dptr2, cov_d1d2)))
     throw CovarianceException("GetCovarianceBlock failed in computeDV2DVCovariance()");
 
   return covToEigenOffDiagCorr(cov_d1d1, num_vars1, cov_d2d2, num_vars2, cov_d1d2);
