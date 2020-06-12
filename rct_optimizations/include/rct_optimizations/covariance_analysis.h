@@ -35,7 +35,7 @@ struct DefaultCovarianceOptions : ceres::Covariance::Options
  * ...|
  * a_n|
  */
-Eigen::MatrixXd covToEigenCorr(double* cov, std::size_t num_vars);
+Eigen::MatrixXd covToEigenCorr(const double* cov, const std::size_t num_vars);
 
 /**
  * @brief Arrange the Ceres covariance results as an Eigen matrix.
@@ -51,7 +51,7 @@ Eigen::MatrixXd covToEigenCorr(double* cov, std::size_t num_vars);
  * ...|
  * a_n|
  */
-Eigen::MatrixXd covToEigenCov(double* cov, std::size_t num_vars);
+Eigen::MatrixXd covToEigenCov(const double* cov, const std::size_t num_vars);
 
 
 /**
@@ -74,7 +74,7 @@ Eigen::MatrixXd covToEigenCov(double* cov, std::size_t num_vars);
  * ... |
  * a_n1|
  */
-Eigen::MatrixXd covToEigenOffDiagCorr(double* cov_d1d1, std::size_t num_vars1, double* cov_d2d2, std::size_t num_vars2, double* cov_d1d2);
+Eigen::MatrixXd covToEigenOffDiagCorr(const double* cov_d1d1, const std::size_t num_vars1, const double* cov_d2d2, const std::size_t num_vars2, const double* cov_d1d2);
 
 /**
  * @brief Compute variance and covariance for a given problem and Pose6d parameter. Uses @ref computeDVCovariance.
@@ -93,7 +93,8 @@ Eigen::MatrixXd covToEigenOffDiagCorr(double* cov_d1d1, std::size_t num_vars1, d
  * rz|
  * @throw CovarianceException if computation of covariance fails for any pair of parameter blocks, or if GetCovarianceBlock returns false.
  */
-Eigen::MatrixXd computePoseCovariance(ceres::Problem& problem, Pose6d& pose, const ceres::Covariance::Options& options = DefaultCovarianceOptions());
+Eigen::MatrixXd computePoseCovariance(ceres::Problem& problem, const Pose6d& pose,
+                                      const ceres::Covariance::Options& options = DefaultCovarianceOptions());
 
 /**
  * @brief Compute off-diagonal covariance between a Pose6d parameter and a double array parameter. Uses @ref computeDV2DVCovariance.
@@ -116,7 +117,7 @@ Eigen::MatrixXd computePoseCovariance(ceres::Problem& problem, Pose6d& pose, con
  * rz|
  * @throw CovarianceException if computation of covariance fails for any pair of parameter blocks, or if GetCovarianceBlock returns false.
  */
-Eigen::MatrixXd computePose2DVCovariance(ceres::Problem &problem, Pose6d &pose, double* dptr, std::size_t num_vars, const ceres::Covariance::Options& options = DefaultCovarianceOptions());
+Eigen::MatrixXd computePose2DVCovariance(ceres::Problem &problem, const Pose6d &pose, const double* dptr, const std::size_t num_vars, const ceres::Covariance::Options& options = DefaultCovarianceOptions());
 
 /**
  * @brief Compute off-diagonal covariance between two Pose6d parameters. Uses @ref computeDV2DVCovariance.
@@ -138,7 +139,7 @@ Eigen::MatrixXd computePose2DVCovariance(ceres::Problem &problem, Pose6d &pose, 
  * rz1|
  * @throw CovarianceException if computation of covariance fails for any pair of parameter blocks, or if GetCovarianceBlock returns false.
  */
-Eigen::MatrixXd computePose2PoseCovariance(ceres::Problem &problem, Pose6d &p1, Pose6d &p2, const ceres::Covariance::Options& options = DefaultCovarianceOptions());
+Eigen::MatrixXd computePose2PoseCovariance(ceres::Problem &problem, const Pose6d &p1, const Pose6d &p2, const ceres::Covariance::Options& options = DefaultCovarianceOptions());
 
 /**
  * @brief Compute standard deviations and correlation coefficients for a given problem and parameter block. Uses @ref computeDV2DVCovariance.
@@ -156,7 +157,7 @@ Eigen::MatrixXd computePose2PoseCovariance(ceres::Problem &problem, Pose6d &p1, 
  * a_n|
  * @throw CovarianceException if computation of covariance fails for any pair of parameter blocks, or if GetCovarianceBlock returns false.
  */
-Eigen::MatrixXd computeDVCovariance(ceres::Problem &problem, double *dptr, std::size_t num_vars, const ceres::Covariance::Options& options = DefaultCovarianceOptions());
+Eigen::MatrixXd computeDVCovariance(ceres::Problem &problem, const double* dptr, const std::size_t& num_vars, const ceres::Covariance::Options& options = DefaultCovarianceOptions());
 
 /**
  * @brief Compute off-diagonal covariance for a given problem and parameters.
@@ -176,6 +177,6 @@ Eigen::MatrixXd computeDVCovariance(ceres::Problem &problem, double *dptr, std::
  * a_n1|
  * @throw CovarianceException if computation of covariance fails for any pair of parameter blocks, or if GetCovarianceBlock returns false.
  */
-Eigen::MatrixXd computeDV2DVCovariance(ceres::Problem &problem, double* dptr1, std::size_t num_vars1, double* dptr2, std::size_t num_vars2, const ceres::Covariance::Options& options = DefaultCovarianceOptions());
+Eigen::MatrixXd computeDV2DVCovariance(ceres::Problem &problem, const double* dptr1, const std::size_t num_vars1, const double* dptr2, const std::size_t num_vars2, const ceres::Covariance::Options& options = DefaultCovarianceOptions());
 
 }  // namespace rct_optimizations

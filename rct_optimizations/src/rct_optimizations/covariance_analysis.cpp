@@ -3,7 +3,7 @@
 namespace rct_optimizations
 {
 
-Eigen::MatrixXd covToEigenCorr(double* cov, std::size_t num_vars)
+Eigen::MatrixXd covToEigenCorr(const double* cov, const std::size_t num_vars)
 {
   Eigen::MatrixXd out(num_vars, num_vars);
 
@@ -29,7 +29,7 @@ Eigen::MatrixXd covToEigenCorr(double* cov, std::size_t num_vars)
   return out;
 }
 
-Eigen::MatrixXd covToEigenCov(double* cov, std::size_t num_vars)
+Eigen::MatrixXd covToEigenCov(const double* cov, const std::size_t num_vars)
 {
   Eigen::MatrixXd out(num_vars, num_vars);
 
@@ -43,7 +43,7 @@ Eigen::MatrixXd covToEigenCov(double* cov, std::size_t num_vars)
   return out;
 }
 
-Eigen::MatrixXd covToEigenOffDiagCorr(double* cov_d1d1, std::size_t num_vars1, double* cov_d2d2, std::size_t num_vars2, double* cov_d1d2)
+Eigen::MatrixXd covToEigenOffDiagCorr(const double* cov_d1d1, const std::size_t num_vars1, const double* cov_d2d2, const std::size_t num_vars2, const double* cov_d1d2)
 {
   Eigen::MatrixXd out(num_vars1, num_vars2);
 
@@ -63,22 +63,22 @@ Eigen::MatrixXd covToEigenOffDiagCorr(double* cov_d1d1, std::size_t num_vars1, d
   return out;
 }
 
-Eigen::MatrixXd computePoseCovariance(ceres::Problem& problem, Pose6d& pose, const ceres::Covariance::Options& options)
+Eigen::MatrixXd computePoseCovariance(ceres::Problem& problem, const Pose6d& pose, const ceres::Covariance::Options& options)
 {
   return computeDVCovariance(problem, pose.values.data(), 6, options);
 }
 
-Eigen::MatrixXd computePose2DVCovariance(ceres::Problem &problem, Pose6d &pose, double* dptr, std::size_t num_vars, const ceres::Covariance::Options& options)
+Eigen::MatrixXd computePose2DVCovariance(ceres::Problem &problem, const Pose6d &pose, const double* dptr, std::size_t num_vars, const ceres::Covariance::Options& options)
 {
   return computeDV2DVCovariance(problem, pose.values.data(), 6, dptr, num_vars, options);
 }
 
-Eigen::MatrixXd computePose2PoseCovariance(ceres::Problem &problem, Pose6d &p1, Pose6d &p2, const ceres::Covariance::Options& options)
+Eigen::MatrixXd computePose2PoseCovariance(ceres::Problem &problem, const Pose6d &p1, const Pose6d &p2, const ceres::Covariance::Options& options)
 {
   return computeDV2DVCovariance(problem, p1.values.data(), 6, p2.values.data(), 6, options);
 }
 
-Eigen::MatrixXd computeDVCovariance(ceres::Problem &problem, double *dptr, std::size_t num_vars, const ceres::Covariance::Options& options)
+Eigen::MatrixXd computeDVCovariance(ceres::Problem &problem, const double * dptr, const std::size_t& num_vars, const ceres::Covariance::Options& options)
 {
   ceres::Covariance covariance(options);
 
@@ -95,7 +95,7 @@ Eigen::MatrixXd computeDVCovariance(ceres::Problem &problem, double *dptr, std::
   return covToEigenCorr(cov, num_vars);
 }
 
-Eigen::MatrixXd computeDV2DVCovariance(ceres::Problem &P, double* dptr1, std::size_t num_vars1, double* dptr2, std::size_t num_vars2, const ceres::Covariance::Options& options)
+Eigen::MatrixXd computeDV2DVCovariance(ceres::Problem &P, const double* dptr1, const std::size_t num_vars1, const double* dptr2, const std::size_t num_vars2, const ceres::Covariance::Options& options)
 {
   ceres::Covariance covariance(options);
 
