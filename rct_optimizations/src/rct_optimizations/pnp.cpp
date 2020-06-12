@@ -1,6 +1,7 @@
 #include "rct_optimizations/pnp.h"
 #include "rct_optimizations/ceres_math_utilities.h"
 #include "rct_optimizations/local_parameterization.h"
+#include "rct_optimizations/covariance_analysis.h"
 
 #include <ceres/ceres.h>
 
@@ -119,6 +120,7 @@ PnPResult optimize(const PnPProblem &params)
   result.initial_cost_per_obs = summary.initial_cost / summary.num_residuals;
   result.final_cost_per_obs = summary.final_cost / summary.num_residuals;
   result.camera_to_target = Eigen::Translation3d(t) * q;
+  result.camera_to_target_covariance = computeFullDV2DVCovariance(problem, t.data(), t.size(), q.coeffs().data(), q_param->LocalSize());
 
   return result;
 }
