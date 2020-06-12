@@ -97,6 +97,30 @@ Eigen::MatrixXd computePoseCovariance(ceres::Problem& problem, const Pose6d& pos
                                       const ceres::Covariance::Options& options = DefaultCovarianceOptions());
 
 /**
+ * @brief Compute variance and covariance for a given problem and Eigen quaternion and translation vector parameters.
+ * It assumed that the quaternion utilizes a Ceres local parameterization to reduce its values to 3 instead of 4.
+ * Uses @ref computeDVCovariance.
+ * @param The Ceres problem (after optimization).
+ * @param t the pose translation parameter
+ * @param q the pose quaternion parameter
+ * @param options Options to use when calculating covariance. Use default if not explicitly set by user.
+ * @return A square matrix with size (6 x 6) containing variance (diagonal elements) and covariance (off-diagonal
+ * elements). Given that @ref pose contains the parameters [x, y, z, rx, ry, rz], the output matrix will be arranged
+ * like this: |x|y|z|rx|ry|rz
+ * --|--------------
+ * x |
+ * y |
+ * z |
+ * rx|
+ * ry|
+ * rz|
+ * @throw CovarianceException if computation of covariance fails for any pair of parameter blocks, or if
+ * GetCovarianceBlock returns false.
+ */
+Eigen::MatrixXd computePoseCovariance(ceres::Problem& problem, const Eigen::Vector3d& t, Eigen::Quaterniond& q,
+                                      const ceres::Covariance::Options& options = DefaultCovarianceOptions());
+
+/**
  * @brief Compute off-diagonal covariance between a Pose6d parameter and a double array parameter. Uses @ref computeDV2DVCovariance.
  * @param The Ceres problem (after optimization).
  * @param pose First Pose6d parameter.
