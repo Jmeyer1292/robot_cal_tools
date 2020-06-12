@@ -81,22 +81,22 @@ Eigen::MatrixXd computePoseCovariance(ceres::Problem& problem, const Eigen::Vect
   // Covariance of position with itself
   Eigen::MatrixXd t_cov = computeDVCovariance(problem, t.data(), t.size());
   // Covariance of locally parameterized quaternion covariance with position
-  Eigen::MatrixXd qt_cov =
-      computeDV2DVCovariance(problem, q.coeffs().data(), q_loc_param->LocalSize(), t.data(), t.size());
+  Eigen::MatrixXd tq_cov =
+      computeDV2DVCovariance(problem, t.data(), t.size(), q.coeffs().data(), q_loc_param->LocalSize());
 
   Eigen::Index n = q_loc_param->LocalSize() + t.size();
   Eigen::MatrixXd cov;
   cov.resize(n, n);
   /* Total covariance matrix
-   *      Q        P
-   * Q | C(q,q) | C(q, p) |
-   * P | C(p,q) | C(p, p) |
+   *        T         Q
+   * T | C(t, t) | C(t, q) |
+   * Q | C(q, t) | C(q, q) |
    */
   cov.resize(6, 6);
-  cov.block<3, 3>(0, 0) = q_cov;
-  cov.block<3, 3>(3, 3) = t_cov;
-  cov.block<3, 3>(0, 3) = qt_cov;
-  cov.block<3, 3>(3, 0) = qt_cov.transpose();
+  cov.block<3, 3>(0, 0) = t_cov;
+  cov.block<3, 3>(3, 3) = q_cov;
+  cov.block<3, 3>(0, 3) = tq_cov;
+  cov.block<3, 3>(3, 0) = tq_cov.transpose();
 
   return cov;
 }
