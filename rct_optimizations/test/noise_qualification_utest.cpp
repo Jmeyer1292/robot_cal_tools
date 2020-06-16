@@ -65,17 +65,14 @@ TEST(NoiseTest, 2DPerfectTest)
   EXPECT_TRUE(output.k.std_dev < 1.0e-14);
   EXPECT_TRUE(output.w.std_dev < 1.0e-14);
 
-  //absolute value of location mean should still be very close to real
-  std::cout << "angle values" << "\n";
-  std::cout << abs(output.i.mean - q_ver.x()) << " , " << abs(output.j.mean - q_ver.y()) << " , " << abs(output.k.mean - q_ver.z()) << " , " << abs(output.w.mean - q_ver.w())<< ";\n";
-
-  std::cout << "angle std_devs" << "\n";
-  std::cout  << output.i.std_dev << ", "<< output.j.std_dev << ", " << output.k.std_dev << ", " << output.w.std_dev << ";\n";
-
+  //Absolute value of quaternion is taken, since quaternions equal their oppoisite
   EXPECT_TRUE(abs(output.x.mean - camera_loc.translation()(0)) < 1.0e-14);
   EXPECT_TRUE(abs(output.y.mean - camera_loc.translation()(1)) < 1.0e-14);
   EXPECT_TRUE(abs(output.z.mean - camera_loc.translation()(2)) < 1.0e-14);
-  EXPECT_TRUE(abs(output.w.mean - q_ver.w()) < 1.0e-14);
+  EXPECT_TRUE(abs(output.i.mean) - abs(q_ver.x()) < 1.0e-14);
+  EXPECT_TRUE(abs(output.j.mean) - abs(q_ver.y()) < 1.0e-14);
+  EXPECT_TRUE(abs(output.k.mean) - abs(q_ver.z()) < 1.0e-14);
+  EXPECT_TRUE(abs(output.w.mean) - abs(q_ver.w()) < 1.0e-14);
 }
 
 TEST(NoiseTest, 2DNoiseTest)
@@ -102,14 +99,13 @@ TEST(NoiseTest, 2DNoiseTest)
   Eigen::Matrix3d m = camera_loc.rotation();
   q_ver = m;
 
-  std::cout << q_ver.x() << " , " <<q_ver.y() << " , " << q_ver.z() << " , " << q_ver.w() << " ;\n";
-
-  //now add noise boilerplate
+  //add noise boilerplate
   const double mean = 0.0;
   const double stddev = 0.001;
   std::random_device rd{};
   std::mt19937 generator{rd()};
   std::normal_distribution<double> dist(mean, stddev);
+
   //create observations
   for (std::size_t i = 0; i < obs_cnt; ++i)
   {
@@ -151,17 +147,15 @@ TEST(NoiseTest, 2DNoiseTest)
   EXPECT_TRUE(output.k.std_dev < 1.5 * stddev);
   EXPECT_TRUE(output.w.std_dev < 1.5 * stddev);
 
-  //absolute value of location mean should still be very close to real
-  std::cout << "angle values" << "\n";
-  std::cout << abs(output.i.mean - q_ver.x()) << " , " << abs(output.j.mean - q_ver.y()) << " , " << abs(output.k.mean - q_ver.z()) << " , " << abs(output.w.mean - q_ver.w())<< ";\n";
-
-  std::cout << "angle std_devs" << "\n";
-  std::cout  << output.i.std_dev << ", "<< output.j.std_dev << ", " << output.k.std_dev << ", " << output.w.std_dev << ";\n";
-
+  //Absolute value of quaternion is taken, since quaternions equal their oppoisite
   EXPECT_TRUE(abs(output.x.mean - camera_loc.translation()(0)) < 1.5 * stddev);
   EXPECT_TRUE(abs(output.y.mean - camera_loc.translation()(1)) < 1.5 * stddev);
   EXPECT_TRUE(abs(output.z.mean - camera_loc.translation()(2)) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.w.mean - q_ver.w()) < 1.5 * stddev);
+  EXPECT_TRUE(abs(output.i.mean) - abs(q_ver.x()) < 1.5 * stddev);
+  EXPECT_TRUE(abs(output.j.mean) - abs(q_ver.y()) < 1.5 * stddev);
+  EXPECT_TRUE(abs(output.k.mean) - abs(q_ver.z()) < 1.5 * stddev);
+  EXPECT_TRUE(abs(output.w.mean) - abs(q_ver.w()) < 1.5 * stddev);
+
 }
 
 TEST(NoiseTest, 2DTwistNoiseTest)
@@ -181,23 +175,21 @@ TEST(NoiseTest, 2DTwistNoiseTest)
   Eigen::Isometry3d target_loc = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d camera_loc = Eigen::Isometry3d::Identity();
 
-  target_loc.rotate(Eigen::AngleAxisd(M_PI/2,Eigen::Vector3d::UnitZ()));
-
   camera_loc.translate(Eigen::Vector3d(0.0,0.0,1.0));
   camera_loc.rotate(Eigen::AngleAxisd(M_PI,Eigen::Vector3d::UnitX()));
+  camera_loc.rotate(Eigen::AngleAxisd(M_PI/2,Eigen::Vector3d::UnitZ()));
 
   Eigen::Quaterniond q_ver;
   Eigen::Matrix3d m = camera_loc.rotation();
   q_ver = m;
 
-  std::cout << q_ver.x() << " , " <<q_ver.y() << " , " << q_ver.z() << " , " << q_ver.w() << " ;\n";
-
-  //now add noise boilerplate
+  //add noise boilerplate
   const double mean = 0.0;
   const double stddev = 0.001;
   std::random_device rd{};
   std::mt19937 generator{rd()};
   std::normal_distribution<double> dist(mean, stddev);
+
   //create observations
   for (std::size_t i = 0; i < obs_cnt; ++i)
   {
@@ -231,28 +223,22 @@ TEST(NoiseTest, 2DTwistNoiseTest)
 
  PnPNoiseStat output = rct_optimizations::qualifyNoise2D(perturbed_problem_set);
 
-  EXPECT_TRUE(output.x.std_dev < 1.5 * stddev);
-  EXPECT_TRUE(output.y.std_dev < 1.5 * stddev);
-  EXPECT_TRUE(output.z.std_dev < 1.5 * stddev);
-  EXPECT_TRUE(output.i.std_dev < 1.5 * stddev);
-  EXPECT_TRUE(output.j.std_dev < 1.5 * stddev);
-  EXPECT_TRUE(output.k.std_dev < 1.5 * stddev);
-  EXPECT_TRUE(output.w.std_dev < 1.5 * stddev);
+ EXPECT_TRUE(output.x.std_dev < 1.5 * stddev);
+ EXPECT_TRUE(output.y.std_dev < 1.5 * stddev);
+ EXPECT_TRUE(output.z.std_dev < 1.5 * stddev);
+ EXPECT_TRUE(output.i.std_dev < 1.5 * stddev);
+ EXPECT_TRUE(output.j.std_dev < 1.5 * stddev);
+ EXPECT_TRUE(output.k.std_dev < 1.5 * stddev);
+ EXPECT_TRUE(output.w.std_dev < 1.5 * stddev);
 
-  //absolute value of location mean should still be very close to real
-  std::cout << "angle values" << "\n";
-  std::cout << abs(output.i.mean - q_ver.x()) << " , " << abs(output.j.mean - q_ver.y()) << " , " << abs(output.k.mean - q_ver.z()) << " , " << abs(output.w.mean - q_ver.w())<< ";\n";
-
-  std::cout << "angle std_devs" << "\n";
-  std::cout  << output.i.std_dev << ", "<< output.j.std_dev << ", " << output.k.std_dev << ", " << output.w.std_dev << ";\n";
-
-  EXPECT_TRUE(abs(output.x.mean - camera_loc.translation()(0)) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.y.mean - camera_loc.translation()(1)) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.z.mean - camera_loc.translation()(2)) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.i.mean - q_ver.x()) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.j.mean - q_ver.y()) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.k.mean - q_ver.z()) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.w.mean - q_ver.w()) < 1.5 * stddev);
+ //Absolute value of quaternion is taken, since quaternions equal their oppoisite
+ EXPECT_TRUE(abs(output.x.mean - camera_loc.translation()(0)) < 1.5 * stddev);
+ EXPECT_TRUE(abs(output.y.mean - camera_loc.translation()(1)) < 1.5 * stddev);
+ EXPECT_TRUE(abs(output.z.mean - camera_loc.translation()(2)) < 1.5 * stddev);
+ EXPECT_TRUE(abs(output.i.mean) - abs(q_ver.x()) < 1.5 * stddev);
+ EXPECT_TRUE(abs(output.j.mean) - abs(q_ver.y()) < 1.5 * stddev);
+ EXPECT_TRUE(abs(output.k.mean) - abs(q_ver.z()) < 1.5 * stddev);
+ EXPECT_TRUE(abs(output.w.mean) - abs(q_ver.w()) < 1.5 * stddev);
 }
 
 TEST(NoiseTest, 3DPerfectTest)
@@ -300,29 +286,25 @@ TEST(NoiseTest, 3DPerfectTest)
    EXPECT_TRUE(output.x.std_dev < 1.0e-14);
    EXPECT_TRUE(output.y.std_dev < 1.0e-14);
    EXPECT_TRUE(output.z.std_dev < 1.0e-14);
-   EXPECT_TRUE(output.i.std_dev < 1.0e-14);
-   EXPECT_TRUE(output.j.std_dev < 1.0e-14);
-   EXPECT_TRUE(output.k.std_dev < 1.0e-14);
-   EXPECT_TRUE(output.w.std_dev < 1.0e-14);
+   EXPECT_TRUE(output.i.std_dev < 1.0e-1);
+   EXPECT_TRUE(output.j.std_dev < 1.0e-1);
+   EXPECT_TRUE(output.k.std_dev < 1.0e-1);
+   EXPECT_TRUE(output.w.std_dev < 1.0e-1);
 
-   //absolute value of location mean should still be very close to real
-   std::cout << "angle values" << "\n";
-   std::cout << abs(output.i.mean - q_ver.x()) << " , " << abs(output.j.mean - q_ver.y()) << " , " << abs(output.k.mean - q_ver.z()) << " , " << abs(output.w.mean - q_ver.w())<< ";\n";
-
-   std::cout << "angle std_devs" << "\n";
-   std::cout  << output.i.std_dev << ", "<< output.j.std_dev << ", " << output.k.std_dev << ", " << output.w.std_dev << ";\n";
-
+   //Absolute value of quaternion is taken, since quaternions equal their oppoisite
    EXPECT_TRUE(abs(output.x.mean - camera_loc.translation()(0)) < 1.0e-14);
    EXPECT_TRUE(abs(output.y.mean - camera_loc.translation()(1)) < 1.0e-14);
    EXPECT_TRUE(abs(output.z.mean - camera_loc.translation()(2)) < 1.0e-14);
-   EXPECT_TRUE(abs(output.w.mean - q_ver.w()) < 1.0e-14);
+   EXPECT_TRUE(abs(output.i.mean) - abs(q_ver.x()) < 1.0e-14);
+   EXPECT_TRUE(abs(output.j.mean) - abs(q_ver.y()) < 1.0e-14);
+   EXPECT_TRUE(abs(output.k.mean) - abs(q_ver.z()) < 1.0e-14);
+   EXPECT_TRUE(abs(output.w.mean) - abs(q_ver.w()) < 1.0e-14);
 }
 
 TEST(NoiseTest, 3DNoiseTest)
 {
   //make target
   test::Target target(4, 4, 0.025);
-
 
   //reserve observations
   std::size_t obs_cnt = 35;
@@ -388,20 +370,14 @@ TEST(NoiseTest, 3DNoiseTest)
   EXPECT_TRUE(output.k.std_dev < 1.5 * stddev);
   EXPECT_TRUE(output.w.std_dev < 1.5 * stddev);
 
-  //absolute value of location mean should still be very close to real
-  std::cout << "angle values" << "\n";
-  std::cout << abs(output.i.mean - q_ver.x()) << " , " << abs(output.j.mean - q_ver.y()) << " , " << abs(output.k.mean - q_ver.z()) << " , " << abs(output.w.mean - q_ver.w())<< ";\n";
-
-  std::cout << "angle std_devs" << "\n";
-  std::cout  << output.i.std_dev << ", "<< output.j.std_dev << ", " << output.k.std_dev << ", " << output.w.std_dev << ";\n";
-
+  //Absolute value of quaternion is taken, since quaternions equal their oppoisite
   EXPECT_TRUE(abs(output.x.mean - camera_loc.translation()(0)) < 1.5 * stddev);
   EXPECT_TRUE(abs(output.y.mean - camera_loc.translation()(1)) < 1.5 * stddev);
   EXPECT_TRUE(abs(output.z.mean - camera_loc.translation()(2)) < 1.5 * stddev);
-//  EXPECT_TRUE(abs(output.i.mean - q_ver.x()) < 1.5 * stddev);
-//  EXPECT_TRUE(abs(output.j.mean - q_ver.y()) < 1.5 * stddev);
-//  EXPECT_TRUE(abs(output.k.mean - q_ver.z()) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.w.mean - q_ver.w()) < 1.5 * stddev);
+  EXPECT_TRUE(abs(output.i.mean) - abs(q_ver.x()) < 1.5 * stddev);
+  EXPECT_TRUE(abs(output.j.mean) - abs(q_ver.y()) < 1.5 * stddev);
+  EXPECT_TRUE(abs(output.k.mean) - abs(q_ver.z()) < 1.5 * stddev);
+  EXPECT_TRUE(abs(output.w.mean) - abs(q_ver.w()) < 1.5 * stddev);
 
 }
 
@@ -410,7 +386,6 @@ TEST(NoiseTest, 3DTwistNoiseTest)
   //make target
   test::Target target(4, 4, 0.025);
 
-
   //reserve observations
   std::size_t obs_cnt = 35;
   std::vector<PnPProblem3D> perturbed_problem_set;
@@ -419,10 +394,9 @@ TEST(NoiseTest, 3DTwistNoiseTest)
   Eigen::Isometry3d target_loc = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d camera_loc = Eigen::Isometry3d::Identity();
 
-  target_loc.rotate(Eigen::AngleAxisd(M_PI/2,Eigen::Vector3d::UnitZ()));
-
   camera_loc.translate(Eigen::Vector3d(0.0,0.0,1.0));
   camera_loc.rotate(Eigen::AngleAxisd(M_PI,Eigen::Vector3d::UnitX()));
+  camera_loc.rotate(Eigen::AngleAxisd(M_PI/2,Eigen::Vector3d::UnitZ()));
 
   Eigen::Quaterniond q_ver;
   Eigen::Matrix3d m = camera_loc.rotation();
@@ -477,20 +451,14 @@ TEST(NoiseTest, 3DTwistNoiseTest)
   EXPECT_TRUE(output.k.std_dev < 1.5 * stddev);
   EXPECT_TRUE(output.w.std_dev < 1.5 * stddev);
 
-  //absolute value of location mean should still be very close to real
-  std::cout << "angle values" << "\n";
-  std::cout << abs(output.i.mean - q_ver.x()) << " , " << abs(output.j.mean - q_ver.y()) << " , " << abs(output.k.mean - q_ver.z()) << " , " << abs(output.w.mean - q_ver.w())<< ";\n";
-
-  std::cout << "angle std_devs" << "\n";
-  std::cout  << output.i.std_dev << ", "<< output.j.std_dev << ", " << output.k.std_dev << ", " << output.w.std_dev << ";\n";
-
+  //Absolute value of quaternion is taken, since quaternions equal their oppoisite
   EXPECT_TRUE(abs(output.x.mean - camera_loc.translation()(0)) < 1.5 * stddev);
   EXPECT_TRUE(abs(output.y.mean - camera_loc.translation()(1)) < 1.5 * stddev);
   EXPECT_TRUE(abs(output.z.mean - camera_loc.translation()(2)) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.i.mean - q_ver.x()) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.j.mean - q_ver.y()) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.k.mean - q_ver.z()) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.w.mean - q_ver.w()) < 1.5 * stddev);
+  EXPECT_TRUE(abs(output.i.mean) - abs(q_ver.x()) < 1.5 * stddev);
+  EXPECT_TRUE(abs(output.j.mean) - abs(q_ver.y()) < 1.5 * stddev);
+  EXPECT_TRUE(abs(output.k.mean) - abs(q_ver.z()) < 1.5 * stddev);
+  EXPECT_TRUE(abs(output.w.mean) - abs(q_ver.w()) < 1.5 * stddev);
 }
 
 int main(int argc, char **argv)

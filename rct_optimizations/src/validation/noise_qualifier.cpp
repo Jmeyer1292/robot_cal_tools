@@ -1,5 +1,7 @@
 #include <Eigen/Dense>
+#include <Eigen/Eigen>
 #include <Eigen/Geometry>
+#include <Eigen/Eigenvalues>
 #include <rct_optimizations/validation/noise_qualifier.h>
 #include <rct_optimizations/experimental/pnp.h>
 
@@ -16,18 +18,21 @@ namespace rct_optimizations
  {
 
   PnPNoiseStat output;
+  std::size_t count = params.size();
 
   std::vector<Eigen::Isometry3d> solution_transforms;
+  solution_transforms.reserve(count);
+
   std::vector<Eigen::Vector3d> translations;
+  translations.reserve(count);
+
+  std::vector<Eigen::Vector4d> orientations;
+  orientations.reserve(count);
 
   using namespace boost::accumulators;
   accumulator_set<double, stats<tag::mean, tag::variance>> x_acc;
   accumulator_set<double, stats<tag::mean, tag::variance>> y_acc;
   accumulator_set<double, stats<tag::mean, tag::variance>> z_acc;
-  accumulator_set<double, stats<tag::mean, tag::variance>> i_acc;
-  accumulator_set<double, stats<tag::mean, tag::variance>> j_acc;
-  accumulator_set<double, stats<tag::mean, tag::variance>> k_acc;
-  accumulator_set<double, stats<tag::mean, tag::variance>> w_acc;
 
 
   for (auto& prob : params)
@@ -50,28 +55,70 @@ namespace rct_optimizations
       Eigen::Matrix3d m = result.camera_to_target.rotation();
       q = m;
 
-      i_acc(q.x());
-      j_acc(q.y());
-      k_acc(q.z());
-      w_acc(q.w());
+      Eigen::Vector4d v(q.x(), q.y(), q.z(),q.w());
+
+      orientations.push_back(v);
     }
   }
 
   output.x.mean = boost::accumulators::mean(x_acc);
   output.y.mean = boost::accumulators::mean(y_acc);
   output.z.mean = boost::accumulators::mean(z_acc);
-  output.i.mean = boost::accumulators::mean(i_acc);
-  output.j.mean = boost::accumulators::mean(j_acc);
-  output.k.mean = boost::accumulators::mean(k_acc);
-  output.w.mean = boost::accumulators::mean(w_acc);
-
   output.x.std_dev = sqrt(boost::accumulators::variance(x_acc));
   output.y.std_dev = sqrt(boost::accumulators::variance(y_acc));
   output.z.std_dev = sqrt(boost::accumulators::variance(z_acc));
-  output.i.std_dev = sqrt(boost::accumulators::variance(i_acc));
-  output.j.std_dev = sqrt(boost::accumulators::variance(j_acc));
-  output.k.std_dev = sqrt(boost::accumulators::variance(k_acc));
-  output.w.std_dev = sqrt(boost::accumulators::variance(w_acc));
+
+  //Mean quaternion is found using method described by Markley et al: Quaternion Averaging
+  //All quaternions are equally weighted
+
+  //Accumulator Matrix
+  Eigen::Matrix4d A = Eigen::Matrix4d::Zero();
+
+  for (std::size_t i = 0; i <= count; ++i)
+  {
+    //rank 1 update of 'A', the accumulator matrix, with the u,v = q,qT
+    Eigen::Matrix4d temp = (orientations[i] * orientations[i].transpose());
+    A += temp;
+  }
+
+  //scale A
+  A = (1.0/double(count)) * A;
+
+  //Eigenvectors,values should be strictly real
+  Eigen::EigenSolver<Eigen::Matrix4d> E(A, true);
+
+  //Each column of 4x4 vectors is an eigenvector; desired mean has max eigenvalue
+  Eigen::Index max_evi, one;
+
+  //find maximium eigenvalue, and store its index in max_evi
+  E.eigenvalues().real().maxCoeff(&max_evi, &one);
+  Eigen::Vector4d mean = E.eigenvectors().real().col(max_evi);
+
+  output.i.mean = mean[0];
+  output.j.mean = mean[1];
+  output.k.mean = mean[2];
+  output.w.mean = mean[3];
+
+  //Manually calculate standard deviations from mean
+  Eigen::Array4d std_dev = Eigen::Array4d::Zero();
+  Eigen::Array4d sum = Eigen::Array4d::Zero();
+  for (std::size_t i =0; i< count; ++i)
+  {
+   //absolute value taken because a quaternion is equal to its opposite
+   Eigen::Array4d term = orientations[i].cwiseAbs() - mean.cwiseAbs();
+   term = term.square();
+   sum+= term;
+  }
+
+  std_dev = sum/double(count);
+  std_dev = std_dev.sqrt();
+
+
+
+  output.i.std_dev = std_dev.x();//(1);
+  output.j.std_dev = std_dev.y();//(2);
+  output.k.std_dev = std_dev.z();//(3);
+  output.w.std_dev = std_dev.w();//(0);
 
   //Output: mean & standard deviation of x,y,z,i,j,k,w
   return output;
@@ -81,17 +128,21 @@ namespace rct_optimizations
  {
 
   PnPNoiseStat output;
+  std::size_t count = params.size();
 
   std::vector<Eigen::Isometry3d> solution_transforms;
+  solution_transforms.reserve(count);
+
+  std::vector<Eigen::Vector3d> translations;
+  translations.reserve(count);
+
+  std::vector<Eigen::Vector4d> orientations;
+  orientations.reserve(count);
 
   using namespace boost::accumulators;
   accumulator_set<double, stats<tag::mean, tag::variance>> x_acc;
   accumulator_set<double, stats<tag::mean, tag::variance>> y_acc;
   accumulator_set<double, stats<tag::mean, tag::variance>> z_acc;
-  accumulator_set<double, stats<tag::mean, tag::variance>> i_acc;
-  accumulator_set<double, stats<tag::mean, tag::variance>> j_acc;
-  accumulator_set<double, stats<tag::mean, tag::variance>> k_acc;
-  accumulator_set<double, stats<tag::mean, tag::variance>> w_acc;
 
 
   for (auto& prob : params)
@@ -104,6 +155,7 @@ namespace rct_optimizations
     {
       //we will save the full result here for debugging purposes
       solution_transforms.push_back(result.camera_to_target);
+      translations.push_back(solution_transforms.back().translation());
 
       x_acc(result.camera_to_target.translation()(0));
       y_acc(result.camera_to_target.translation()(1));
@@ -113,28 +165,70 @@ namespace rct_optimizations
       Eigen::Matrix3d m = result.camera_to_target.rotation();
       q = m;
 
-      i_acc(q.x());
-      j_acc(q.y());
-      k_acc(q.z());
-      w_acc(q.w());
+      Eigen::Vector4d v(q.x(), q.y(), q.z(),q.w());
+
+      orientations.push_back(v);
     }
   }
 
   output.x.mean = boost::accumulators::mean(x_acc);
   output.y.mean = boost::accumulators::mean(y_acc);
   output.z.mean = boost::accumulators::mean(z_acc);
-  output.i.mean = boost::accumulators::mean(i_acc);
-  output.j.mean = boost::accumulators::mean(j_acc);
-  output.k.mean = boost::accumulators::mean(k_acc);
-  output.w.mean = boost::accumulators::mean(w_acc);
-
   output.x.std_dev = sqrt(boost::accumulators::variance(x_acc));
   output.y.std_dev = sqrt(boost::accumulators::variance(y_acc));
   output.z.std_dev = sqrt(boost::accumulators::variance(z_acc));
-  output.i.std_dev = sqrt(boost::accumulators::variance(i_acc));
-  output.j.std_dev = sqrt(boost::accumulators::variance(j_acc));
-  output.k.std_dev = sqrt(boost::accumulators::variance(k_acc));
-  output.w.std_dev = sqrt(boost::accumulators::variance(w_acc));
+
+  //Mean quaternion is found using method described by Markley et al: Quaternion Averaging
+  //All quaternions are equally weighted
+
+  //Accumulator Matrix
+  Eigen::Matrix4d A = Eigen::Matrix4d::Zero();
+
+  for (std::size_t i = 0; i <= count; ++i)
+  {
+    //rank 1 update of 'A', the accumulator matrix, with the u,v = q,qT
+    Eigen::Matrix4d temp = (orientations[i] * orientations[i].transpose());
+    A += temp;
+  }
+
+  //scale A
+  A = (1.0/double(count)) * A;
+
+  //Eigenvectors,values should be strictly real
+  Eigen::EigenSolver<Eigen::Matrix4d> E(A, true);
+
+  //Each column of 4x4 vectors is an eigenvector; desired mean has max eigenvalue
+  Eigen::Index max_evi, one;
+
+  //find maximium eigenvalue, and store its index in max_evi
+  E.eigenvalues().real().maxCoeff(&max_evi, &one);
+  Eigen::Vector4d mean = E.eigenvectors().real().col(max_evi);
+
+  output.i.mean = mean[0];
+  output.j.mean = mean[1];
+  output.k.mean = mean[2];
+  output.w.mean = mean[3];
+
+  //Manually calculate standard deviations from mean
+  Eigen::Array4d std_dev = Eigen::Array4d::Zero();
+  Eigen::Array4d sum = Eigen::Array4d::Zero();
+  for (std::size_t i =0; i< count; ++i)
+  {
+   //absolute value taken because a quaternion is equal to its opposite
+   Eigen::Array4d term = orientations[i].cwiseAbs() - mean.cwiseAbs();
+   term = term.square();
+   sum+= term;
+  }
+
+  std_dev = sum/double(count);
+  std_dev = std_dev.sqrt();
+
+
+
+  output.i.std_dev = std_dev.x();//(1);
+  output.j.std_dev = std_dev.y();//(2);
+  output.k.std_dev = std_dev.z();//(3);
+  output.w.std_dev = std_dev.w();//(0);
 
   //Output: mean & standard deviation of x,y,z,i,j,k,w
   return output;
