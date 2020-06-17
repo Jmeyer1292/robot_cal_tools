@@ -52,7 +52,9 @@ std::vector<Eigen::Isometry3d> HemispherePoseGenerator::generate(const Eigen::Ve
       camera.translate(position);
 
       // x is 'up' in target frame
-      Eigen::Isometry3d camera_oriented = lookAt(camera.translation(), target_origin, Eigen::Vector3d(1, 0, 0));
+      Eigen::Isometry3d camera_oriented = target_offset
+                                        * lookAt(camera.translation(), target_origin, Eigen::Vector3d(1, 0, 0))
+                                        * Eigen::Isometry3d(Eigen::AngleAxisd(z_rot, Eigen::Vector3d::UnitZ()));
 
       // this vector is still in target spatial coordinates
       camera_positions.push_back(camera_oriented);
@@ -80,9 +82,9 @@ std::vector<Eigen::Isometry3d> ConicalPoseGenerator::generate(const Eigen::Vecto
     camera_pose.translate(Eigen::Vector3d{ r * cos(i * dt), r * sin(i * dt), h });
 
     // change orientation to look at target
-    Eigen::Isometry3d camera_oriented = lookAt(camera_pose.translation(),
-                                               target_origin,
-                                               Eigen::Vector3d(1, 0, 0));
+    Eigen::Isometry3d camera_oriented = target_offset
+                                      * lookAt(camera_pose.translation(), target_origin, Eigen::Vector3d(1, 0, 0))
+                                      * Eigen::Isometry3d(Eigen::AngleAxisd(z_rot, Eigen::Vector3d::UnitZ()));
 
     camera_positions.push_back(camera_oriented);
   }
@@ -110,9 +112,9 @@ std::vector<Eigen::Isometry3d> GridPoseGenerator::generate(const Eigen::Vector3d
       camera_pose.translate(Eigen::Vector3d{grid_coords(i), grid_coords(j), h });
 
       // change orientation to look at target
-      Eigen::Isometry3d camera_oriented = lookAt(camera_pose.translation(),
-                                                 target_origin,
-                                                 Eigen::Vector3d(1, 0, 0));
+      Eigen::Isometry3d camera_oriented = target_offset
+                                        * lookAt(camera_pose.translation(), target_origin, Eigen::Vector3d(1, 0, 0))
+                                        * Eigen::Isometry3d(Eigen::AngleAxisd(z_rot, Eigen::Vector3d::UnitZ()));
 
       camera_positions.push_back(camera_oriented);
     }
