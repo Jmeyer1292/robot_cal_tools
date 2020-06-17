@@ -1,5 +1,4 @@
 #include <rct_optimizations/dh_chain_kinematic_calibration.h>
-#include <rct_optimizations/impl/dh_chain.hpp>
 #include <rct_optimizations/ceres_math_utilities.h>
 #include <rct_optimizations/eigen_conversions.h>
 #include <rct_optimizations/covariance_analysis.h>

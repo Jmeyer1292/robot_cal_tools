@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 #include <rct_optimizations/extrinsic_hand_eye.h>
-#include <rct_optimizations/impl/dh_chain.hpp>
 #include <rct_optimizations/ceres_math_utilities.h>
 
 // Test utilities

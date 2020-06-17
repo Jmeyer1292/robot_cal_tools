@@ -1,6 +1,5 @@
 #include <rct_optimizations_tests/dh_chain_observation_creator.h>
 #include <rct_optimizations_tests/observation_creator.h>
-#include <rct_optimizations/impl/dh_chain.hpp>
 
 namespace rct_optimizations
 {
@@ -23,8 +22,8 @@ KinObservation3D3D::Set createKinematicObservations(const DHChain &to_camera_cha
     obs.camera_chain_joints = to_camera_chain.createUniformlyRandomPose();
     obs.target_chain_joints = to_target_chain.createUniformlyRandomPose();
 
-    Eigen::Isometry3d to_camera_mount = to_camera_chain.getFK(obs.camera_chain_joints);
-    Eigen::Isometry3d to_target_mount = to_target_chain.getFK(obs.target_chain_joints);
+    Eigen::Isometry3d to_camera_mount = to_camera_chain.getFK<double>(obs.camera_chain_joints);
+    Eigen::Isometry3d to_target_mount = to_target_chain.getFK<double>(obs.target_chain_joints);
 
     obs.correspondence_set = getCorrespondences(to_camera_mount * true_mount_to_camera,
                                                 camera_base_to_target_base * to_target_mount * true_mount_to_target,

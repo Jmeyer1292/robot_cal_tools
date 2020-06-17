@@ -29,6 +29,7 @@ add_library(${PROJECT_NAME} SHARED
   #Target Homography
   src/${PROJECT_NAME}/validation/homography_validation.cpp
   # DH Chain Kinematic Calibration
+  src/${PROJECT_NAME}/dh_chain.cpp
   src/${PROJECT_NAME}/dh_chain_kinematic_calibration.cpp
 )
 

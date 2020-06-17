@@ -1,4 +1,3 @@
-#include <rct_optimizations/impl/dh_chain.hpp>
 #include <rct_optimizations_tests/dh_chain_observation_creator.h>
 #include <gtest/gtest.h>
 
