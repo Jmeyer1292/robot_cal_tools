@@ -20,7 +20,7 @@ double DHTransform::createRandomJointValue() const
 
 // DH Chain
 
-DHChain::DHChain(std::vector<DHTransform::Ptr> transforms)
+DHChain::DHChain(std::vector<DHTransform> transforms)
   : transforms_(std::move(transforms))
 {
 }
@@ -30,7 +30,7 @@ Eigen::VectorXd DHChain::createUniformlyRandomPose() const
   Eigen::VectorXd joints(transforms_.size());
   for (std::size_t i = 0; i < transforms_.size(); ++i)
   {
-    joints[i] = transforms_[i]->createRandomJointValue();
+    joints[i] = transforms_[i].createRandomJointValue();
   }
   return joints;
 }
@@ -45,7 +45,7 @@ Eigen::MatrixX4d DHChain::getDHTable() const
   Eigen::MatrixX4d out(dof(), 4);
   for (std::size_t i = 0; i < transforms_.size(); ++i)
   {
-    out.row(i) = transforms_[i]->params.transpose();
+    out.row(i) = transforms_[i].params.transpose();
   }
   return out;
 }
@@ -56,7 +56,7 @@ std::vector<DHJointType> DHChain::getJointTypes() const
   out.reserve(transforms_.size());
   for (const auto &t : transforms_)
   {
-    out.push_back(t->type);
+    out.push_back(t.type);
   }
   return out;
 }

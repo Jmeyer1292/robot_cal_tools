@@ -36,10 +36,7 @@ using Vector2 = Eigen::Matrix<T, 2, 1>;
  */
 struct DHTransform
 {
-  using Ptr = std::unique_ptr<DHTransform>;
-
   DHTransform(const Eigen::Vector4d& params_, DHJointType type_);
-  virtual ~DHTransform() = default;
 
   /**
    * @brief Creates the homogoneous transformation from the previous link to the current link
@@ -111,7 +108,7 @@ struct DHTransform
 class DHChain
 {
 public:
-    DHChain(std::vector<DHTransform::Ptr> transforms);
+    DHChain(std::vector<DHTransform> transforms);
 
   /**
    * @brief Calculates forward kinematics for the robot with the joints provided.
@@ -126,7 +123,7 @@ public:
     Isometry3<T> transform(Isometry3<T>::Identity());
     for (Eigen::Index i = 0; i < joint_values.size(); ++i)
     {
-      transform = transform * transforms_.at(i)->createRelativeTransform(joint_values[i]);
+      transform = transform * transforms_.at(i).createRelativeTransform(joint_values[i]);
     }
     return transform;
   }
@@ -145,7 +142,7 @@ public:
     for (Eigen::Index i = 0; i < joint_values.size(); ++i)
     {
       const Eigen::Matrix<T, 1, 4> &offset = offsets.row(i);
-      transform = transform * transforms_.at(i)->createRelativeTransform(joint_values[i], offset);
+      transform = transform * transforms_.at(i).createRelativeTransform(joint_values[i], offset);
     }
     return transform;
   }
@@ -176,7 +173,7 @@ public:
 
 protected:
   /** @brief The DH transforms that make up the chain */
-  std::vector<DHTransform::Ptr> transforms_;
+  std::vector<DHTransform> transforms_;
 };
 
 } // namespace rct_optimizations
