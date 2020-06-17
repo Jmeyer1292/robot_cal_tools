@@ -1,7 +1,6 @@
 #include "rct_optimizations/pnp.h"
 #include "rct_optimizations/ceres_math_utilities.h"
-#include "rct_optimizations/eigen_conversions.h"
-
+#include "rct_optimizations/local_parameterization.h"
 #include <ceres/ceres.h>
 
 namespace
@@ -72,7 +71,9 @@ PnPResult optimize(const PnPProblem &params)
     problem.AddResidualBlock(cost_block, nullptr, q.coeffs().data(), t.data());
   }
 
-  problem.SetParameterization(q.coeffs().data(), new ceres::EigenQuaternionParameterization());
+  ceres::LocalParameterization *q_param
+    = new ceres::AutoDiffLocalParameterization<EigenQuaternionPlus, 4, 3>();
+  problem.SetParameterization(q.coeffs().data(), q_param);
 
   ceres::Solver::Summary summary;
   ceres::Solver::Options options;
