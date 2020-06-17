@@ -25,7 +25,7 @@ struct PoseGenerator
    * @param target_origin The position of the target
    * @return A vector of camera positions & orientations
    */
-  virtual std::vector<Eigen::Isometry3d> generate(const Eigen::Vector3d &target_origin) const = 0;
+  virtual std::vector<Eigen::Isometry3d> generate(const Eigen::Isometry3d &target_origin) const = 0;
 };
 
 /**
@@ -47,7 +47,7 @@ struct HemispherePoseGenerator : PoseGenerator
   }
 
   virtual std::vector<Eigen::Isometry3d> generate(
-    const Eigen::Vector3d &target_origin) const override final;
+    const Eigen::Isometry3d &target_origin) const override final;
 
   double r; /* @brief Radius of the hemisphere */
   unsigned theta_cnt; /* @brief The number of points in the theta-wise direction*/
@@ -75,7 +75,7 @@ struct ConicalPoseGenerator : PoseGenerator
   }
 
   virtual std::vector<Eigen::Isometry3d> generate(
-    const Eigen::Vector3d &target_origin) const override final;
+    const Eigen::Isometry3d &target_origin) const override final;
 
   double r; /** @brief Radius of the cone*/
   double h; /** @brief Height of the cone (distance to target) */
@@ -103,7 +103,7 @@ struct GridPoseGenerator : PoseGenerator
   }
 
   virtual std::vector<Eigen::Isometry3d> generate(
-    const Eigen::Vector3d &target_origin) const override final;
+    const Eigen::Isometry3d &target_origin) const override final;
 
   double spacing; /** @brief Distance betweeon points */
   double h; /** @brief Grid distance to target */
