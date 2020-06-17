@@ -1,4 +1,5 @@
 #include <rct_optimizations_tests/dh_chain_observation_creator.h>
+#include <random>
 #include <gtest/gtest.h>
 
 using namespace rct_optimizations;
