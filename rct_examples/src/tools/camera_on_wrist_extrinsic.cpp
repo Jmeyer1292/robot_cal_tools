@@ -7,7 +7,7 @@
 #include <rct_image_tools/image_utils.h>
 // The calibration function for 'moving camera' on robot wrist
 #include <rct_optimizations/extrinsic_hand_eye.h>
-#include <rct_optimizations/experimental/pnp.h>
+#include <rct_optimizations/pnp.h>
 
 // For display of found targets
 #include <opencv2/highgui/highgui.hpp>

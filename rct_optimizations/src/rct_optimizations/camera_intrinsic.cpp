@@ -1,5 +1,5 @@
 #include "rct_optimizations/experimental/camera_intrinsic.h"
-#include <rct_optimizations/experimental/pnp.h>
+#include <rct_optimizations/pnp.h>
 
 #include <rct_optimizations/ceres_math_utilities.h>
 #include <rct_optimizations/eigen_conversions.h>

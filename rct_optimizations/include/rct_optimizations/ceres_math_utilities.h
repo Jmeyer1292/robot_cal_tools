@@ -61,6 +61,36 @@ inline void projectPoint(const CameraIntrinsics& intr, const T point[3], T xy_im
   xy_image[1] = intr.fy() * yp + intr.cy();
 }
 
+template<typename T>
+inline Eigen::Matrix<T, 2, 1> projectPoint(const rct_optimizations::CameraIntrinsics &intr,
+                                           const Eigen::Matrix<T, 3, 1>& point)
+{
+  // Scale the input point by its distance from the camera (i.e. z-coordinate)
+  Eigen::Matrix<T, 3, 1> scaled_point(point);
+  scaled_point(2) = T(1.0);
+
+  // Avoid divide by zero
+  if (std::abs(point.z() - T(0.0) > T(1.e-10)))
+  {
+    scaled_point.x() = point.x() / point.z();
+    scaled_point.y() = point.y() / point.z();
+  }
+
+  /* Create the camera parameters matrix
+   * | fx  0   cx | * | x/z | = | u |
+   * | 0   fy  cy | * | y/z | = | v |
+   * | 0   0   1  | * |  1  | = | 1 |
+   */
+  Eigen::Matrix3d camera_matrix;
+  camera_matrix << intr.fx(), 0.0, intr.cx(), 0.0, intr.fy(), intr.cy(), 0.0, 0.0, 1.0;
+
+  // Perform projection using focal length and camera optical center into image plane
+  Eigen::Matrix<T, 3, 1> image_pt = camera_matrix.cast<T>() * scaled_point;
+
+  // Return only the top two elements of the vector
+  return image_pt.template head<2>();
 }
+
+} // namespace rct_optimizations
 
 #endif // RCT_CERES_MATH_UTILITIES_H
