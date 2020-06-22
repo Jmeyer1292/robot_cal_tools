@@ -47,9 +47,9 @@ struct SolvePnPCostFunc
 struct SolvePnPCostFunc3D
 {
 public:
-  SolvePnPCostFunc3D(const rct_optimizations::CameraIntrinsics& intr, const Eigen::Vector3d& pt_in_target,
+  SolvePnPCostFunc3D(const Eigen::Vector3d& pt_in_target,
                      const Eigen::Vector3d& pt_in_image)
-    : intr_(intr), in_target_(pt_in_target), in_image_(pt_in_image)
+    :in_target_(pt_in_target), in_image_(pt_in_image)
   {}
 
   template<typename T>
@@ -65,17 +65,15 @@ public:
     target_pt[2] = T(in_target_(2));
 
     T camera_point[3];  // Point in camera coordinates
+
     rct_optimizations::transformPoint(target_angle_axis, target_position, target_pt, camera_point);
 
-    T xyz_image[3];
-
-    residual[0] = xyz_image[0] - in_image_.x();
-    residual[1] = xyz_image[1] - in_image_.y();
-    residual[2] = xyz_image[2] - in_image_.z();
+    residual[0] = camera_point[0] - in_image_.x();
+    residual[1] = camera_point[1] - in_image_.y();
+    residual[2] = camera_point[2] - in_image_.z();
     return true;
   }
 
-  rct_optimizations::CameraIntrinsics intr_;
   Eigen::Vector3d in_target_;
   Eigen::Vector3d in_image_;
 };
@@ -138,14 +136,13 @@ PnPResult optimize(const rct_optimizations::PnPProblem3D& params)
   for (std::size_t i = 0; i < params.correspondences.size(); ++i) // For each 3D point seen in the 3D image
   {
     // Define
-    const auto& img_obs = params.correspondences[i].in_image; //Why decalare when you can deduce!
+    const auto& img_obs = params.correspondences[i].in_image;
     const auto& point_in_target = params.correspondences[i].in_target;
 
     // Allocate Ceres data structures - ownership is taken by the ceres
     // Problem data structure
 
-
-    auto* cost_fn = new SolvePnPCostFunc3D(params.intr, point_in_target, img_obs);
+    auto* cost_fn = new SolvePnPCostFunc3D(point_in_target, img_obs);
 
     auto* cost_block = new ceres::AutoDiffCostFunction<SolvePnPCostFunc3D, 2, 6>(cost_fn);
 
@@ -153,6 +150,7 @@ PnPResult optimize(const rct_optimizations::PnPProblem3D& params)
   }
 
   ceres::Solver::Options options;
+  //options.function_tolerance = 1e-7;
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);
 

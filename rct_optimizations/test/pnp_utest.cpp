@@ -123,16 +123,19 @@ TEST(PNP_3D, PerfectInitialConditions)
                                              target_point,
                                              target);
 
-  setup.camera_to_target_guess = camera_point;
+  Eigen::Isometry3d noise = camera_point;
+  noise.translate(Eigen::Vector3d(0.0001, 0.5, 0));
+  setup.camera_to_target_guess = noise;
 
   PnPResult res = rct_optimizations::optimize(setup);
 
   EXPECT_TRUE(res.converged);
-  //costs are oddly high for 3d, perfect guess
-  std::cout << res.initial_cost_per_obs << " , " << res.final_cost_per_obs << ";\n";
-  EXPECT_TRUE(res.initial_cost_per_obs < 1.0e-2);
-  EXPECT_TRUE(res.final_cost_per_obs < 1.0e-2);
-  EXPECT_TRUE(res.camera_to_target.isApprox(setup.camera_to_target_guess));
+  //Starting with an incorrect first guess means that cost must decrease
+  EXPECT_LT(res.final_cost_per_obs, res.initial_cost_per_obs);
+  EXPECT_LT(res.final_cost_per_obs, 1.0e-20);
+  EXPECT_LT((res.camera_to_target.translation() - camera_point.translation()).norm(), 1.0e-10);
+  //can only achieve 5 decimal accuracy
+  EXPECT_TRUE(res.camera_to_target.isApprox(camera_point, 1.0e-5));
 }
 
 int main(int argc, char **argv)

@@ -5,8 +5,46 @@
 #include <rct_optimizations_tests/observation_creator.h>
 #include <rct_optimizations/experimental/pnp.h>
 #include <rct_optimizations/validation/noise_qualifier.h>
+#include <rct_optimizations/ceres_math_utilities.h>
+
+//tolerance for oreintation difference, in radians
+#define ANGULAR_THRESHOLD 6*M_PI/180
 
 using namespace rct_optimizations;
+
+TEST(NoiseTest, QuatMeanTest)
+{
+ /*This test validate the method used to find the mean quaternion
+  * in noise_qualifier.cpp
+  */
+
+ //base quaternion
+ Eigen::Quaterniond quat_1 (0,1,0,0);
+ Eigen::Quaterniond quat_2 (0,0,1,0);
+ Eigen::Quaterniond quat_3 (1,0,0,0);
+
+ //std::cout << quat_2.angularDistance(quat_1) << "\n";
+ std::vector<Eigen::Quaterniond> poses1 = {quat_1, quat_2};
+  std::vector<Eigen::Quaterniond> poses2 = {quat_2, quat_3};
+
+ //average new quats
+RotationStat r1 = FindQuaternionMean(poses1);
+RotationStat r2 = FindQuaternionMean(poses2);
+
+Eigen::Quaterniond mean_quat1 (r1.qw.mean, r1.qx.mean, r1.qy.mean, r1.qz.mean);
+
+//The two quaternions are 2 pi rad apart, so the mean should be ~PI away from both
+EXPECT_LT(mean_quat1.angularDistance(quat_1) - M_PI, ANGULAR_THRESHOLD);
+EXPECT_LT(mean_quat1.angularDistance(quat_2) - M_PI, ANGULAR_THRESHOLD);
+
+Eigen::Quaterniond mean_quat2 (r2.qw.mean, r2.qx.mean, r2.qy.mean, r2.qz.mean);
+
+//The two quaternions are pi rad apart, so the mean should be ~PI/2 away from both
+std::cout << quat_2.angularDistance(quat_3) << std::endl;
+
+EXPECT_LT(mean_quat2.angularDistance(quat_2) - M_PI/2, ANGULAR_THRESHOLD);
+//EXPECT_LT(mean_quat2.angularDistance(quat_3) - M_PI, ANGULAR_THRESHOLD);
+}
 
 TEST(NoiseTest, 2DPerfectTest)
 {
@@ -29,8 +67,7 @@ TEST(NoiseTest, 2DPerfectTest)
   camera_loc.rotate(Eigen::AngleAxisd(M_PI,Eigen::Vector3d::UnitX()));
 
   Eigen::Quaterniond q_ver;
-  Eigen::Matrix3d m = camera_loc.rotation();
-  q_ver = m;
+  q_ver = camera_loc.rotation();
 
   //create observations
   for (std::size_t i = 0; i < obs_cnt; ++i)
@@ -57,22 +94,22 @@ TEST(NoiseTest, 2DPerfectTest)
 
  PnPNoiseStat output = rct_optimizations::qualifyNoise2D(ideal_problem_set);
 
-  EXPECT_TRUE(output.x.std_dev < 1.0e-14);
-  EXPECT_TRUE(output.y.std_dev < 1.0e-14);
-  EXPECT_TRUE(output.z.std_dev < 1.0e-14);
-  EXPECT_TRUE(output.i.std_dev < 1.0e-14);
-  EXPECT_TRUE(output.j.std_dev < 1.0e-14);
-  EXPECT_TRUE(output.k.std_dev < 1.0e-14);
-  EXPECT_TRUE(output.w.std_dev < 1.0e-14);
+  EXPECT_LT(output.x.std_dev, 1.0e-14);
+  EXPECT_LT(output.y.std_dev, 1.0e-14);
+  EXPECT_LT(output.z.std_dev, 1.0e-14);
+  EXPECT_LT(output.q.qx.std_dev, 1.0e-14);
+  EXPECT_LT(output.q.qy.std_dev, 1.0e-14);
+  EXPECT_LT(output.q.qz.std_dev, 1.0e-14);
+  EXPECT_LT(output.q.qw.std_dev, 1.0e-14);
 
   //Absolute value of quaternion is taken, since quaternions equal their oppoisite
-  EXPECT_TRUE(abs(output.x.mean - camera_loc.translation()(0)) < 1.0e-14);
-  EXPECT_TRUE(abs(output.y.mean - camera_loc.translation()(1)) < 1.0e-14);
-  EXPECT_TRUE(abs(output.z.mean - camera_loc.translation()(2)) < 1.0e-14);
-  EXPECT_TRUE(abs(output.i.mean) - abs(q_ver.x()) < 1.0e-14);
-  EXPECT_TRUE(abs(output.j.mean) - abs(q_ver.y()) < 1.0e-14);
-  EXPECT_TRUE(abs(output.k.mean) - abs(q_ver.z()) < 1.0e-14);
-  EXPECT_TRUE(abs(output.w.mean) - abs(q_ver.w()) < 1.0e-14);
+  EXPECT_LT(abs(output.x.mean - camera_loc.translation()(0)), 1.0e-14);
+  EXPECT_LT(abs(output.y.mean - camera_loc.translation()(1)), 1.0e-14);
+  EXPECT_LT(abs(output.z.mean - camera_loc.translation()(2)), 1.0e-14);
+  EXPECT_LT(abs(output.q.qx.mean) - abs(q_ver.x()), 1.0e-14);
+  EXPECT_LT(abs(output.q.qy.mean) - abs(q_ver.y()), 1.0e-14);
+  EXPECT_LT(abs(output.q.qz.mean) - abs(q_ver.z()), 1.0e-14);
+  EXPECT_LT(abs(output.q.qw.mean) - abs(q_ver.w()), 1.0e-14);
 }
 
 TEST(NoiseTest, 2DNoiseTest)
@@ -96,12 +133,11 @@ TEST(NoiseTest, 2DNoiseTest)
   camera_loc.rotate(Eigen::AngleAxisd(M_PI,Eigen::Vector3d::UnitX()));
 
   Eigen::Quaterniond q_ver;
-  Eigen::Matrix3d m = camera_loc.rotation();
-  q_ver = m;
+  q_ver = camera_loc.rotation();
 
   //add noise boilerplate
   const double mean = 0.0;
-  const double stddev = 0.001;
+  const double stddev = 1.0;
   std::random_device rd{};
   std::mt19937 generator{rd()};
   std::normal_distribution<double> dist(mean, stddev);
@@ -137,25 +173,27 @@ TEST(NoiseTest, 2DNoiseTest)
    perturbed_problem_set.push_back(instance);
   }
 
- PnPNoiseStat output = rct_optimizations::qualifyNoise2D(perturbed_problem_set);
+  PnPNoiseStat output = rct_optimizations::qualifyNoise2D(perturbed_problem_set);
 
-  EXPECT_TRUE(output.x.std_dev < 1.5 * stddev);
-  EXPECT_TRUE(output.y.std_dev < 1.5 * stddev);
-  EXPECT_TRUE(output.z.std_dev < 1.5 * stddev);
-  EXPECT_TRUE(output.i.std_dev < 1.5 * stddev);
-  EXPECT_TRUE(output.j.std_dev < 1.5 * stddev);
-  EXPECT_TRUE(output.k.std_dev < 1.5 * stddev);
-  EXPECT_TRUE(output.w.std_dev < 1.5 * stddev);
+  //find true target position in camera
+  //target position relative to camera
+//  std::vector<double> rel_target_pos = {0,0, -1};
+//  std::vector<double> xy(2);
+//  const T* rel_target_pos = {0,0, -1};
+//  const T*  xy(2);
+
+//  rct_optimizations::projectPoint(camera.intr, rel_target_pos, xy);
+
+  EXPECT_LT(output.x.std_dev, 1.5 * stddev);
+  EXPECT_LT(output.y.std_dev, 1.5 * stddev);
+  EXPECT_LT(output.z.std_dev, 1.5 * stddev);
 
   //Absolute value of quaternion is taken, since quaternions equal their oppoisite
-  EXPECT_TRUE(abs(output.x.mean - camera_loc.translation()(0)) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.y.mean - camera_loc.translation()(1)) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.z.mean - camera_loc.translation()(2)) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.i.mean) - abs(q_ver.x()) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.j.mean) - abs(q_ver.y()) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.k.mean) - abs(q_ver.z()) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.w.mean) - abs(q_ver.w()) < 1.5 * stddev);
+  EXPECT_LT(Eigen::Quaterniond(abs(output.q.qw.mean), abs(output.q.qx.mean), abs(output.q.qy.mean), abs(output.q.qz.mean)).angularDistance(q_ver), ANGULAR_THRESHOLD);
 
+  EXPECT_LT(abs(output.x.mean - camera_loc.translation()(0)), (camera_loc.translation()(2)/camera.intr.fx()) * stddev);
+  EXPECT_LT(abs(output.y.mean - camera_loc.translation()(1)), (camera_loc.translation()(2)/camera.intr.fy()) * stddev);
+  //EXPECT_LT(abs(output.z.mean - camera_loc.translation()(2)), (camera.intr.fx() * camera_loc.translation.(0) * std::pow((u - camera.intr.cx()), -2.0)) * stddev);
 }
 
 TEST(NoiseTest, 2DTwistNoiseTest)
@@ -180,12 +218,11 @@ TEST(NoiseTest, 2DTwistNoiseTest)
   camera_loc.rotate(Eigen::AngleAxisd(M_PI/2,Eigen::Vector3d::UnitZ()));
 
   Eigen::Quaterniond q_ver;
-  Eigen::Matrix3d m = camera_loc.rotation();
-  q_ver = m;
+  q_ver = camera_loc.rotation();
 
   //add noise boilerplate
   const double mean = 0.0;
-  const double stddev = 0.001;
+  const double stddev = 1.0;
   std::random_device rd{};
   std::mt19937 generator{rd()};
   std::normal_distribution<double> dist(mean, stddev);
@@ -226,19 +263,13 @@ TEST(NoiseTest, 2DTwistNoiseTest)
  EXPECT_TRUE(output.x.std_dev < 1.5 * stddev);
  EXPECT_TRUE(output.y.std_dev < 1.5 * stddev);
  EXPECT_TRUE(output.z.std_dev < 1.5 * stddev);
- EXPECT_TRUE(output.i.std_dev < 1.5 * stddev);
- EXPECT_TRUE(output.j.std_dev < 1.5 * stddev);
- EXPECT_TRUE(output.k.std_dev < 1.5 * stddev);
- EXPECT_TRUE(output.w.std_dev < 1.5 * stddev);
+ EXPECT_LT(Eigen::Quaterniond(output.q.qw.mean, output.q.qx.mean, output.q.qy.mean, output.q.qz.mean).angularDistance(q_ver), ANGULAR_THRESHOLD);
 
  //Absolute value of quaternion is taken, since quaternions equal their oppoisite
- EXPECT_TRUE(abs(output.x.mean - camera_loc.translation()(0)) < 1.5 * stddev);
- EXPECT_TRUE(abs(output.y.mean - camera_loc.translation()(1)) < 1.5 * stddev);
- EXPECT_TRUE(abs(output.z.mean - camera_loc.translation()(2)) < 1.5 * stddev);
- EXPECT_TRUE(abs(output.i.mean) - abs(q_ver.x()) < 1.5 * stddev);
- EXPECT_TRUE(abs(output.j.mean) - abs(q_ver.y()) < 1.5 * stddev);
- EXPECT_TRUE(abs(output.k.mean) - abs(q_ver.z()) < 1.5 * stddev);
- EXPECT_TRUE(abs(output.w.mean) - abs(q_ver.w()) < 1.5 * stddev);
+
+ EXPECT_LT(abs(output.x.mean - camera_loc.translation()(0)), (camera_loc.translation()(2)/camera.intr.fx()) * stddev);
+ EXPECT_LT(abs(output.y.mean - camera_loc.translation()(1)), (camera_loc.translation()(2)/camera.intr.fy()) * stddev);
+ //EXPECT_LT(abs(output.z.mean - camera_loc.translation()(2)), (camera.intr.fx() * camera_loc.translation.(0) * std::pow((u - camera.intr.cx()), -2.0)) * stddev);
 }
 
 TEST(NoiseTest, 3DPerfectTest)
@@ -259,8 +290,7 @@ TEST(NoiseTest, 3DPerfectTest)
   camera_loc.rotate(Eigen::AngleAxisd(M_PI,Eigen::Vector3d::UnitX()));
 
   Eigen::Quaterniond q_ver;
-  Eigen::Matrix3d m = camera_loc.rotation();
-  q_ver = m;
+  q_ver = camera_loc.rotation();
 
   //create observations
   for (std::size_t i = 0; i < obs_cnt; ++i)
@@ -283,22 +313,23 @@ TEST(NoiseTest, 3DPerfectTest)
 
    PnPNoiseStat output = rct_optimizations::qualifyNoise3D(ideal_problem_set);
 
-   EXPECT_TRUE(output.x.std_dev < 1.0e-14);
-   EXPECT_TRUE(output.y.std_dev < 1.0e-14);
-   EXPECT_TRUE(output.z.std_dev < 1.0e-14);
-   EXPECT_TRUE(output.i.std_dev < 1.0e-1);
-   EXPECT_TRUE(output.j.std_dev < 1.0e-1);
-   EXPECT_TRUE(output.k.std_dev < 1.0e-1);
-   EXPECT_TRUE(output.w.std_dev < 1.0e-1);
+   EXPECT_LT(output.x.std_dev, 1.0e-14);
+   EXPECT_LT(output.y.std_dev, 1.0e-14);
+   EXPECT_LT(output.z.std_dev, 1.0e-14);
+   //Rotational accuracy is less than positional, possibly because orientation is not optimized directly
+   EXPECT_LT(output.q.qx.std_dev, ANGULAR_THRESHOLD);
+   EXPECT_LT(output.q.qy.std_dev, ANGULAR_THRESHOLD);
+   EXPECT_LT(output.q.qz.std_dev, ANGULAR_THRESHOLD);
+   EXPECT_LT(output.q.qw.std_dev, ANGULAR_THRESHOLD);
 
    //Absolute value of quaternion is taken, since quaternions equal their oppoisite
-   EXPECT_TRUE(abs(output.x.mean - camera_loc.translation()(0)) < 1.0e-14);
-   EXPECT_TRUE(abs(output.y.mean - camera_loc.translation()(1)) < 1.0e-14);
-   EXPECT_TRUE(abs(output.z.mean - camera_loc.translation()(2)) < 1.0e-14);
-   EXPECT_TRUE(abs(output.i.mean) - abs(q_ver.x()) < 1.0e-14);
-   EXPECT_TRUE(abs(output.j.mean) - abs(q_ver.y()) < 1.0e-14);
-   EXPECT_TRUE(abs(output.k.mean) - abs(q_ver.z()) < 1.0e-14);
-   EXPECT_TRUE(abs(output.w.mean) - abs(q_ver.w()) < 1.0e-14);
+   EXPECT_LT(abs(output.x.mean - camera_loc.translation()(0)), 1.0e-14);
+   EXPECT_LT(abs(output.y.mean - camera_loc.translation()(1)), 1.0e-14);
+   EXPECT_LT(abs(output.z.mean - camera_loc.translation()(2)), 1.0e-14);
+   EXPECT_LT(abs(output.q.qx.mean) - abs(q_ver.x()), ANGULAR_THRESHOLD);
+   EXPECT_LT(abs(output.q.qy.mean) - abs(q_ver.y()), ANGULAR_THRESHOLD);
+   EXPECT_LT(abs(output.q.qz.mean) - abs(q_ver.z()), ANGULAR_THRESHOLD);
+   EXPECT_LT(abs(output.q.qw.mean) - abs(q_ver.w()), ANGULAR_THRESHOLD );
 }
 
 TEST(NoiseTest, 3DNoiseTest)
@@ -318,12 +349,11 @@ TEST(NoiseTest, 3DNoiseTest)
   camera_loc.rotate(Eigen::AngleAxisd(M_PI,Eigen::Vector3d::UnitX()));
 
   Eigen::Quaterniond q_ver;
-  Eigen::Matrix3d m = camera_loc.rotation();
-  q_ver = m;
+  q_ver = camera_loc.rotation();
 
   //Noise boilerplate
   const double mean = 0.0;
-  const double stddev = 0.001;
+  const double stddev = 1.0;
   std::random_device rd{};
   std::mt19937 generator{rd()};
   std::normal_distribution<double> dist(mean, stddev);
@@ -362,23 +392,16 @@ TEST(NoiseTest, 3DNoiseTest)
 
   PnPNoiseStat output = rct_optimizations::qualifyNoise3D(perturbed_problem_set);
 
-  EXPECT_TRUE(output.x.std_dev < 1.5 * stddev);
-  EXPECT_TRUE(output.y.std_dev < 1.5 * stddev);
-  EXPECT_TRUE(output.z.std_dev < 1.5 * stddev);
-  EXPECT_TRUE(output.i.std_dev < 1.5 * stddev);
-  EXPECT_TRUE(output.j.std_dev < 1.5 * stddev);
-  EXPECT_TRUE(output.k.std_dev < 1.5 * stddev);
-  EXPECT_TRUE(output.w.std_dev < 1.5 * stddev);
+  EXPECT_LT(output.x.std_dev, 1.5 * stddev);
+  EXPECT_LT(output.y.std_dev, 1.5 * stddev);
+  EXPECT_LT(output.z.std_dev, 1.5 * stddev);
+  EXPECT_LT(Eigen::Quaterniond(output.q.qw.mean, output.q.qx.mean, output.q.qy.mean, output.q.qz.mean).angularDistance(q_ver), ANGULAR_THRESHOLD);
 
   //Absolute value of quaternion is taken, since quaternions equal their oppoisite
-  EXPECT_TRUE(abs(output.x.mean - camera_loc.translation()(0)) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.y.mean - camera_loc.translation()(1)) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.z.mean - camera_loc.translation()(2)) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.i.mean) - abs(q_ver.x()) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.j.mean) - abs(q_ver.y()) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.k.mean) - abs(q_ver.z()) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.w.mean) - abs(q_ver.w()) < 1.5 * stddev);
-
+  //Comparing to Standard Deviation, because 3d camera does not have explicit instrinsics
+  EXPECT_LT(abs(output.x.mean - camera_loc.translation()(0)), 1.5 * stddev);
+  EXPECT_LT(abs(output.y.mean - camera_loc.translation()(1)), 1.5 * stddev);
+  EXPECT_LT(abs(output.z.mean - camera_loc.translation()(2)), 1.5 * stddev);
 }
 
 TEST(NoiseTest, 3DTwistNoiseTest)
@@ -399,12 +422,11 @@ TEST(NoiseTest, 3DTwistNoiseTest)
   camera_loc.rotate(Eigen::AngleAxisd(M_PI/2,Eigen::Vector3d::UnitZ()));
 
   Eigen::Quaterniond q_ver;
-  Eigen::Matrix3d m = camera_loc.rotation();
-  q_ver = m;
+  q_ver = camera_loc.rotation();
 
   //Noise boilerplate
   const double mean = 0.0;
-  const double stddev = 0.001;
+  const double stddev = 1.0;
   std::random_device rd{};
   std::mt19937 generator{rd()};
   std::normal_distribution<double> dist(mean, stddev);
@@ -446,19 +468,15 @@ TEST(NoiseTest, 3DTwistNoiseTest)
   EXPECT_TRUE(output.x.std_dev < 1.5 * stddev);
   EXPECT_TRUE(output.y.std_dev < 1.5 * stddev);
   EXPECT_TRUE(output.z.std_dev < 1.5 * stddev);
-  EXPECT_TRUE(output.i.std_dev < 1.5 * stddev);
-  EXPECT_TRUE(output.j.std_dev < 1.5 * stddev);
-  EXPECT_TRUE(output.k.std_dev < 1.5 * stddev);
-  EXPECT_TRUE(output.w.std_dev < 1.5 * stddev);
+  EXPECT_LT(Eigen::Quaterniond(output.q.qw.mean, output.q.qx.mean, output.q.qy.mean, output.q.qz.mean).angularDistance(q_ver), ANGULAR_THRESHOLD);
 
   //Absolute value of quaternion is taken, since quaternions equal their oppoisite
-  EXPECT_TRUE(abs(output.x.mean - camera_loc.translation()(0)) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.y.mean - camera_loc.translation()(1)) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.z.mean - camera_loc.translation()(2)) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.i.mean) - abs(q_ver.x()) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.j.mean) - abs(q_ver.y()) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.k.mean) - abs(q_ver.z()) < 1.5 * stddev);
-  EXPECT_TRUE(abs(output.w.mean) - abs(q_ver.w()) < 1.5 * stddev);
+
+  //Absolute value of quaternion is taken, since quaternions equal their oppoisite
+  //Comparing to Standard Deviation, because 3d camera does not have explicit instrinsics
+  EXPECT_LT(abs(output.x.mean - camera_loc.translation()(0)), 1.5 * stddev);
+  EXPECT_LT(abs(output.y.mean - camera_loc.translation()(1)), 1.5 * stddev);
+  EXPECT_LT(abs(output.z.mean - camera_loc.translation()(2)), 1.5 * stddev);
 }
 
 int main(int argc, char **argv)
