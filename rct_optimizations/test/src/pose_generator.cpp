@@ -22,7 +22,7 @@ Eigen::Isometry3d lookAt(const Eigen::Vector3d &origin,
 }
 
 // hemisphere
-std::vector<Eigen::Isometry3d> HemispherePoseGenerator::generate(const Eigen::Isometry3d &target_origin) const
+std::vector<Eigen::Isometry3d> HemispherePoseGenerator::generate(const Eigen::Isometry3d &target_origin)
 {
   std::size_t position_cnt = theta_cnt * phi_cnt;
 
@@ -53,7 +53,7 @@ std::vector<Eigen::Isometry3d> HemispherePoseGenerator::generate(const Eigen::Is
       // x is 'up' in target frame
       Eigen::Isometry3d camera_oriented = target_offset
                                         * lookAt(camera.translation(), target_origin.translation(), Eigen::Vector3d(1, 0, 0))
-                                        * Eigen::Isometry3d(Eigen::AngleAxisd(z_rot, Eigen::Vector3d::UnitZ()));
+                                        * Eigen::Isometry3d(Eigen::AngleAxisd(getZRot(), Eigen::Vector3d::UnitZ()));
 
       // this vector is still in target spatial coordinates
       camera_positions.push_back(camera_oriented);
@@ -63,8 +63,13 @@ std::vector<Eigen::Isometry3d> HemispherePoseGenerator::generate(const Eigen::Is
   return camera_positions;
 }
 
+double HemispherePoseGenerator::getZRot()
+{
+  return z_sampler(mt_rand);
+}
+
 // cone
-std::vector<Eigen::Isometry3d> ConicalPoseGenerator::generate(const Eigen::Isometry3d &target_origin) const
+std::vector<Eigen::Isometry3d> ConicalPoseGenerator::generate(const Eigen::Isometry3d &target_origin)
 {
   std::vector<Eigen::Isometry3d> camera_positions;
   camera_positions.reserve(n_poses);
@@ -82,7 +87,7 @@ std::vector<Eigen::Isometry3d> ConicalPoseGenerator::generate(const Eigen::Isome
     // change orientation to look at target
     Eigen::Isometry3d camera_oriented = target_offset
                                       * lookAt(camera_pose.translation(), target_origin.translation(), Eigen::Vector3d(1, 0, 0))
-                                      * Eigen::Isometry3d(Eigen::AngleAxisd(z_rot, Eigen::Vector3d::UnitZ()));
+                                      * Eigen::Isometry3d(Eigen::AngleAxisd(getZRot(), Eigen::Vector3d::UnitZ()));
 
     camera_positions.push_back(camera_oriented);
   }
@@ -90,8 +95,13 @@ std::vector<Eigen::Isometry3d> ConicalPoseGenerator::generate(const Eigen::Isome
   return camera_positions;
 }
 
+double ConicalPoseGenerator::getZRot()
+{
+  return z_sampler(mt_rand);
+}
+
 // grid
-std::vector<Eigen::Isometry3d> GridPoseGenerator::generate(const Eigen::Isometry3d &target_origin) const
+std::vector<Eigen::Isometry3d> GridPoseGenerator::generate(const Eigen::Isometry3d &target_origin)
 {
   // Generates positions in target frame; need to convert to world frame
   std::vector<Eigen::Isometry3d> camera_positions;
@@ -111,13 +121,18 @@ std::vector<Eigen::Isometry3d> GridPoseGenerator::generate(const Eigen::Isometry
       // change orientation to look at target
       Eigen::Isometry3d camera_oriented = target_offset
                                         * lookAt(camera_pose.translation(), target_origin.translation(), Eigen::Vector3d(1, 0, 0))
-                                        * Eigen::Isometry3d(Eigen::AngleAxisd(z_rot, Eigen::Vector3d::UnitZ()));
+                                        * Eigen::Isometry3d(Eigen::AngleAxisd(getZRot(), Eigen::Vector3d::UnitZ()));
 
       camera_positions.push_back(camera_oriented);
     }
   }
 
   return camera_positions;
+}
+
+double GridPoseGenerator::getZRot()
+{
+  return z_sampler(mt_rand);
 }
 
 } // namespace test

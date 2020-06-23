@@ -2,6 +2,7 @@
 
 #include <Eigen/Geometry>
 #include <vector>
+#include <random>
 
 namespace rct_optimizations
 {
@@ -25,7 +26,9 @@ struct PoseGenerator
    * @param target_origin The position of the target
    * @return A vector of camera positions & orientations
    */
-  virtual std::vector<Eigen::Isometry3d> generate(const Eigen::Isometry3d &target_origin) const = 0;
+  virtual std::vector<Eigen::Isometry3d> generate(const Eigen::Isometry3d &target_origin) = 0;
+
+  virtual double getZRot() = 0;
 };
 
 /**
@@ -33,27 +36,81 @@ struct PoseGenerator
  */
 struct HemispherePoseGenerator : PoseGenerator
 {
-  inline HemispherePoseGenerator(double r_ = 2.0,
-                                 unsigned theta_cnt_ = 10,
-                                 unsigned phi_cnt_ = 10,
-                                 double z_rot_ = 0.0,
-                                 const Eigen::Isometry3d& target_offset_ = Eigen::Isometry3d::Identity())
+protected:
+  inline HemispherePoseGenerator(double r_,
+                                 unsigned theta_cnt_,
+                                 unsigned phi_cnt_,
+                                 double z_rot_min_,
+                                 double z_rot_max_,
+                                 const Eigen::Isometry3d& target_offset_,
+                                 unsigned long seed_ = std::mt19937::default_seed)
     : r(r_)
     , theta_cnt(theta_cnt_)
     , phi_cnt(phi_cnt_)
-    , z_rot(z_rot_)
     , target_offset(target_offset_)
+    , mt_rand(seed_)
+    , z_sampler(z_rot_min_, z_rot_max_)
   {
+
+  }
+
+public:
+  inline HemispherePoseGenerator(double r_,
+                                 unsigned theta_cnt_,
+                                 unsigned phi_cnt_,
+                                 double z_rot_,
+                                 const Eigen::Isometry3d& target_offset_)
+    : HemispherePoseGenerator(r_, theta_cnt_, phi_cnt_, z_rot_, z_rot_, target_offset_)
+  {
+
+  }
+
+  inline HemispherePoseGenerator(double r_, unsigned theta_cnt_, unsigned phi_cnt_)
+    : HemispherePoseGenerator(r_, theta_cnt_, phi_cnt_, 0.0, Eigen::Isometry3d::Identity())
+  {
+
+  }
+
+  inline HemispherePoseGenerator()
+    : HemispherePoseGenerator(2.0, 10, 10, 0.0, Eigen::Isometry3d::Identity())
+  {
+
   }
 
   virtual std::vector<Eigen::Isometry3d> generate(
-    const Eigen::Isometry3d &target_origin) const override final;
+    const Eigen::Isometry3d &target_origin) override final;
 
-  double r; /* @brief Radius of the hemisphere */
-  unsigned theta_cnt; /* @brief The number of points in the theta-wise direction*/
-  unsigned phi_cnt; /* @brief The number of points in the phi-wise direction */
-  double z_rot; /* @brief Rotation to apply around camera Z-axis (radians) */
-  Eigen::Isometry3d target_offset; /* @brief Transform from target origin to origin of pose pattern */
+  virtual double getZRot() override final;
+
+  double r; /** @brief Radius of the hemisphere */
+  unsigned theta_cnt; /** @brief The number of points in the theta-wise direction*/
+  unsigned phi_cnt; /** @brief The number of points in the phi-wise direction */
+  Eigen::Isometry3d target_offset; /** @brief Transform from target origin to origin of pose pattern */
+
+private:
+  std::mt19937 mt_rand; /** @brief Psuedo-random number generator */
+  std::uniform_real_distribution<double> z_sampler; /** @brief Sampler for camera Z+ rotation */
+};
+
+/**
+ * @brief Generates camera poses in a hemisphere pattern. Randomly vary rotation around the camera Z+ axis.
+ */
+struct RandomZRotHemispherePoseGenerator : HemispherePoseGenerator
+{
+  inline RandomZRotHemispherePoseGenerator(double r_,
+                                           unsigned theta_cnt_,
+                                           unsigned phi_cnt_,
+                                           const Eigen::Isometry3d& target_offset_)
+    : HemispherePoseGenerator (r_, theta_cnt_, phi_cnt_, 0.0, 2 * M_PI, target_offset_)
+  {
+
+  }
+
+  inline RandomZRotHemispherePoseGenerator()
+    : RandomZRotHemispherePoseGenerator(2.0, 10, 10, Eigen::Isometry3d::Identity())
+  {
+
+  }
 };
 
 /**
@@ -61,27 +118,74 @@ struct HemispherePoseGenerator : PoseGenerator
  */
 struct ConicalPoseGenerator : PoseGenerator
 {
-  inline ConicalPoseGenerator(double r_ = 1.0,
-                              double h_ = 2.0,
-                              unsigned n_poses_ = 20,
-                              double z_rot_ = 0.0,
-                              const Eigen::Isometry3d& target_offset_ = Eigen::Isometry3d::Identity())
+protected:
+  inline ConicalPoseGenerator(double r_,
+                              double h_,
+                              unsigned n_poses_,
+                              double z_rot_min_,
+                              double z_rot_max_,
+                              const Eigen::Isometry3d& target_offset_,
+                              unsigned long seed_ = std::mt19937::default_seed)
     : r(r_)
     , h(h_)
     , n_poses(n_poses_)
-    , z_rot(z_rot_)
     , target_offset(target_offset_)
+    , mt_rand(seed_)
+    , z_sampler(z_rot_min_, z_rot_max_)
   {
   }
 
+public:
+  inline ConicalPoseGenerator(double r_,
+                              double h_,
+                              unsigned n_poses_,
+                              double z_rot_,
+                              const Eigen::Isometry3d& target_offset_)
+    : ConicalPoseGenerator(r_, h_, n_poses_, z_rot_, z_rot_, target_offset_)
+  {
+
+  }
+
+  inline ConicalPoseGenerator()
+    : ConicalPoseGenerator(1.0, 2.0, 20, 0.0, Eigen::Isometry3d::Identity())
+  {
+
+  }
+
   virtual std::vector<Eigen::Isometry3d> generate(
-    const Eigen::Isometry3d &target_origin) const override final;
+    const Eigen::Isometry3d &target_origin) override final;
+
+  virtual double getZRot() override final;
 
   double r; /** @brief Radius of the cone*/
   double h; /** @brief Height of the cone (distance to target) */
   unsigned n_poses; /** @brief Number of poses to generate */
-  double z_rot; /* @brief Rotation to apply around camera Z-axis (radians) */
   Eigen::Isometry3d target_offset; /* @brief Transform from target origin to origin of pose pattern */
+
+private:
+  std::mt19937 mt_rand; /** @brief Psuedo-random number generator */
+  std::uniform_real_distribution<double> z_sampler; /** @brief Sampler for camera Z+ rotation */
+};
+
+/**
+ * @brief Generates camera positions using a conical template, with the target at the 'point'. Randomly vary rotation around the camera Z+ axis.
+ */
+struct RandomZRotConicalPoseGenerator : ConicalPoseGenerator
+{
+  inline RandomZRotConicalPoseGenerator(double r_,
+                                        double h_,
+                                        unsigned n_poses_,
+                                        const Eigen::Isometry3d& target_offset_)
+    : ConicalPoseGenerator (r_, h_, n_poses_, 0.0, 2 * M_PI, target_offset_)
+  {
+
+  }
+
+  inline RandomZRotConicalPoseGenerator()
+    : RandomZRotConicalPoseGenerator(1.0, 2.0, 20, Eigen::Isometry3d::Identity())
+  {
+
+  }
 };
 
 /**
@@ -89,27 +193,64 @@ struct ConicalPoseGenerator : PoseGenerator
  */
 struct GridPoseGenerator : PoseGenerator
 {
-  inline GridPoseGenerator(double spacing_ = 0.2,
-                           double h_ = 2.0,
-                           unsigned grid_side_ = 10,
-                           double z_rot_ = 0.0,
-                           const Eigen::Isometry3d& target_offset_ = Eigen::Isometry3d::Identity())
+protected:
+  inline GridPoseGenerator(double spacing_,
+                           double h_,
+                           unsigned grid_side_,
+                           double z_rot_min_,
+                           double z_rot_max_,
+                           const Eigen::Isometry3d& target_offset_,
+                           unsigned long seed_ = std::mt19937::default_seed)
     : spacing(spacing_)
     , h(h_)
     , grid_side(grid_side_)
-    , z_rot(z_rot_)
     , target_offset(target_offset_)
+    , mt_rand(seed_)
+    , z_sampler(z_rot_min_, z_rot_max_)
+  {
+  }
+
+public:
+  inline GridPoseGenerator()
+    : GridPoseGenerator(0.2, 2.0, 10, 0.0, 0.0, Eigen::Isometry3d::Identity())
   {
   }
 
   virtual std::vector<Eigen::Isometry3d> generate(
-    const Eigen::Isometry3d &target_origin) const override final;
+    const Eigen::Isometry3d &target_origin) override final;
 
-  double spacing; /** @brief Distance betweeon points */
+  virtual double getZRot() override final;
+
+  double spacing; /** @brief Distance between points */
   double h; /** @brief Grid distance to target */
-  unsigned grid_side; /** number of columns & rows to go into grid */
-  double z_rot; /* @brief Rotation to apply around camera Z-axis (radians) */
-  Eigen::Isometry3d target_offset; /* @brief Transform from target origin to origin of pose pattern */
+  unsigned grid_side; /** @brief number of columns & rows to go into grid */
+  double z_rot; /** @brief Rotation to apply around camera Z-axis (radians) */
+  Eigen::Isometry3d target_offset; /** @brief Transform from target origin to origin of pose pattern */
+
+private:
+  std::mt19937 mt_rand; /** @brief Psuedo-random number generator */
+  std::uniform_real_distribution<double> z_sampler; /** @brief Sampler for camera Z+ rotation */
+};
+
+/**
+ * @brief Generate poses in a grid. Randomly vary rotation around the camera Z+ axis.
+ */
+struct RandomZRotGridPoseGenerator : GridPoseGenerator
+{
+  inline RandomZRotGridPoseGenerator(double spacing_,
+                                     double h_,
+                                     unsigned grid_side_,
+                                     const Eigen::Isometry3d& target_offset_)
+    : GridPoseGenerator (spacing_, h_, grid_side_, 0.0, 2 * M_PI, target_offset_)
+  {
+
+  }
+
+  inline RandomZRotGridPoseGenerator()
+    : RandomZRotGridPoseGenerator(0.2, 2.0, 10, Eigen::Isometry3d::Identity())
+  {
+
+  }
 };
 
 }  // namespace test
