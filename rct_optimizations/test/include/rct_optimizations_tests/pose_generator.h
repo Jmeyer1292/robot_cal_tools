@@ -146,6 +146,14 @@ public:
 
   }
 
+  inline ConicalPoseGenerator(double r_,
+                              double h_,
+                              unsigned n_poses_)
+    : ConicalPoseGenerator(r_, h_, n_poses_, 0.0, Eigen::Isometry3d::Identity())
+  {
+
+  }
+
   inline ConicalPoseGenerator()
     : ConicalPoseGenerator(1.0, 2.0, 20, 0.0, Eigen::Isometry3d::Identity())
   {
@@ -211,9 +219,28 @@ protected:
   }
 
 public:
+  inline GridPoseGenerator(double spacing_,
+                           double h_,
+                           unsigned grid_side_,
+                           double z_rot_,
+                           const Eigen::Isometry3d& target_offset_)
+    : GridPoseGenerator(spacing_, h_, grid_side_, z_rot_, z_rot_, target_offset_)
+  {
+
+  }
+
+  inline GridPoseGenerator(double spacing_,
+                           double h_,
+                           unsigned grid_side_)
+    : GridPoseGenerator(spacing_, h_, grid_side_, 0.0, Eigen::Isometry3d::Identity())
+  {
+
+  }
+
   inline GridPoseGenerator()
     : GridPoseGenerator(0.2, 2.0, 10, 0.0, 0.0, Eigen::Isometry3d::Identity())
   {
+
   }
 
   virtual std::vector<Eigen::Isometry3d> generate(
