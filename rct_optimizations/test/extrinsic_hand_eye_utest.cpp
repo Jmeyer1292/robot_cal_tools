@@ -260,9 +260,13 @@ TYPED_TEST(HandEyeTest, RandomAroundAnswerInitialConditions_MoreHemispheres)
   const std::size_t max_attempts = 2 * n;
   std::size_t count = 0;
 
+
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation().x() = 0.1;
+
   std::vector<std::shared_ptr<test::PoseGenerator>> pgs;
-//  pgs.push_back(std::make_shared<test::HemispherePoseGenerator>(2.0, 10, 10));
-  pgs.push_back(std::make_shared<test::HemispherePoseGenerator>(2.0, 10, 10, 0.5 * M_PI));
+  pgs.push_back(std::make_shared<test::RandomZRotHemispherePoseGenerator>(2.0, 10, 10, Eigen::Isometry3d::Identity()));
+  pgs.push_back(std::make_shared<test::RandomZRotHemispherePoseGenerator>(2.0, 10, 10, offset));
 
   while(count < n && count < max_attempts)
   {
