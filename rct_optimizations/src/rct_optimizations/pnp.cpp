@@ -1,7 +1,6 @@
 #include "rct_optimizations/pnp.h"
 #include "rct_optimizations/ceres_math_utilities.h"
 #include "rct_optimizations/covariance_analysis.h"
-
 #include <ceres/ceres.h>
 
 namespace
@@ -117,11 +116,30 @@ PnPResult optimize(const PnPProblem &params)
   result.camera_to_target = Eigen::Translation3d(cam_to_tgt_translation)
                             * Eigen::AngleAxisd(cam_to_tgt_angle_axis.norm(),
                                                 cam_to_tgt_angle_axis.normalized());
-  result.camera_to_target_covariance = computeFullDV2DVCovariance(problem,
-                                                                  cam_to_tgt_translation.data(),
-                                                                  cam_to_tgt_translation.size(),
-                                                                  cam_to_tgt_angle_axis.data(),
-                                                                  cam_to_tgt_angle_axis.size());
+//  result.camera_to_target_covariance = computeFullDV2DVCovariance(problem,
+//                                                                  cam_to_tgt_translation.data(),
+//                                                                  cam_to_tgt_translation.size(),
+//                                                                  cam_to_tgt_angle_axis.data(),
+//                                                                  cam_to_tgt_angle_axis.size());
+
+  // compose labels "camera_to_target_x", etc.
+  std::vector<std::string> labels_camera_to_target_guess_translation;
+  for (auto label_t : params.labels_translation)
+  {
+    labels_camera_to_target_guess_translation.emplace_back(params.label_camera_to_target_guess + "_" + label_t);
+  }
+
+  // compose labels "camera_to_target_qx", etc.
+  std::vector<std::string> labels_camera_to_target_guess_quaternion;
+  for (auto label_r : params.labels_rotation)
+  {
+    labels_camera_to_target_guess_quaternion.emplace_back(params.label_camera_to_target_guess + "_" + label_r);
+  }
+  std::vector<std::vector<std::string>> param_labels = { labels_camera_to_target_guess_translation, labels_camera_to_target_guess_quaternion };
+
+  result.covariance = rct_optimizations::computeCovariance(problem,
+                                                           std::vector<const double *>({cam_to_tgt_translation.data(), cam_to_tgt_angle_axis.data()}),
+                                                           param_labels);
 
   return result;
 }
@@ -159,11 +177,11 @@ PnPResult optimize(const rct_optimizations::PnPProblem3D& params)
   result.camera_to_target = Eigen::Translation3d(cam_to_tgt_translation)
                             * Eigen::AngleAxisd(cam_to_tgt_angle_axis.norm(),
                                                 cam_to_tgt_angle_axis.normalized());
-  result.camera_to_target_covariance = computeFullDV2DVCovariance(problem,
-                                                                  cam_to_tgt_translation.data(),
-                                                                  cam_to_tgt_translation.size(),
-                                                                  cam_to_tgt_angle_axis.data(),
-                                                                  cam_to_tgt_angle_axis.size());
+//  result.covariance = computeFullDV2DVCovariance(problem,
+//                                                                  cam_to_tgt_translation.data(),
+//                                                                  cam_to_tgt_translation.size(),
+//                                                                  cam_to_tgt_angle_axis.data(),
+//                                                                  cam_to_tgt_angle_axis.size());
 
   return result;
 }

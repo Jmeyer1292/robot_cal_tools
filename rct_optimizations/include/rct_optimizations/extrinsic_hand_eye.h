@@ -16,7 +16,8 @@
  */
 #pragma once
 
-#include "rct_optimizations/types.h"
+#include <rct_optimizations/covariance_types.h>
+#include <rct_optimizations/types.h>
 #include <Eigen/Dense>
 #include <vector>
 
@@ -28,6 +29,12 @@ struct ExtrinsicHandEyeProblem2D3D
   CameraIntrinsics intr;
   Eigen::Isometry3d target_mount_to_target_guess;
   Eigen::Isometry3d camera_mount_to_camera_guess;
+
+  const std::array<std::string, 6> labels_isometry3d = {"x", "y", "z", "rx", "ry", "rz"};
+
+  std::string label_target_mount_to_target = "wrist_to_target";
+
+  std::string label_camera_mount_to_camera = "base_to_camera";
 };
 
 struct ExtrinsicHandEyeProblem3D3D
@@ -35,6 +42,12 @@ struct ExtrinsicHandEyeProblem3D3D
   typename Observation3D3D::Set observations;
   Eigen::Isometry3d target_mount_to_target_guess;
   Eigen::Isometry3d camera_mount_to_camera_guess;
+
+  const std::array<std::string, 6> labels_isometry3d = {"x", "y", "z", "rx", "ry", "rz"};
+
+  std::string label_target_mount_to_target = "wrist_to_target";
+
+  std::string label_camera_mount_to_camera = "base_to_camera";
 };
 
 struct ExtrinsicHandEyeResult
@@ -46,9 +59,7 @@ struct ExtrinsicHandEyeResult
   Eigen::Isometry3d target_mount_to_target;
   Eigen::Isometry3d camera_mount_to_camera;
 
-  Eigen::MatrixXd covariance_target_mount_to_target;
-  Eigen::MatrixXd covariance_camera_mount_to_camera;
-  Eigen::MatrixXd covariance_tform_target_to_tform_camera;
+  CovarianceResult covariance;
 };
 
 ExtrinsicHandEyeResult optimize(const ExtrinsicHandEyeProblem2D3D &params);

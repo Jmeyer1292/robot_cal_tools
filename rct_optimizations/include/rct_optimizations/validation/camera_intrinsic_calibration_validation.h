@@ -1,6 +1,7 @@
 #pragma once
 
 #include <rct_optimizations/pnp.h>
+#include <rct_optimizations/covariance_types.h>
 #include <rct_optimizations/types.h>
 
 namespace rct_optimizations

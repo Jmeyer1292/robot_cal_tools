@@ -1,9 +1,10 @@
-#include "rct_optimizations/extrinsic_hand_eye.h"
+#include <rct_optimizations/extrinsic_hand_eye.h>
 
-#include "rct_optimizations/ceres_math_utilities.h"
-#include "rct_optimizations/covariance_analysis.h"
-#include "rct_optimizations/eigen_conversions.h"
-#include "rct_optimizations/types.h"
+#include <rct_optimizations/ceres_math_utilities.h>
+#include <rct_optimizations/covariance_analysis.h>
+#include <rct_optimizations/covariance_types.h>
+#include <rct_optimizations/eigen_conversions.h>
+#include <rct_optimizations/types.h>
 
 #include <ceres/ceres.h>
 #include <iostream>
@@ -211,12 +212,28 @@ ExtrinsicHandEyeResult optimize(const ExtrinsicHandEyeProblem2D3D& params)
   result.camera_mount_to_camera = poseCalToEigen(internal_camera_to_wrist).inverse();
   result.initial_cost_per_obs = summary.initial_cost / summary.num_residuals;
   result.final_cost_per_obs = summary.final_cost / summary.num_residuals;
-  result.covariance_camera_mount_to_camera = rct_optimizations::computePoseCovariance(problem, internal_camera_to_wrist);
-  result.covariance_target_mount_to_target = rct_optimizations::computePoseCovariance(problem, internal_base_to_target);
-  result.covariance_tform_target_to_tform_camera = rct_optimizations::computePose2PoseCovariance(problem, internal_camera_to_wrist, internal_base_to_target);
+
+  // compose labels "camera_mount_to_camera_x", etc.
+  std::vector<std::string> labels_camera_mount_to_camera;
+  for (auto label_isometry : params.labels_isometry3d)
+  {
+    labels_camera_mount_to_camera.emplace_back(params.label_camera_mount_to_camera + "_" + label_isometry);
+  }
+
+  // compose labels "target_mount_to_target_x", etc.
+  std::vector<std::string> labels_target_mount_to_target;
+  for (auto label_isometry : params.labels_isometry3d)
+  {
+    labels_target_mount_to_target.emplace_back(params.label_target_mount_to_target + "_" + label_isometry);
+  }
+
+  std::vector<std::vector<std::string>> param_labels;
+  param_labels.push_back(labels_camera_mount_to_camera);
+  param_labels.push_back(labels_target_mount_to_target);
+
+  result.covariance = rct_optimizations::computeCovariance(problem, param_labels);
 
   return result;
-
 }
 
 ExtrinsicHandEyeResult optimize(const ExtrinsicHandEyeProblem3D3D& params)
@@ -257,9 +274,26 @@ ExtrinsicHandEyeResult optimize(const ExtrinsicHandEyeProblem3D3D& params)
   result.camera_mount_to_camera = poseCalToEigen(internal_camera_to_wrist).inverse();
   result.initial_cost_per_obs = summary.initial_cost / summary.num_residuals;
   result.final_cost_per_obs = summary.final_cost / summary.num_residuals;
-  result.covariance_camera_mount_to_camera = rct_optimizations::computePoseCovariance(problem, internal_camera_to_wrist);
-  result.covariance_target_mount_to_target = rct_optimizations::computePoseCovariance(problem, internal_base_to_target);
-  result.covariance_tform_target_to_tform_camera = rct_optimizations::computePose2PoseCovariance(problem, internal_camera_to_wrist, internal_base_to_target);
+
+  // compose labels "camera_mount_to_camera_x", etc.
+  std::vector<std::string> labels_camera_mount_to_camera;
+  for (auto label_isometry : params.labels_isometry3d)
+  {
+    labels_camera_mount_to_camera.emplace_back(params.label_camera_mount_to_camera + "_" + label_isometry);
+  }
+
+  // compose labels "target_mount_to_target_x", etc.
+  std::vector<std::string> labels_target_mount_to_target;
+  for (auto label_isometry : params.labels_isometry3d)
+  {
+    labels_target_mount_to_target.emplace_back(params.label_target_mount_to_target + "_" + label_isometry);
+  }
+
+  std::vector<std::vector<std::string>> param_labels;
+  param_labels.push_back(labels_camera_mount_to_camera);
+  param_labels.push_back(labels_target_mount_to_target);
+
+  result.covariance = rct_optimizations::computeCovariance(problem, param_labels);
 
   return result;
 }

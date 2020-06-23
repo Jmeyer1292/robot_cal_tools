@@ -247,7 +247,7 @@ rct_optimizations::optimize(const rct_optimizations::IntrinsicEstimationProblem&
 
   // TODO: How to handle errors while calculating covariance? Possible for optimization to converge even though the covariance matrix is near rank deficient,
   // which means the result contains (potentially) valid optimization results but partial or invalid covariance results.
-  result.covariance_intr = rct_optimizations::computeDVCovariance(problem, internal_intrinsics_data.data(), 9);
+//  result.covariance_intr = rct_optimizations::computeDVCovariance(problem, internal_intrinsics_data.data(), 9);
 
   return result;
 }
