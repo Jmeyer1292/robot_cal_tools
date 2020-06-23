@@ -3,6 +3,7 @@
 #include <Eigen/Geometry>
 #include <vector>
 #include <random>
+#include <memory>
 
 namespace rct_optimizations
 {
@@ -27,8 +28,6 @@ struct PoseGenerator
    * @return A vector of camera positions & orientations
    */
   virtual std::vector<Eigen::Isometry3d> generate(const Eigen::Isometry3d &target_origin) = 0;
-
-  virtual double getZRot() = 0;
 };
 
 /**
@@ -79,8 +78,6 @@ public:
 
   virtual std::vector<Eigen::Isometry3d> generate(
     const Eigen::Isometry3d &target_origin) override final;
-
-  virtual double getZRot() override final;
 
   double r; /** @brief Radius of the hemisphere */
   unsigned theta_cnt; /** @brief The number of points in the theta-wise direction*/
@@ -163,8 +160,6 @@ public:
   virtual std::vector<Eigen::Isometry3d> generate(
     const Eigen::Isometry3d &target_origin) override final;
 
-  virtual double getZRot() override final;
-
   double r; /** @brief Radius of the cone*/
   double h; /** @brief Height of the cone (distance to target) */
   unsigned n_poses; /** @brief Number of poses to generate */
@@ -246,8 +241,6 @@ public:
   virtual std::vector<Eigen::Isometry3d> generate(
     const Eigen::Isometry3d &target_origin) override final;
 
-  virtual double getZRot() override final;
-
   double spacing; /** @brief Distance between points */
   double h; /** @brief Grid distance to target */
   unsigned grid_side; /** @brief number of columns & rows to go into grid */
@@ -278,6 +271,36 @@ struct RandomZRotGridPoseGenerator : GridPoseGenerator
   {
 
   }
+};
+
+struct RandomZRotPoseGenerator : PoseGenerator
+{
+  inline RandomZRotPoseGenerator(const std::shared_ptr<PoseGenerator>& pg_,
+                                 double z_rot_min_,
+                                 double z_rot_max_,
+                                 unsigned long seed_ = std::mt19937::default_seed)
+    : pg(pg_)
+    , mt_rand(seed_)
+    , z_sampler(z_rot_min_, z_rot_max_)
+  {
+
+  }
+
+  inline RandomZRotPoseGenerator(const std::shared_ptr<PoseGenerator>& pg_,
+                                 unsigned long seed_ = std::mt19937::default_seed)
+    : RandomZRotPoseGenerator(pg_, 0, 2*M_PI, seed_)
+  {
+
+  }
+
+  virtual std::vector<Eigen::Isometry3d> generate(
+    const Eigen::Isometry3d &target_origin) override final;
+
+  std::shared_ptr<PoseGenerator> pg;
+
+private:
+  std::mt19937 mt_rand; /** @brief Psuedo-random number generator */
+  std::uniform_real_distribution<double> z_sampler; /** @brief Sampler for camera Z+ rotation */
 };
 
 }  // namespace test

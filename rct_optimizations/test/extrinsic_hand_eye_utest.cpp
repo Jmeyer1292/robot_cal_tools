@@ -256,7 +256,7 @@ TYPED_TEST(HandEyeTest, RandomAroundAnswerInitialConditions)
 
 TYPED_TEST(HandEyeTest, RandomAroundAnswerInitialConditions_MoreHemispheres)
 {
-  const std::size_t n = 10;
+  const std::size_t n = 1;
   const std::size_t max_attempts = 2 * n;
   std::size_t count = 0;
 
@@ -265,8 +265,8 @@ TYPED_TEST(HandEyeTest, RandomAroundAnswerInitialConditions_MoreHemispheres)
   offset.translation().x() = 0.1;
 
   std::vector<std::shared_ptr<test::PoseGenerator>> pgs;
-  pgs.push_back(std::make_shared<test::RandomZRotHemispherePoseGenerator>(2.0, 10, 10, Eigen::Isometry3d::Identity()));
-  pgs.push_back(std::make_shared<test::RandomZRotHemispherePoseGenerator>(2.0, 10, 10, offset));
+  pgs.push_back(std::make_shared<test::RandomZRotPoseGenerator>(std::make_shared<test::HemispherePoseGenerator>(2.0, 10, 10, 0.0, Eigen::Isometry3d::Identity())));
+  pgs.push_back(std::make_shared<test::RandomZRotPoseGenerator>(std::make_shared<test::HemispherePoseGenerator>(2.0, 10, 10, 0.0, offset)));
 
   while(count < n && count < max_attempts)
   {
