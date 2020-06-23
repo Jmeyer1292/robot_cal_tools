@@ -35,7 +35,6 @@ struct PoseGenerator
  */
 struct HemispherePoseGenerator : PoseGenerator
 {
-public:
   inline HemispherePoseGenerator(double r_,
                                  unsigned theta_cnt_,
                                  unsigned phi_cnt_,
@@ -78,7 +77,6 @@ public:
  */
 struct ConicalPoseGenerator : PoseGenerator
 {
-protected:
   inline ConicalPoseGenerator(double r_,
                               double h_,
                               unsigned n_poses_,
@@ -122,7 +120,6 @@ protected:
  */
 struct GridPoseGenerator : PoseGenerator
 {
-public:
   inline GridPoseGenerator(double spacing_,
                            double h_,
                            unsigned grid_side_,
@@ -160,7 +157,9 @@ public:
   Eigen::Isometry3d target_offset; /** @brief Transform from target origin to origin of pose pattern */
 };
 
-
+/**
+ * @brief Applies a random rotation around the camera Z+ axis in range [@ref z_rot_min_, @ref z_rot_max_]
+ */
 struct RandomZRotPoseGenerator : PoseGenerator
 {
   inline RandomZRotPoseGenerator(const std::shared_ptr<PoseGenerator>& pg_,

@@ -121,6 +121,7 @@ std::vector<Eigen::Isometry3d> GridPoseGenerator::generate(const Eigen::Isometry
   return camera_positions;
 }
 
+// random Z+
 std::vector<Eigen::Isometry3d> RandomZRotPoseGenerator::generate(const Eigen::Isometry3d &target_origin)
 {
   auto poses = pg->generate(target_origin);
