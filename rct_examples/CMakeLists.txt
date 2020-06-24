@@ -114,6 +114,16 @@ add_dependencies(${PROJECT_NAME}_multi_camera_pnp ${${PROJECT_NAME}_EXPORTED_TAR
 
 target_link_libraries(${PROJECT_NAME}_multi_camera_pnp ${catkin_LIBRARIES} rct::rct_optimizations rct::rct_image_tools)
 
+# Executable demonstrating camera intrinsic calibration validation
+add_executable(${PROJECT_NAME}_camera_intrinsic_calibration_validation src/tools/camera_intrinsic_calibration_validation.cpp)
+
+set_target_properties(${PROJECT_NAME}_camera_intrinsic_calibration_validation PROPERTIES OUTPUT_NAME camera_intrinsic_calibration_validation PREFIX "")
+
+add_dependencies(${PROJECT_NAME}_camera_intrinsic_calibration_validation ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(${PROJECT_NAME}_camera_intrinsic_calibration_validation ${catkin_LIBRARIES} rct::rct_optimizations rct::rct_image_tools)
+
+
 #############
 ## Testing ##
 #############
@@ -134,6 +144,7 @@ install(TARGETS
     ${PROJECT_NAME}_multi_static_camera
     ${PROJECT_NAME}_intr
     ${PROJECT_NAME}_pnp
+    ${PROJECT_NAME}_camera_intrinsic_calibration_validation
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

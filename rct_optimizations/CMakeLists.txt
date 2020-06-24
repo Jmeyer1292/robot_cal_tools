@@ -22,6 +22,8 @@ add_library(${PROJECT_NAME} SHARED
   src/${PROJECT_NAME}/multi_camera_pnp.cpp
   # DH Chain
   src/${PROJECT_NAME}/dh_chain.cpp
+  # Validation Tools
+  src/${PROJECT_NAME}/validation/camera_intrinsic_calibration_validation.cpp
 )
 target_compile_options(${PROJECT_NAME} PUBLIC -std=c++14)
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra)
