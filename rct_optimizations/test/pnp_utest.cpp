@@ -14,21 +14,21 @@ TEST(PNP_2D, PerfectInitialConditions)
   double spacing = 0.025;
   test::Target target(target_rows, target_cols, spacing);
 
-  Eigen::Isometry3d camera_to_target(Eigen::Isometry3d::Identity());
+  Eigen::Isometry3d target_to_camera(Eigen::Isometry3d::Identity());
   double x = static_cast<double>(target_rows - 1) * spacing / 2.0;
   double y = static_cast<double>(target_cols - 1) * spacing / 2.0;
-  camera_to_target.translate(Eigen::Vector3d(x, y, 1.0));
-  camera_to_target.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
+  target_to_camera.translate(Eigen::Vector3d(x, y, 1.0));
+  target_to_camera.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
 
   PnPProblem problem;
-  problem.camera_to_target_guess = camera_to_target;
+  problem.camera_to_target_guess = target_to_camera.inverse();
   problem.intr = camera.intr;
   EXPECT_NO_THROW(problem.correspondences =
-                      test::getCorrespondences(camera_to_target, Eigen::Isometry3d::Identity(), camera, target, true));
+                    test::getCorrespondences(target_to_camera, Eigen::Isometry3d::Identity(), camera, target, true));
 
   PnPResult result = optimize(problem);
   EXPECT_TRUE(result.converged);
-  EXPECT_TRUE(result.camera_to_target.isApprox(camera_to_target));
+  EXPECT_TRUE(result.camera_to_target.isApprox(target_to_camera.inverse()));
   EXPECT_LT(result.initial_cost_per_obs, 1.0e-15);
   EXPECT_LT(result.final_cost_per_obs, 1.0e-15);
 }
@@ -42,16 +42,16 @@ TEST(PNP_2D, PerturbedInitialCondition)
   double spacing = 0.025;
   test::Target target(target_rows, target_cols, spacing);
 
-  Eigen::Isometry3d camera_to_target(Eigen::Isometry3d::Identity());
+  Eigen::Isometry3d target_to_camera(Eigen::Isometry3d::Identity());
   double x = static_cast<double>(target_rows) * spacing / 2.0;
   double y = static_cast<double>(target_cols) * spacing / 2.0;
-  camera_to_target.translate(Eigen::Vector3d(x, y, 1.0));
-  camera_to_target.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
+  target_to_camera.translate(Eigen::Vector3d(x, y, 1.0));
+  target_to_camera.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
 
   PnPProblem problem;
-  problem.camera_to_target_guess = test::perturbPose(camera_to_target, 0.05, 0.05);
+  problem.camera_to_target_guess = test::perturbPose(target_to_camera.inverse(), 0.05, 0.05);
   problem.intr = camera.intr;
-  problem.correspondences = test::getCorrespondences(camera_to_target,
+  problem.correspondences = test::getCorrespondences(target_to_camera,
                                                      Eigen::Isometry3d::Identity(),
                                                      camera,
                                                      target,
@@ -59,7 +59,7 @@ TEST(PNP_2D, PerturbedInitialCondition)
 
   PnPResult result = optimize(problem);
   EXPECT_TRUE(result.converged);
-  EXPECT_TRUE(result.camera_to_target.isApprox(camera_to_target, 1.0e-8));
+  EXPECT_TRUE(result.camera_to_target.isApprox(target_to_camera.inverse(), 1.0e-8));
   EXPECT_LT(result.final_cost_per_obs, 1.0e-15);
 }
 
@@ -72,15 +72,15 @@ TEST(PNP_2D, BadIntrinsicParameters)
   double spacing = 0.025;
   test::Target target(target_rows, target_cols, spacing);
 
-  Eigen::Isometry3d camera_to_target(Eigen::Isometry3d::Identity());
+  Eigen::Isometry3d target_to_camera(Eigen::Isometry3d::Identity());
   double x = static_cast<double>(target_rows) * spacing / 2.0;
   double y = static_cast<double>(target_cols) * spacing / 2.0;
-  camera_to_target.translate(Eigen::Vector3d(x, y, 1.0));
-  camera_to_target.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
+  target_to_camera.translate(Eigen::Vector3d(x, y, 1.0));
+  target_to_camera.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
 
   PnPProblem problem;
-  problem.camera_to_target_guess = camera_to_target;
-  problem.correspondences = test::getCorrespondences(camera_to_target,
+  problem.camera_to_target_guess = target_to_camera.inverse();
+  problem.correspondences = test::getCorrespondences(target_to_camera,
                                                      Eigen::Isometry3d::Identity(),
                                                      camera,
                                                      target,
@@ -99,7 +99,7 @@ TEST(PNP_2D, BadIntrinsicParameters)
   // The optimization should still converge by moving the camera further away from the target,
   // but the residual error and error in the resulting transform should be much higher
   EXPECT_TRUE(result.converged);
-  EXPECT_FALSE(result.camera_to_target.isApprox(camera_to_target, 1.0e-3));
+  EXPECT_FALSE(result.camera_to_target.isApprox(target_to_camera.inverse(), 1.0e-3));
   EXPECT_GT(result.final_cost_per_obs, 1.0e-3);
 }
 
