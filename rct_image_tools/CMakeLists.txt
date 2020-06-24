@@ -13,11 +13,8 @@ endif()
 if(NOT TARGET Eigen3::Eigen)
     find_package(Threads REQUIRED)
     add_library(Eigen3::Eigen IMPORTED INTERFACE)
-    set_target_properties (Eigen3::Eigen PROPERTIES
-      EXPORT_NAME Eigen
-      INTERFACE_COMPILE_DEFINITIONS ${EIGEN3_DEFINITIONS}
-      INTERFACE_INCLUDE_DIRECTORIES ${EIGEN3_INCLUDE_DIRS}
-      )
+    set_property(TARGET Eigen3::Eigen PROPERTY INTERFACE_COMPILE_DEFINITIONS ${EIGEN3_DEFINITIONS})
+    set_property(TARGET Eigen3::Eigen PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${EIGEN3_INCLUDE_DIRS})
 endif()
 
 add_library(${PROJECT_NAME} SHARED
