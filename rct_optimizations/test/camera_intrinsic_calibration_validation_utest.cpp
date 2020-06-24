@@ -87,19 +87,20 @@ TEST(CameraIntrinsicCalibrationValidation, MeasureIntrinsicCalibrationAccuracy)
   // Validate the intrinsic calibration
   // Perfect intrinsic parameters, perfect transform guesses
   {
-    IntrinsicCalibrationAccuracyResult result = measureIntrinsicCalibrationAccuracy(observations,
-                                                                 camera.intr,
-                                                                 camera_mount_to_camera,
-                                                                 target_mount_to_target,
-                                                                 camera_base_to_target_base);
+    IntrinsicCalibrationAccuracyResult result
+      = measureIntrinsicCalibrationAccuracy(observations,
+                                            camera.intr,
+                                            camera_mount_to_camera,
+                                            target_mount_to_target,
+                                            camera_base_to_target_base);
 
     // Expect results to be within 2 sigma (~95%) of the threshold
     {
-      double threshold = 1.0e-14;
+      double threshold = 1.0e-13;
       EXPECT_LT(result.pos_error.first + 2.0 * result.pos_error.second, threshold);
     }
     {
-      double threshold = 1.0e-14;
+      double threshold = 1.0e-13;
       EXPECT_LT(result.ang_error.first + 2.0 * result.ang_error.second, threshold);
     }
   }
@@ -114,11 +115,12 @@ TEST(CameraIntrinsicCalibrationValidation, MeasureIntrinsicCalibrationAccuracy)
 
   // Perfect intrinsic parameters, imperfect transform guesses
   {
-    IntrinsicCalibrationAccuracyResult result = measureIntrinsicCalibrationAccuracy(observations,
-                                                                 camera.intr,
-                                                                 camera_mount_to_camera_guess,
-                                                                 target_mount_to_target_guess,
-                                                                 camera_base_to_target_base);
+    IntrinsicCalibrationAccuracyResult result
+      = measureIntrinsicCalibrationAccuracy(observations,
+                                            camera.intr,
+                                            camera_mount_to_camera_guess,
+                                            target_mount_to_target_guess,
+                                            camera_base_to_target_base);
 
     // Expect results to be within 2 sigma (~95%) of the threshold
     {
@@ -139,11 +141,12 @@ TEST(CameraIntrinsicCalibrationValidation, MeasureIntrinsicCalibrationAccuracy)
     camera.intr.cx() -= 0.01 * camera.intr.cx();
     camera.intr.cx() += 0.01 * camera.intr.cy();
 
-    IntrinsicCalibrationAccuracyResult result = measureIntrinsicCalibrationAccuracy(observations,
-                                                                 camera.intr,
-                                                                 camera_mount_to_camera_guess,
-                                                                 target_mount_to_target_guess,
-                                                                 camera_base_to_target_base);
+    IntrinsicCalibrationAccuracyResult result
+      = measureIntrinsicCalibrationAccuracy(observations,
+                                            camera.intr,
+                                            camera_mount_to_camera_guess,
+                                            target_mount_to_target_guess,
+                                            camera_base_to_target_base);
 
     // Expect results not to be within 2 sigma (~95%) of the threshold because we modified the camera intrinsics
     {
