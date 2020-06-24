@@ -5,9 +5,9 @@
 namespace rct_optimizations
 {
 VirtualCorrespondenceResult measureVirtualTargetDiff(const Correspondence2D3D::Set &correspondences,
-                                                 const CameraIntrinsics &intr,
-                                                 const Eigen::Isometry3d &camera_to_target_guess,
-                                                 const double pnp_sq_error_threshold)
+                                                     const CameraIntrinsics &intr,
+                                                     const Eigen::Isometry3d &camera_to_target_guess,
+                                                     const double pnp_sq_error_threshold)
 {
   // Create a lambda for doing the PnP optimization
   auto solve_pnp = [&intr, &camera_to_target_guess, &pnp_sq_error_threshold](
@@ -75,7 +75,9 @@ IntrinsicCalibrationAccuracyResult measureIntrinsicCalibrationAccuracy(
     // Check that the correspondences in all observations are the same size
     if (obs_1.correspondence_set.size() != obs_2.correspondence_set.size())
     {
-      throw std::runtime_error("They don't match");
+      std::stringstream ss;
+      ss << "Correspondence sizes do not match between observations " << i << " and " << i + 1;
+      throw std::runtime_error(ss.str());
     }
   }
 
