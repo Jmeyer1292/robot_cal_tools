@@ -77,7 +77,7 @@ IntrinsicCalibrationAccuracyResult measureIntrinsicCalibrationAccuracy(
     {
       std::stringstream ss;
       ss << "Correspondence sizes do not match between observations " << i << " and " << i + 1;
-      throw std::runtime_error(ss.str());
+      throw OptimizationException(ss.str());
     }
   }
 
