@@ -17,6 +17,15 @@ find_package(Eigen3 REQUIRED)
 if(NOT EIGEN3_INCLUDE_DIRS)
   set(EIGEN3_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIR})
 endif()
+if(NOT TARGET Eigen3::Eigen)
+    find_package(Threads REQUIRED)
+    add_library(Eigen3::Eigen IMPORTED INTERFACE)
+    set_target_properties (Eigen3::Eigen PROPERTIES
+      EXPORT_NAME Eigen
+      INTERFACE_COMPILE_DEFINITIONS ${EIGEN3_DEFINITIONS}
+      INTERFACE_INCLUDE_DIRECTORIES ${EIGEN3_INCLUDE_DIRS}
+      )
+endif()
 
 # This package only provides examples. It does not export any tools.
 catkin_package()

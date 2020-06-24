@@ -8,6 +8,17 @@ find_package(rct_image_tools REQUIRED)
 
 find_package(OpenCV REQUIRED)
 
+find_package(Eigen3 REQUIRED)
+if(NOT TARGET Eigen3::Eigen)
+    find_package(Threads REQUIRED)
+    add_library(Eigen3::Eigen IMPORTED INTERFACE)
+    set_target_properties (Eigen3::Eigen PROPERTIES
+      EXPORT_NAME Eigen
+      INTERFACE_COMPILE_DEFINITIONS ${EIGEN3_DEFINITIONS}
+      INTERFACE_INCLUDE_DIRECTORIES ${EIGEN3_INCLUDE_DIRS}
+      )
+endif()
+
 find_package(catkin REQUIRED COMPONENTS
   roscpp
 

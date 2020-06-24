@@ -6,20 +6,15 @@ find_package(yaml-cpp REQUIRED)
 find_package(rct_common REQUIRED)
 find_package(rct_optimizations REQUIRED)
 
-find_package(Eigen3 REQUIRED NO_MODULE)
+find_package(Eigen3 REQUIRED)
 if(NOT TARGET Eigen3::Eigen)
     find_package(Threads REQUIRED)
-    add_library(eigen IMPORTED INTERFACE)
-    set_target_properties (eigen PROPERTIES
+    add_library(Eigen3::Eigen IMPORTED INTERFACE)
+    set_target_properties (Eigen3::Eigen PROPERTIES
       EXPORT_NAME Eigen
       INTERFACE_COMPILE_DEFINITIONS ${EIGEN3_DEFINITIONS}
       INTERFACE_INCLUDE_DIRECTORIES ${EIGEN3_INCLUDE_DIRS}
       )
-
-    install(TARGETS eigen EXPORT Eigen3Targets)
-    export(TARGETS eigen NAMESPACE Eigen3:: FILE Eigen3Targets.cmake)
-    install(EXPORT Eigen3Targets NAMESPACE Eigen3:: DESTINATION ${CMAKEPACKAGE_INSTALL_DIR})
-
 endif()
 
 add_library(${PROJECT_NAME} SHARED
