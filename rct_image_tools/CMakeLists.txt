@@ -1,80 +1,62 @@
 cmake_minimum_required(VERSION 3.5.0)
-project(rct_image_tools)
-
-add_compile_options(-std=c++11 -Wall -Wextra)
+project(rct_image_tools VERSION 0.1.0 LANGUAGES CXX)
 
 find_package(OpenCV REQUIRED)
+find_package(yaml-cpp REQUIRED)
+find_package(rct_common REQUIRED)
 find_package(rct_optimizations REQUIRED)
 
-find_package(catkin REQUIRED)
-
 find_package(Eigen3 REQUIRED)
-# Eigen 3.2 (Wily) only provides EIGEN3_INCLUDE_DIR, not EIGEN3_INCLUDE_DIRS
 if(NOT EIGEN3_INCLUDE_DIRS)
   set(EIGEN3_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIR})
 endif()
+if(NOT TARGET Eigen3::Eigen)
+    find_package(Threads REQUIRED)
+    add_library(Eigen3::Eigen IMPORTED INTERFACE)
+    set_property(TARGET Eigen3::Eigen PROPERTY INTERFACE_COMPILE_DEFINITIONS ${EIGEN3_DEFINITIONS})
+    set_property(TARGET Eigen3::Eigen PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${EIGEN3_INCLUDE_DIRS})
+endif()
 
-catkin_package(
-  INCLUDE_DIRS
-    include
-  LIBRARIES
-    ${PROJECT_NAME}
-    yaml-cpp
-  DEPENDS
-    OpenCV
-    Eigen3
-)
-
-###########
-## Build ##
-###########
-
-include_directories(
-  include
-  ${catkin_INCLUDE_DIRS}
-  ${EIGEN3_INCLUDE_DIRS}
-)
-
-# Declare a C++ library
-add_library(${PROJECT_NAME}
+add_library(${PROJECT_NAME} SHARED
   src/${PROJECT_NAME}/image_observation_finder.cpp
   src/${PROJECT_NAME}/aruco_finder.cpp
   src/${PROJECT_NAME}/circle_detector.cpp
   src/${PROJECT_NAME}/modified_circle_grid_target.cpp
 )
-
-add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-target_link_libraries(${PROJECT_NAME}
-  ${catkin_LIBRARIES}
-  ${OpenCV_LIBRARIES}
+target_compile_options(${PROJECT_NAME} PUBLIC -std=c++11)
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra)
+target_include_directories(${PROJECT_NAME} PUBLIC
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+  "$<INSTALL_INTERFACE:include>")
+target_link_libraries(${PROJECT_NAME} PUBLIC
+  opencv_core
+  opencv_aruco
+  opencv_features2d
+  opencv_imgproc
+  opencv_highgui
   yaml-cpp
+  Eigen3::Eigen
   rct::rct_optimizations
 )
 
-add_executable(${PROJECT_NAME}_test
-  src/observation_finder_tests.cpp
-)
+if(RCT_BUILD_TESTS)
+  add_executable(${PROJECT_NAME}_test
+    src/observation_finder_tests.cpp
+  )
 
-add_dependencies(${PROJECT_NAME}_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+  target_compile_options(${PROJECT_NAME}_test PUBLIC -std=c++11)
+  target_compile_options(${PROJECT_NAME}_test PRIVATE -Wall -Wextra)
+  target_include_directories(${PROJECT_NAME}_test PUBLIC
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+    "$<INSTALL_INTERFACE:include>")
+  target_link_libraries(${PROJECT_NAME}_test
+    ${PROJECT_NAME}
+    rct::rct_optimizations
+  )
+endif()
 
-target_link_libraries(${PROJECT_NAME}_test
-  ${catkin_LIBRARIES}
-  ${PROJECT_NAME}
-  rct::rct_optimizations
-)
+rct_configure_package(${PROJECT_NAME})
 
-#############
-## Install ##
-#############
-
-install(TARGETS ${PROJECT_NAME}
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-
-install(DIRECTORY include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-  FILES_MATCHING PATTERN "*.h"
+install(DIRECTORY include/${PROJECT_NAME}
+  DESTINATION include
 )
