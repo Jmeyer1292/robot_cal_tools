@@ -42,7 +42,7 @@ Correspondence3D3D::Set getCorrespondences(const Eigen::Isometry3d &camera_pose,
  * @brief Creates a 2D-3D observation set
  * @param camera - camera intrinsics
  * @param target - target definition
- * @param pose_generator - base class for camera pose generation
+ * @param pose_generators - vector of shared pointers to variants of base class for camera pose generation
  * @param true_target_mount_to_target - the true transform from the target mount to the target
  * @param true_camera_mount_to_camera - the true transform from the camera mount to the camera
  * @param camera_base_to_target_base - the transform from the camera base frame to the target base frame (typically identity)
@@ -51,7 +51,7 @@ Correspondence3D3D::Set getCorrespondences(const Eigen::Isometry3d &camera_pose,
 Observation2D3D::Set createObservations(
   const Camera &camera,
   const Target &target,
-  const PoseGenerator &pose_generator,
+  const std::vector<std::shared_ptr<PoseGenerator>> &pose_generators,
   const Eigen::Isometry3d &true_target_mount_to_target,
   const Eigen::Isometry3d &true_camera_mount_to_camera,
   const Eigen::Isometry3d &camera_base_to_target_base = Eigen::Isometry3d::Identity());
@@ -59,7 +59,7 @@ Observation2D3D::Set createObservations(
 /**
  * @brief Creates a 3D-3D observation set
  * @param target - target definition
- * @param pose_generator - base class for camera pose generation
+ * @param pose_generators - vector of shared pointers to variants of base class for camera pose generation
  * @param true_target_mount_to_target - the true transform from the target mount to the target
  * @param true_camera_mount_to_camera - the true transform from the camera mount to the camera
  * @param camera_base_to_target_base - the transform from the camera base frame to the target base frame (typically identity)
@@ -67,7 +67,7 @@ Observation2D3D::Set createObservations(
  */
 Observation3D3D::Set createObservations(
   const Target &target,
-  const PoseGenerator &pose_generator,
+  const std::vector<std::shared_ptr<PoseGenerator>> &pose_generators,
   const Eigen::Isometry3d &true_target_mount_to_target,
   const Eigen::Isometry3d &true_camera_mount_to_camera,
   const Eigen::Isometry3d &camera_base_to_target_base = Eigen::Isometry3d::Identity());
