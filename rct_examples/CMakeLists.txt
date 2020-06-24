@@ -121,7 +121,7 @@ set_target_properties(${PROJECT_NAME}_camera_intrinsic_calibration_validation PR
 
 add_dependencies(${PROJECT_NAME}_camera_intrinsic_calibration_validation ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(${PROJECT_NAME}_camera_intrinsic_calibration_validation ${catkin_LIBRARIES} rct::rct_optimizations)
+target_link_libraries(${PROJECT_NAME}_camera_intrinsic_calibration_validation ${catkin_LIBRARIES} rct::rct_optimizations rct::rct_image_tools)
 
 
 #############

@@ -2,6 +2,7 @@
 #include <rct_optimizations/validation/camera_intrinsic_calibration_validation.h>
 #include <rct_optimizations_tests/utilities.h>
 #include <rct_optimizations_tests/observation_creator.h>
+#include <memory>
 
 using namespace rct_optimizations;
 
@@ -70,7 +71,7 @@ TEST(CameraIntrinsicCalibrationValidation, MeasureIntrinsicCalibrationAccuracy)
 {
   test::Camera camera = test::makeKinectCamera();
   test::Target target(5, 7, 0.025);
-  test::GridPoseGenerator pose_gen;
+  auto pose_gen = std::make_shared<test::GridPoseGenerator>();
 
   // Create the relevant calibration transforms
   Eigen::Isometry3d camera_mount_to_camera(Eigen::Isometry3d::Identity());
@@ -80,7 +81,7 @@ TEST(CameraIntrinsicCalibrationValidation, MeasureIntrinsicCalibrationAccuracy)
   // Create some observations
   Observation2D3D::Set observations = test::createObservations(camera,
                                                                target,
-                                                               pose_gen,
+                                                               {pose_gen},
                                                                target_mount_to_target,
                                                                camera_mount_to_camera);
 
