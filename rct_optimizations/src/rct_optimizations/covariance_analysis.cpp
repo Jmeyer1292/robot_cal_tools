@@ -72,27 +72,26 @@ Eigen::MatrixXd computePoseCovariance(ceres::Problem& problem, const Eigen::Vect
                                       const ceres::Covariance::Options& options)
 {
   const ceres::LocalParameterization* q_loc_param = problem.GetParameterization(q.coeffs().data());
-  if (q_loc_param->LocalSize() >= q.coeffs().size())
+
+  if (q_loc_param->LocalSize() != 3)
     throw CovarianceException("Locally parameterized size of the quaternion is not smaller than its original size");
 
   // Calculate the individual covariance matrices
   // Covariance of locally parameterized quaternion with itself
-  Eigen::MatrixXd q_cov = computeDVCovariance(problem, q.coeffs().data(), q_loc_param->LocalSize());
+  Eigen::MatrixXd q_cov = computeDVCovariance(problem, q.coeffs().data(), q_loc_param->LocalSize(), options);
   // Covariance of position with itself
-  Eigen::MatrixXd t_cov = computeDVCovariance(problem, t.data(), t.size());
+  Eigen::MatrixXd t_cov = computeDVCovariance(problem, t.data(), t.size(), options);
   // Covariance of locally parameterized quaternion covariance with position
   Eigen::MatrixXd tq_cov =
-      computeDV2DVCovariance(problem, t.data(), t.size(), q.coeffs().data(), q_loc_param->LocalSize());
+      computeDV2DVCovariance(problem, t.data(), t.size(), q.coeffs().data(), q_loc_param->LocalSize(), options);
 
-  Eigen::Index n = q_loc_param->LocalSize() + t.size();
   Eigen::MatrixXd cov;
-  cov.resize(n, n);
+  cov.resize(6, 6);
   /* Total covariance matrix
    *        T         Q
    * T | C(t, t) | C(t, q) |
    * Q | C(q, t) | C(q, q) |
    */
-  cov.resize(6, 6);
   cov.block<3, 3>(0, 0) = t_cov;
   cov.block<3, 3>(3, 3) = q_cov;
   cov.block<3, 3>(0, 3) = tq_cov;
