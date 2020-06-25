@@ -69,7 +69,7 @@ TEST(PNP_2D, PerturbedInitialCondition)
   PnPResult result = optimize(problem);
   EXPECT_TRUE(result.converged);
   EXPECT_TRUE(result.camera_to_target.isApprox(target_to_camera.inverse(), 1.0e-8));
-  EXPECT_LT(result.final_cost_per_obs, 1.0e-14);
+  EXPECT_LT(result.final_cost_per_obs, 1.0e-12);
 
   for (Eigen::Index row = 0; row < result.camera_to_target_covariance.rows(); ++row)
   {
