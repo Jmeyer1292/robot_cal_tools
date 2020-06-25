@@ -10,7 +10,7 @@
 #include <boost/accumulators/statistics/stats.hpp>
 #include <boost/accumulators/statistics/mean.hpp>
 #include <boost/accumulators/statistics/variance.hpp>
-
+#include <cassert>
 
 namespace rct_optimizations
 {
@@ -61,6 +61,11 @@ RotationStat FindQuaternionMean(const std::vector<Eigen::Quaterniond>& quaterns)
   q.qy.mean = mean[1];
   q.qz.mean = mean[2];
   q.qw.mean = mean[3];
+
+  assert(std::isnan(q.qx.mean) == false &&
+         std::isnan(q.qy.mean) == false &&
+         std::isnan(q.qz.mean) == false &&
+         std::isnan(q.qw.mean) == false);
 
   //Manually calculate standard deviations from mean
   Eigen::Array4d std_dev = Eigen::Array4d::Zero();

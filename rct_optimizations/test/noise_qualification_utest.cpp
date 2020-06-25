@@ -8,7 +8,7 @@
 #include <rct_optimizations/ceres_math_utilities.h>
 
 //tolerance for oreintation difference, in radians
-#define ANGULAR_THRESHOLD 6*M_PI/180
+#define ANGULAR_THRESHOLD 10*M_PI/180
 
 using namespace rct_optimizations;
 
@@ -40,10 +40,7 @@ EXPECT_LT(mean_quat1.angularDistance(quat_2) - M_PI, ANGULAR_THRESHOLD);
 Eigen::Quaterniond mean_quat2 (r2.qw.mean, r2.qx.mean, r2.qy.mean, r2.qz.mean);
 
 //The two quaternions are pi rad apart, so the mean should be ~PI/2 away from both
-std::cout << quat_2.angularDistance(quat_3) << std::endl;
-
 EXPECT_LT(mean_quat2.angularDistance(quat_2) - M_PI/2, ANGULAR_THRESHOLD);
-//EXPECT_LT(mean_quat2.angularDistance(quat_3) - M_PI, ANGULAR_THRESHOLD);
 }
 
 TEST(NoiseTest, 2DPerfectTest)
@@ -177,12 +174,9 @@ TEST(NoiseTest, 2DNoiseTest)
 
   //find true target position in camera
   //target position relative to camera
-//  std::vector<double> rel_target_pos = {0,0, -1};
-//  std::vector<double> xy(2);
-//  const T* rel_target_pos = {0,0, -1};
-//  const T*  xy(2);
-
-//  rct_optimizations::projectPoint(camera.intr, rel_target_pos, xy);
+  double  uv[2];
+  Eigen::Vector3d second_target_loc = camera_loc.translation();
+  rct_optimizations::projectPoint(camera.intr, second_target_loc.data(), uv);
 
   EXPECT_LT(output.x.std_dev, 1.5 * stddev);
   EXPECT_LT(output.y.std_dev, 1.5 * stddev);
@@ -193,7 +187,7 @@ TEST(NoiseTest, 2DNoiseTest)
 
   EXPECT_LT(abs(output.x.mean - camera_loc.translation()(0)), (camera_loc.translation()(2)/camera.intr.fx()) * stddev);
   EXPECT_LT(abs(output.y.mean - camera_loc.translation()(1)), (camera_loc.translation()(2)/camera.intr.fy()) * stddev);
-  //EXPECT_LT(abs(output.z.mean - camera_loc.translation()(2)), (camera.intr.fx() * camera_loc.translation.(0) * std::pow((u - camera.intr.cx()), -2.0)) * stddev);
+  EXPECT_LT(abs(output.z.mean - camera_loc.translation()(2)), std::max(1.5*stddev, camera.intr.fx() * camera_loc.translation()(0) * std::sqrt(uv[0] - camera.intr.cx()) * stddev));
 }
 
 TEST(NoiseTest, 2DTwistNoiseTest)
@@ -260,16 +254,23 @@ TEST(NoiseTest, 2DTwistNoiseTest)
 
  PnPNoiseStat output = rct_optimizations::qualifyNoise2D(perturbed_problem_set);
 
+
+ //find true target position in camera
+ //target position relative to camera
+ double  uv[2];
+ Eigen::Vector3d second_target_loc = camera_loc.translation();
+ rct_optimizations::projectPoint(camera.intr, second_target_loc.data(), uv);
+
+
  EXPECT_TRUE(output.x.std_dev < 1.5 * stddev);
  EXPECT_TRUE(output.y.std_dev < 1.5 * stddev);
  EXPECT_TRUE(output.z.std_dev < 1.5 * stddev);
  EXPECT_LT(Eigen::Quaterniond(output.q.qw.mean, output.q.qx.mean, output.q.qy.mean, output.q.qz.mean).angularDistance(q_ver), ANGULAR_THRESHOLD);
 
  //Absolute value of quaternion is taken, since quaternions equal their oppoisite
-
  EXPECT_LT(abs(output.x.mean - camera_loc.translation()(0)), (camera_loc.translation()(2)/camera.intr.fx()) * stddev);
  EXPECT_LT(abs(output.y.mean - camera_loc.translation()(1)), (camera_loc.translation()(2)/camera.intr.fy()) * stddev);
- //EXPECT_LT(abs(output.z.mean - camera_loc.translation()(2)), (camera.intr.fx() * camera_loc.translation.(0) * std::pow((u - camera.intr.cx()), -2.0)) * stddev);
+ EXPECT_LT(abs(output.z.mean - camera_loc.translation()(2)), std::max(1.5*stddev, camera.intr.fx() * camera_loc.translation()(0) * std::sqrt(uv[0] - camera.intr.cx()) * stddev));
 }
 
 TEST(NoiseTest, 3DPerfectTest)
@@ -345,7 +346,7 @@ TEST(NoiseTest, 3DNoiseTest)
   Eigen::Isometry3d target_loc = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d camera_loc = Eigen::Isometry3d::Identity();
 
-  camera_loc.translate(Eigen::Vector3d(0.0,0.0,1.0));
+  camera_loc.translate(Eigen::Vector3d(0.05,0.01,1.0));
   camera_loc.rotate(Eigen::AngleAxisd(M_PI,Eigen::Vector3d::UnitX()));
 
   Eigen::Quaterniond q_ver;
@@ -353,7 +354,8 @@ TEST(NoiseTest, 3DNoiseTest)
 
   //Noise boilerplate
   const double mean = 0.0;
-  const double stddev = 1.0;
+  //Smaller std dev magnitude bc in meters, not pixels
+  const double stddev = 0.005;
   std::random_device rd{};
   std::mt19937 generator{rd()};
   std::normal_distribution<double> dist(mean, stddev);
@@ -395,12 +397,14 @@ TEST(NoiseTest, 3DNoiseTest)
   EXPECT_LT(output.x.std_dev, 1.5 * stddev);
   EXPECT_LT(output.y.std_dev, 1.5 * stddev);
   EXPECT_LT(output.z.std_dev, 1.5 * stddev);
+  double debug_dist = (Eigen::Quaterniond(output.q.qw.mean, output.q.qx.mean, output.q.qy.mean, output.q.qz.mean).angularDistance(q_ver));
+  std::cout << debug_dist << "\n";
   EXPECT_LT(Eigen::Quaterniond(output.q.qw.mean, output.q.qx.mean, output.q.qy.mean, output.q.qz.mean).angularDistance(q_ver), ANGULAR_THRESHOLD);
 
   //Absolute value of quaternion is taken, since quaternions equal their oppoisite
   //Comparing to Standard Deviation, because 3d camera does not have explicit instrinsics
-  EXPECT_LT(abs(output.x.mean - camera_loc.translation()(0)), 1.5 * stddev);
-  EXPECT_LT(abs(output.y.mean - camera_loc.translation()(1)), 1.5 * stddev);
+  EXPECT_LT(-1.0 * output.x.mean - camera_loc.translation()(0), 1.5 * stddev);
+  EXPECT_LT(-1.0 * output.y.mean - camera_loc.translation()(1), 1.5 * stddev);
   EXPECT_LT(abs(output.z.mean - camera_loc.translation()(2)), 1.5 * stddev);
 }
 
@@ -417,7 +421,7 @@ TEST(NoiseTest, 3DTwistNoiseTest)
   Eigen::Isometry3d target_loc = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d camera_loc = Eigen::Isometry3d::Identity();
 
-  camera_loc.translate(Eigen::Vector3d(0.0,0.0,1.0));
+  camera_loc.translate(Eigen::Vector3d(0.01,0.01,1.0));
   camera_loc.rotate(Eigen::AngleAxisd(M_PI,Eigen::Vector3d::UnitX()));
   camera_loc.rotate(Eigen::AngleAxisd(M_PI/2,Eigen::Vector3d::UnitZ()));
 
@@ -426,7 +430,8 @@ TEST(NoiseTest, 3DTwistNoiseTest)
 
   //Noise boilerplate
   const double mean = 0.0;
-  const double stddev = 1.0;
+  //Smaller std dev magnitude bc in meters, not pixels
+  const double stddev = 0.005;
   std::random_device rd{};
   std::mt19937 generator{rd()};
   std::normal_distribution<double> dist(mean, stddev);
@@ -470,11 +475,10 @@ TEST(NoiseTest, 3DTwistNoiseTest)
   EXPECT_TRUE(output.z.std_dev < 1.5 * stddev);
   EXPECT_LT(Eigen::Quaterniond(output.q.qw.mean, output.q.qx.mean, output.q.qy.mean, output.q.qz.mean).angularDistance(q_ver), ANGULAR_THRESHOLD);
 
+  std::cout << Eigen::Quaterniond(output.q.qw.mean, output.q.qx.mean, output.q.qy.mean, output.q.qz.mean).angularDistance(q_ver) << " \n";
   //Absolute value of quaternion is taken, since quaternions equal their oppoisite
 
-  //Absolute value of quaternion is taken, since quaternions equal their oppoisite
-  //Comparing to Standard Deviation, because 3d camera does not have explicit instrinsics
-  EXPECT_LT(abs(output.x.mean - camera_loc.translation()(0)), 1.5 * stddev);
+  EXPECT_LT(abs(output.x.mean - camera_loc.translation()(0)), 1.5 * stddev);;
   EXPECT_LT(abs(output.y.mean - camera_loc.translation()(1)), 1.5 * stddev);
   EXPECT_LT(abs(output.z.mean - camera_loc.translation()(2)), 1.5 * stddev);
 }
