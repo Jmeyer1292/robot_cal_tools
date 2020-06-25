@@ -18,16 +18,16 @@ struct SolvePnPCostFunc
   }
 
   template<typename T>
-  bool operator()(const T *const target_q, const T *const target_t, T *const residual) const
+  bool operator()(const T *const target_aa, const T *const target_t, T *const residual) const
   {
     using Isometry3 = Eigen::Transform<T, 3, Eigen::Isometry>;
     using Vector3 = Eigen::Matrix<T, 3, 1>;
     using Vector2 = Eigen::Matrix<T, 2, 1>;
 
-    Eigen::Map<const Eigen::Quaternion<T>> q(target_q);
+    Eigen::Map<const Vector3> aa(target_aa);
     Eigen::Map<const Vector3> t(target_t);
     Isometry3 camera_to_target = Isometry3::Identity();
-    camera_to_target = Eigen::Translation<T, 3>(t) * q;
+    camera_to_target = Eigen::Translation<T, 3>(t) * Eigen::AngleAxis<T>(aa.norm(), aa.normalized());
 
     // Transform points into camera coordinates
     Vector3 camera_pt = camera_to_target * in_target_.cast<T>();
@@ -86,7 +86,8 @@ namespace rct_optimizations
 PnPResult optimize(const PnPProblem &params)
 {
   // Create the optimization variables from the input guess
-  Eigen::Quaterniond q(params.camera_to_target_guess.rotation());
+  Eigen::AngleAxisd rot(params.camera_to_target_guess.rotation());
+  Eigen::Vector3d aa = rot.angle() * rot.axis();
   Eigen::Vector3d t(params.camera_to_target_guess.translation());
 
   ceres::Problem problem;
@@ -102,14 +103,10 @@ PnPResult optimize(const PnPProblem &params)
     // Problem data structure
     auto *cost_fn = new SolvePnPCostFunc(params.intr, point_in_target, img_obs);
 
-    auto *cost_block = new ceres::AutoDiffCostFunction<SolvePnPCostFunc, 2, 4, 3>(cost_fn);
+    auto *cost_block = new ceres::AutoDiffCostFunction<SolvePnPCostFunc, 2, 3, 3>(cost_fn);
 
-    problem.AddResidualBlock(cost_block, nullptr, q.coeffs().data(), t.data());
+    problem.AddResidualBlock(cost_block, nullptr, aa.data(), t.data());
   }
-
-  ceres::LocalParameterization *q_param
-    = new ceres::AutoDiffLocalParameterization<EigenQuaternionPlus, 4, 3>();
-  problem.SetParameterization(q.coeffs().data(), q_param);
 
   ceres::Solver::Summary summary;
   ceres::Solver::Options options;
@@ -119,8 +116,8 @@ PnPResult optimize(const PnPProblem &params)
   result.converged = summary.termination_type == ceres::CONVERGENCE;
   result.initial_cost_per_obs = summary.initial_cost / summary.num_residuals;
   result.final_cost_per_obs = summary.final_cost / summary.num_residuals;
-  result.camera_to_target = Eigen::Translation3d(t) * q;
-  result.camera_to_target_covariance = computeFullDV2DVCovariance(problem, t.data(), t.size(), q.coeffs().data(), q_param->LocalSize());
+  result.camera_to_target = Eigen::Translation3d(t) * Eigen::AngleAxisd(aa.norm(), aa.normalized());
+  result.camera_to_target_covariance = computeFullDV2DVCovariance(problem, t.data(), t.size(), aa.data(), aa.size());
 
   return result;
 }
