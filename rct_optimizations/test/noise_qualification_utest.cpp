@@ -14,33 +14,26 @@ using namespace rct_optimizations;
 
 TEST(NoiseTest, QuatMeanTest)
 {
- /*This test validate the method used to find the mean quaternion
-  * in noise_qualifier.cpp
-  */
+  /*This test validate the method used to find the mean quaternion
+   * in noise_qualifier.cpp
+   */
 
- //base quaternion
- Eigen::Quaterniond quat_1 (0,1,0,0);
- Eigen::Quaterniond quat_2 (0,0,1,0);
- Eigen::Quaterniond quat_3 (1,0,0,0);
+  //base quaternion
+  Eigen::Quaterniond quat_1 (0,1,0,0);
+  Eigen::Quaterniond quat_2 (0,0,1,0);
 
- //std::cout << quat_2.angularDistance(quat_1) << "\n";
- std::vector<Eigen::Quaterniond> poses1 = {quat_1, quat_2};
-  std::vector<Eigen::Quaterniond> poses2 = {quat_2, quat_3};
+  //std::cout << quat_2.angularDistance(quat_1) << "\n";
+  std::vector<Eigen::Quaterniond> poses = {quat_1, quat_2};
 
- //average new quats
-RotationStat r1 = FindQuaternionMean(poses1);
-RotationStat r2 = FindQuaternionMean(poses2);
+  //average new quats
+  RotationStat r = FindQuaternionMean(poses);
 
-Eigen::Quaterniond mean_quat1 (r1.qw.mean, r1.qx.mean, r1.qy.mean, r1.qz.mean);
+  Eigen::Quaterniond mean_quat1 (r.qw.mean, r.qx.mean, r.qy.mean, r.qz.mean);
 
-//The two quaternions are 2 pi rad apart, so the mean should be ~PI away from both
-EXPECT_LT(mean_quat1.angularDistance(quat_1) - M_PI, ANGULAR_THRESHOLD);
-EXPECT_LT(mean_quat1.angularDistance(quat_2) - M_PI, ANGULAR_THRESHOLD);
+  //The two quaternions are 2 pi rad apart, so the mean should be ~PI away from both
+  EXPECT_LT(mean_quat1.angularDistance(quat_1) - M_PI, ANGULAR_THRESHOLD);
+  EXPECT_LT(mean_quat1.angularDistance(quat_2) - M_PI, ANGULAR_THRESHOLD);
 
-Eigen::Quaterniond mean_quat2 (r2.qw.mean, r2.qx.mean, r2.qy.mean, r2.qz.mean);
-
-//The two quaternions are pi rad apart, so the mean should be ~PI/2 away from both
-EXPECT_LT(mean_quat2.angularDistance(quat_2) - M_PI/2, ANGULAR_THRESHOLD);
 }
 
 TEST(NoiseTest, 2DPerfectTest)
@@ -172,8 +165,7 @@ TEST(NoiseTest, 2DNoiseTest)
 
   PnPNoiseStat output = rct_optimizations::qualifyNoise2D(perturbed_problem_set);
 
-  //find true target position in camera
-  //target position relative to camera
+  //Project true target position into the camera
   double  uv[2];
   Eigen::Vector3d second_target_loc = camera_loc.translation();
   rct_optimizations::projectPoint(camera.intr, second_target_loc.data(), uv);
@@ -187,6 +179,7 @@ TEST(NoiseTest, 2DNoiseTest)
 
   EXPECT_LT(abs(output.x.mean - camera_loc.translation()(0)), (camera_loc.translation()(2)/camera.intr.fx()) * stddev);
   EXPECT_LT(abs(output.y.mean - camera_loc.translation()(1)), (camera_loc.translation()(2)/camera.intr.fy()) * stddev);
+  //Max is taken in case the target location is is exactly correct & threshold goes to 0
   EXPECT_LT(abs(output.z.mean - camera_loc.translation()(2)), std::max(1.5*stddev, camera.intr.fx() * camera_loc.translation()(0) * std::sqrt(uv[0] - camera.intr.cx()) * stddev));
 }
 
