@@ -8,7 +8,7 @@
 #include <rct_optimizations/ceres_math_utilities.h>
 
 //tolerance for oreintation difference, in radians
-#define ANGULAR_THRESHOLD 6*M_PI/180
+#define ANGULAR_THRESHOLD 8*M_PI/180
 
 using namespace rct_optimizations;
 
