@@ -68,38 +68,6 @@ Eigen::MatrixXd computePoseCovariance(ceres::Problem& problem, const Pose6d& pos
   return computeDVCovariance(problem, pose.values.data(), 6, options);
 }
 
-Eigen::MatrixXd computePoseCovariance(ceres::Problem& problem, const Eigen::Vector3d& t, Eigen::Quaterniond& q,
-                                      const ceres::Covariance::Options& options)
-{
-  const ceres::LocalParameterization* q_loc_param = problem.GetParameterization(q.coeffs().data());
-
-  if (q_loc_param->LocalSize() != 3)
-    throw CovarianceException("Locally parameterized size of the quaternion is not smaller than its original size");
-
-  // Calculate the individual covariance matrices
-  // Covariance of locally parameterized quaternion with itself
-  Eigen::MatrixXd q_cov = computeDVCovariance(problem, q.coeffs().data(), q_loc_param->LocalSize(), options);
-  // Covariance of position with itself
-  Eigen::MatrixXd t_cov = computeDVCovariance(problem, t.data(), t.size(), options);
-  // Covariance of locally parameterized quaternion covariance with position
-  Eigen::MatrixXd tq_cov =
-      computeDV2DVCovariance(problem, t.data(), t.size(), q.coeffs().data(), q_loc_param->LocalSize(), options);
-
-  Eigen::MatrixXd cov;
-  cov.resize(6, 6);
-  /* Total covariance matrix
-   *        T         Q
-   * T | C(t, t) | C(t, q) |
-   * Q | C(q, t) | C(q, q) |
-   */
-  cov.block<3, 3>(0, 0) = t_cov;
-  cov.block<3, 3>(3, 3) = q_cov;
-  cov.block<3, 3>(0, 3) = tq_cov;
-  cov.block<3, 3>(3, 0) = tq_cov.transpose();
-
-  return cov;
-}
-
 Eigen::MatrixXd computePose2DVCovariance(ceres::Problem &problem, const Pose6d &pose, const double* dptr, std::size_t num_vars, const ceres::Covariance::Options& options)
 {
   return computeDV2DVCovariance(problem, pose.values.data(), 6, dptr, num_vars, options);
@@ -146,6 +114,40 @@ Eigen::MatrixXd computeDV2DVCovariance(ceres::Problem &P, const double* dptr1, c
     throw CovarianceException("GetCovarianceBlock failed in computeDV2DVCovariance()");
 
   return covToEigenOffDiagCorr(cov_d1d1, num_vars1, cov_d2d2, num_vars2, cov_d1d2);
+}
+
+Eigen::MatrixXd computeFullDV2DVCovariance(ceres::Problem &problem,
+                                           const double *dptr1,
+                                           const std::size_t num_vars1,
+                                           const double *dptr2,
+                                           const std::size_t num_vars2,
+                                           const ceres::Covariance::Options &options)
+{
+  // Calculate the individual covariance matrices
+  // Covariance of parameter 1 with itself
+  Eigen::MatrixXd cov_p1 = computeDVCovariance(problem, dptr1, num_vars1, options);
+  // Covariance of parameter 2 with itself
+  Eigen::MatrixXd cov_p2 = computeDVCovariance(problem, dptr2, num_vars2, options);
+  // Covariance of parameter 1 with parameter 2
+  Eigen::MatrixXd cov_p1p2
+    = computeDV2DVCovariance(problem, dptr1, num_vars1, dptr2, num_vars2, options);
+
+  // Total covariance matrix
+  Eigen::MatrixXd cov;
+  const std::size_t n = num_vars1 + num_vars2;
+  cov.resize(n, n);
+
+  /*    |     P1    |     P2    |
+   * ---|-----------|-----------|
+   * P1 | C(p1, p1) | C(p1, p2) |
+   * P2 | C(p2, p1) | C(p2, p2) |
+   */
+  cov.block(0, 0, num_vars1, num_vars1) = cov_p1;
+  cov.block(num_vars1, num_vars1, num_vars2, num_vars2) = cov_p2;
+  cov.block(0, num_vars1, num_vars1, num_vars2) = cov_p1p2;
+  cov.block(num_vars1, 0, num_vars2, num_vars1) = cov_p1p2.transpose();
+
+  return cov;
 }
 
 }  // namespace rct_optimizations
