@@ -86,7 +86,7 @@ PnPResult optimize(const PnPProblem &params)
   result.initial_cost_per_obs = summary.initial_cost / summary.num_residuals;
   result.final_cost_per_obs = summary.final_cost / summary.num_residuals;
   result.camera_to_target = Eigen::Translation3d(t) * q;
-  result.camera_to_target_covariance = computePoseCovariance(problem, t, q);
+  result.camera_to_target_covariance = computeFullDV2DVCovariance(problem, t.data(), t.size(), q.coeffs().data(), q_param->LocalSize());
 
   return result;
 }
