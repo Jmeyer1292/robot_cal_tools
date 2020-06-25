@@ -16,6 +16,7 @@ jobs:
              ADDITIONAL_DEBS: git,
              VERBOSE_TESTS: true,
              TARGET_CMAKE_ARGS: "-DRCT_BUILD_TESTS=ON",
+             CTEST_OUTPUT_ON_FAILURE: true,
              AFTER_SCRIPT: 'catkin build -w $target_ws --no-deps --verbose rct_optimizations --make-args test'}
           - {BADGE: xenial,
              OS_NAME: ubuntu,
@@ -25,6 +26,7 @@ jobs:
              ADDITIONAL_DEBS: git,
              VERBOSE_TESTS: true,
              TARGET_CMAKE_ARGS: "-DRCT_BUILD_TESTS=ON",
+             CTEST_OUTPUT_ON_FAILURE: true,
              AFTER_SCRIPT: 'catkin build -w $target_ws --no-deps --verbose rct_optimizations --make-args test'}
     runs-on: ubuntu-latest
     steps:
