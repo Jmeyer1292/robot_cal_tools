@@ -55,18 +55,9 @@ public:
   template<typename T>
   bool operator()(const T *const target_q, const T *const target_t, T *const residual) const
   {
-//    const T* target_angle_axis = target_pose + 0;
-//    const T* target_position = target_pose + 3;
-
-//    // Transform points into camera coordinates
-//    T target_pt[3];
-//    target_pt[0] = T(in_target_(0));
-//    target_pt[1] = T(in_target_(1));
-//    target_pt[2] = T(in_target_(2));
 
     using Isometry3 = Eigen::Transform<T, 3, Eigen::Isometry>;
     using Vector3 = Eigen::Matrix<T, 3, 1>;
-    //using Vector2 = Eigen::Matrix<T, 2, 1>;
 
     Eigen::Map<const Eigen::Quaternion<T>> q(target_q);
     Eigen::Map<const Vector3> t(target_t);
