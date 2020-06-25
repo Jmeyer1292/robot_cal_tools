@@ -3,7 +3,7 @@
 #include <Eigen/Geometry>
 #include <Eigen/Eigenvalues>
 #include <rct_optimizations/validation/noise_qualifier.h>
-#include <rct_optimizations/experimental/pnp.h>
+#include <rct_optimizations/pnp.h>
 
 //accumulators
 #include <boost/accumulators/accumulators.hpp>

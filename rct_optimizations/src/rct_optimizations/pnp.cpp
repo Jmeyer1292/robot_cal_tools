@@ -53,24 +53,32 @@ public:
   {}
 
   template<typename T>
-  bool operator()(const T* const target_pose, T* const residual) const
+  bool operator()(const T *const target_q, const T *const target_t, T *const residual) const
   {
-    const T* target_angle_axis = target_pose + 0;
-    const T* target_position = target_pose + 3;
+//    const T* target_angle_axis = target_pose + 0;
+//    const T* target_position = target_pose + 3;
+
+//    // Transform points into camera coordinates
+//    T target_pt[3];
+//    target_pt[0] = T(in_target_(0));
+//    target_pt[1] = T(in_target_(1));
+//    target_pt[2] = T(in_target_(2));
+
+    using Isometry3 = Eigen::Transform<T, 3, Eigen::Isometry>;
+    using Vector3 = Eigen::Matrix<T, 3, 1>;
+    //using Vector2 = Eigen::Matrix<T, 2, 1>;
+
+    Eigen::Map<const Eigen::Quaternion<T>> q(target_q);
+    Eigen::Map<const Vector3> t(target_t);
+    Isometry3 camera_to_target = Isometry3::Identity();
+    camera_to_target = Eigen::Translation<T, 3>(t) * q;
 
     // Transform points into camera coordinates
-    T target_pt[3];
-    target_pt[0] = T(in_target_(0));
-    target_pt[1] = T(in_target_(1));
-    target_pt[2] = T(in_target_(2));
+    Vector3 camera_pt = camera_to_target * in_target_.cast<T>();
 
-    T camera_point[3];  // Point in camera coordinates
-
-    rct_optimizations::transformPoint(target_angle_axis, target_position, target_pt, camera_point);
-
-    residual[0] = camera_point[0] - in_image_.x();
-    residual[1] = camera_point[1] - in_image_.y();
-    residual[2] = camera_point[2] - in_image_.z();
+    residual[0] = camera_pt[0] - in_image_.x();
+    residual[1] = camera_pt[1] - in_image_.y();
+    residual[2] = camera_pt[2] - in_image_.z();
     return true;
   }
 
@@ -144,7 +152,7 @@ PnPResult optimize(const rct_optimizations::PnPProblem3D& params)
 
     auto* cost_fn = new SolvePnPCostFunc3D(point_in_target, img_obs);
 
-    auto* cost_block = new ceres::AutoDiffCostFunction<SolvePnPCostFunc3D, 2, 6>(cost_fn);
+    auto* cost_block = new ceres::AutoDiffCostFunction<SolvePnPCostFunc3D, 2, 4, 3>(cost_fn);
 
     problem.AddResidualBlock(cost_block, nullptr, q.coeffs().data(), t.data());
   }

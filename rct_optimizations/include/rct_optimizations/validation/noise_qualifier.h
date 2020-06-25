@@ -1,7 +1,7 @@
 #pragma once
 #include <Eigen/Dense>
 #include "rct_optimizations/types.h"
-#include "rct_optimizations/experimental/pnp.h"
+#include "rct_optimizations/pnp.h"
 
 namespace rct_optimizations
 {

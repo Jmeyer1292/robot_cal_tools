@@ -7,7 +7,7 @@
 #include <opencv/cv.hpp>
 #include <ros/ros.h>
 
-#include <rct_optimizations/experimental/pnp.h>
+#include <rct_optimizations/pnp.h>
 #include "rct_ros_tools/parameter_loaders.h"
 #include "rct_ros_tools/data_set.h"
 

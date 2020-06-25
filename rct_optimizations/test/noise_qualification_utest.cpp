@@ -3,7 +3,7 @@
 
 #include <rct_optimizations_tests/utilities.h>
 #include <rct_optimizations_tests/observation_creator.h>
-#include <rct_optimizations/experimental/pnp.h>
+#include <rct_optimizations/pnp.h>
 #include <rct_optimizations/validation/noise_qualifier.h>
 #include <rct_optimizations/ceres_math_utilities.h>
 
