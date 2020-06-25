@@ -35,7 +35,7 @@ struct DefaultCovarianceOptions : ceres::Covariance::Options
  * ...|
  * a_n|
  */
-Eigen::MatrixXd covToEigenCorr(double* cov, std::size_t num_vars);
+Eigen::MatrixXd covToEigenCorr(const double* cov, const std::size_t num_vars);
 
 /**
  * @brief Arrange the Ceres covariance results as an Eigen matrix.
@@ -51,7 +51,7 @@ Eigen::MatrixXd covToEigenCorr(double* cov, std::size_t num_vars);
  * ...|
  * a_n|
  */
-Eigen::MatrixXd covToEigenCov(double* cov, std::size_t num_vars);
+Eigen::MatrixXd covToEigenCov(const double* cov, const std::size_t num_vars);
 
 
 /**
@@ -74,16 +74,18 @@ Eigen::MatrixXd covToEigenCov(double* cov, std::size_t num_vars);
  * ... |
  * a_n1|
  */
-Eigen::MatrixXd covToEigenOffDiagCorr(double* cov_d1d1, std::size_t num_vars1, double* cov_d2d2, std::size_t num_vars2, double* cov_d1d2);
+Eigen::MatrixXd covToEigenOffDiagCorr(const double* cov_d1d1, const std::size_t num_vars1, const double* cov_d2d2, const std::size_t num_vars2, const double* cov_d1d2);
 
 /**
- * @brief Compute variance and covariance for a given problem and Pose6d parameter. Uses @ref computeDVCovariance.
+ * @brief Compute variance and covariance for a given problem and Eigen quaternion and translation vector parameters.
+ * It assumed that the quaternion utilizes a Ceres local parameterization to reduce its values to 3 instead of 4.
+ * Uses @ref computeDVCovariance.
  * @param The Ceres problem (after optimization).
  * @param pose Pose6d parameter
  * @param options Options to use when calculating covariance. Use default if not explicitly set by user.
- * @return A square matrix with size (6 x 6) containing variance (diagonal elements) and covariance (off-diagonal elements).
- * Given that @ref pose contains the parameters [x, y, z, rx, ry, rz], the output matrix will be arranged like this:
- *   |x|y|z|rx|ry|rz
+ * @return A square matrix with size (6 x 6) containing variance (diagonal elements) and covariance (off-diagonal
+ * elements). Given that @ref pose contains the parameters [x, y, z, rx, ry, rz], the output matrix will be arranged
+ * like this: |x|y|z|rx|ry|rz
  * --|--------------
  * x |
  * y |
@@ -91,9 +93,11 @@ Eigen::MatrixXd covToEigenOffDiagCorr(double* cov_d1d1, std::size_t num_vars1, d
  * rx|
  * ry|
  * rz|
- * @throw CovarianceException if computation of covariance fails for any pair of parameter blocks, or if GetCovarianceBlock returns false.
+ * @throw CovarianceException if computation of covariance fails for any pair of parameter blocks, or if
+ * GetCovarianceBlock returns false.
  */
-Eigen::MatrixXd computePoseCovariance(ceres::Problem& problem, Pose6d& pose, const ceres::Covariance::Options& options = DefaultCovarianceOptions());
+Eigen::MatrixXd computePoseCovariance(ceres::Problem& problem, const Pose6d& pose,
+                                      const ceres::Covariance::Options& options = DefaultCovarianceOptions());
 
 /**
  * @brief Compute off-diagonal covariance between a Pose6d parameter and a double array parameter. Uses @ref computeDV2DVCovariance.
@@ -116,7 +120,7 @@ Eigen::MatrixXd computePoseCovariance(ceres::Problem& problem, Pose6d& pose, con
  * rz|
  * @throw CovarianceException if computation of covariance fails for any pair of parameter blocks, or if GetCovarianceBlock returns false.
  */
-Eigen::MatrixXd computePose2DVCovariance(ceres::Problem &problem, Pose6d &pose, double* dptr, std::size_t num_vars, const ceres::Covariance::Options& options = DefaultCovarianceOptions());
+Eigen::MatrixXd computePose2DVCovariance(ceres::Problem &problem, const Pose6d &pose, const double* dptr, const std::size_t num_vars, const ceres::Covariance::Options& options = DefaultCovarianceOptions());
 
 /**
  * @brief Compute off-diagonal covariance between two Pose6d parameters. Uses @ref computeDV2DVCovariance.
@@ -138,13 +142,13 @@ Eigen::MatrixXd computePose2DVCovariance(ceres::Problem &problem, Pose6d &pose, 
  * rz1|
  * @throw CovarianceException if computation of covariance fails for any pair of parameter blocks, or if GetCovarianceBlock returns false.
  */
-Eigen::MatrixXd computePose2PoseCovariance(ceres::Problem &problem, Pose6d &p1, Pose6d &p2, const ceres::Covariance::Options& options = DefaultCovarianceOptions());
+Eigen::MatrixXd computePose2PoseCovariance(ceres::Problem &problem, const Pose6d &p1, const Pose6d &p2, const ceres::Covariance::Options& options = DefaultCovarianceOptions());
 
 /**
  * @brief Compute standard deviations and correlation coefficients for a given problem and parameter block. Uses @ref computeDV2DVCovariance.
  * @param problem The Ceres problem (after optimization).
  * @param dptr Ceres parameter block.
- * @param num_vars Number of parameters in dptr.
+ * @param num_vars Number of parameters in @ref dptr.
  * @param options Options to use when calculating covariance. Use default if not explicitly set by user.
  * @return A square matrix with size (num_vars x num_vars) containing standard deviations (diagonal elements) and correlation coefficients (off-diagonal elements).
  * Given that @ref dptr contains the parameters [a_1 ... a_n] where n = num_vars, the output matrix will be arranged like this:
@@ -156,15 +160,15 @@ Eigen::MatrixXd computePose2PoseCovariance(ceres::Problem &problem, Pose6d &p1, 
  * a_n|
  * @throw CovarianceException if computation of covariance fails for any pair of parameter blocks, or if GetCovarianceBlock returns false.
  */
-Eigen::MatrixXd computeDVCovariance(ceres::Problem &problem, double *dptr, std::size_t num_vars, const ceres::Covariance::Options& options = DefaultCovarianceOptions());
+Eigen::MatrixXd computeDVCovariance(ceres::Problem &problem, const double* dptr, const std::size_t& num_vars, const ceres::Covariance::Options& options = DefaultCovarianceOptions());
 
 /**
  * @brief Compute off-diagonal covariance for a given problem and parameters.
  * @param problem The Ceres problem (after optimization).
  * @param dptr1 First parameter block.
- * @param num_vars1 Number of parameters in dptr1.
+ * @param num_vars1 Number of parameters in @ref dptr1.
  * @param dptr2 Second parameter block.
- * @param num_vars2 Number of parameters in dptr2.
+ * @param num_vars2 Number of parameters in @ref dptr2.
  * @return A matrix with size (num_vars1 x num_vars2) containing the off-diagonal covariance.
  * Given that @ref dptr1 contains the parameters [a_1, a_2 ... a_n1] where n1 = num_vars1 and @ref dptr2 contains the parameters [b_1, b_2 ... b_n2] where n2 = num_vars2,
  * the output matrix will be arranged like this:
@@ -176,6 +180,25 @@ Eigen::MatrixXd computeDVCovariance(ceres::Problem &problem, double *dptr, std::
  * a_n1|
  * @throw CovarianceException if computation of covariance fails for any pair of parameter blocks, or if GetCovarianceBlock returns false.
  */
-Eigen::MatrixXd computeDV2DVCovariance(ceres::Problem &problem, double* dptr1, std::size_t num_vars1, double* dptr2, std::size_t num_vars2, const ceres::Covariance::Options& options = DefaultCovarianceOptions());
+Eigen::MatrixXd computeDV2DVCovariance(ceres::Problem &problem, const double* dptr1, const std::size_t num_vars1, const double* dptr2, const std::size_t num_vars2, const ceres::Covariance::Options& options = DefaultCovarianceOptions());
+
+/**
+ * @brief Compute variance and covariance for a given problem and parameters. Uses @ref computeDVCovariance and @ref computeDV2DVCovariance.
+ * @param The Ceres problem (after optimization).
+ * @param dptr1 First parameter block
+ * @param num_vars1 Number of parameters in @ref dptr1
+ * @param dptr2 Second parameter block
+ * @param num_vars1 Number of parameters in @ref dptr2
+ * @param options Options to use when calculating covariance. Use default if not explicitly set by user.
+ * @return A square matrix with size (n x n), where n = num_vars1 + num_vars2, containing variance (diagonal elements) and covariance (off-diagonal elements).
+ * With input parameter blocks p1 and p2, the output matrix will be arranged like this:
+ *    |     p1    |     p2    |
+ * ---|-----------|-----------|
+ * p1 | C(p1, p1) | C(p1, p2) |
+ * p2 | C(p2, p1) | C(p2, p2) |
+ */
+Eigen::MatrixXd computeFullDV2DVCovariance(ceres::Problem& problem, const double* dptr1, const std::size_t num_vars1, const double* dptr2, const std::size_t num_vars2,
+                                           const ceres::Covariance::Options& options = DefaultCovarianceOptions());
+
 
 }  // namespace rct_optimizations

@@ -21,6 +21,7 @@ struct PnPResult
   double final_cost_per_obs;
 
   Eigen::Isometry3d camera_to_target;
+  Eigen::MatrixXd camera_to_target_covariance;
 };
 
 PnPResult optimize(const PnPProblem& params);
