@@ -8,6 +8,7 @@ using namespace rct_optimizations;
 static const unsigned TARGET_ROWS = 10;
 static const unsigned TARGET_COLS = 14;
 static const double SPACING = 0.025;
+static const double CORRELATION_COEFFICIENT_THRESHOLD = 0.8;
 
 TEST(PNP_2D, PerfectInitialConditions)
 {
@@ -32,8 +33,17 @@ TEST(PNP_2D, PerfectInitialConditions)
   EXPECT_LT(result.initial_cost_per_obs, 1.0e-15);
   EXPECT_LT(result.final_cost_per_obs, 1.0e-15);
 
-  Eigen::IOFormat fmt(4, 0, " | ", "\n", "|", "|");
-  std::cout << "Covariance:\n" << result.camera_to_target_covariance.format(fmt) << std::endl;
+  for (Eigen::Index row = 0; row < result.camera_to_target_covariance.rows(); ++row)
+  {
+    for (Eigen::Index col = 0; col < result.camera_to_target_covariance.cols(); ++col)
+    {
+      if(row != col)
+        EXPECT_LT(std::abs(result.camera_to_target_covariance(row, col)), CORRELATION_COEFFICIENT_THRESHOLD);
+    }
+  }
+
+//  Eigen::IOFormat fmt(4, 0, " | ", "\n", "|", "|");
+//  std::cout << "Covariance:\n" << result.camera_to_target_covariance.format(fmt) << std::endl;
 }
 
 TEST(PNP_2D, PerturbedInitialCondition)
@@ -61,8 +71,17 @@ TEST(PNP_2D, PerturbedInitialCondition)
   EXPECT_TRUE(result.camera_to_target.isApprox(target_to_camera.inverse(), 1.0e-8));
   EXPECT_LT(result.final_cost_per_obs, 1.0e-14);
 
-  Eigen::IOFormat fmt(4, 0, " | ", "\n", "|", "|");
-  std::cout << "Covariance:\n" << result.camera_to_target_covariance.format(fmt) << std::endl;
+  for (Eigen::Index row = 0; row < result.camera_to_target_covariance.rows(); ++row)
+  {
+    for (Eigen::Index col = 0; col < result.camera_to_target_covariance.cols(); ++col)
+    {
+      if (row != col)
+        EXPECT_LT(std::abs(result.camera_to_target_covariance(row, col)), CORRELATION_COEFFICIENT_THRESHOLD);
+    }
+  }
+
+//  Eigen::IOFormat fmt(4, 0, " | ", "\n", "|", "|");
+//  std::cout << "Covariance:\n" << result.camera_to_target_covariance.format(fmt) << std::endl;
 }
 
 TEST(PNP_2D, BadIntrinsicParameters)
@@ -100,8 +119,17 @@ TEST(PNP_2D, BadIntrinsicParameters)
   EXPECT_FALSE(result.camera_to_target.isApprox(target_to_camera.inverse(), 1.0e-3));
   EXPECT_GT(result.final_cost_per_obs, 1.0e-3);
 
-  Eigen::IOFormat fmt(4, 0, " | ", "\n", "|", "|");
-  std::cout << "Covariance:\n" << result.camera_to_target_covariance.format(fmt) << std::endl;
+  for (Eigen::Index row = 0; row < result.camera_to_target_covariance.rows(); ++row)
+  {
+    for (Eigen::Index col = 0; col < result.camera_to_target_covariance.cols(); ++col)
+    {
+      if (row != col)
+        EXPECT_LT(std::abs(result.camera_to_target_covariance(row, col)), CORRELATION_COEFFICIENT_THRESHOLD);
+    }
+  }
+
+//  Eigen::IOFormat fmt(4, 0, " | ", "\n", "|", "|");
+//  std::cout << "Covariance:\n" << result.camera_to_target_covariance.format(fmt) << std::endl;
 }
 
 TEST(PNP_3D, PerfectInitialConditions)
