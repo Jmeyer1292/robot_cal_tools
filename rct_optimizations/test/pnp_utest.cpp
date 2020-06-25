@@ -105,37 +105,53 @@ TEST(PNP_2D, BadIntrinsicParameters)
 
 TEST(PNP_3D, PerfectInitialConditions)
 {
-  //setup params
-  PnPProblem3D setup;
+  unsigned target_rows = 5;
+  unsigned target_cols = 7;
+  double spacing = 0.025;
+  test::Target target(target_rows, target_cols, spacing);
 
-  //testing with only one observation of a 3x3 target
+  Eigen::Isometry3d target_to_camera(Eigen::Isometry3d::Identity());
+  double x = static_cast<double>(target_rows - 1) * spacing / 2.0;
+  double y = static_cast<double>(target_cols - 1) * spacing / 2.0;
+  target_to_camera.translate(Eigen::Vector3d(x, y, 1.0));
+  target_to_camera.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
 
-  //make target
-  test::Target target(5, 5, 0.025);
+  PnPProblem3D problem;
+  problem.camera_to_target_guess = target_to_camera.inverse();
+  EXPECT_NO_THROW(problem.correspondences =
+                    test::getCorrespondences(target_to_camera, Eigen::Isometry3d::Identity(), target));
 
-  Eigen::Isometry3d target_point = Eigen::Isometry3d::Identity();
-  Eigen::Isometry3d camera_point = target_point;
+  PnPResult result = optimize(problem);
+  EXPECT_TRUE(result.converged);
+  EXPECT_TRUE(result.camera_to_target.isApprox(target_to_camera.inverse()));
+  EXPECT_LT(result.initial_cost_per_obs, 1.0e-15);
+  EXPECT_LT(result.final_cost_per_obs, 1.0e-15);
+}
 
-  camera_point.translate(Eigen::Vector3d(0.0,0.0,1.0));
-  camera_point.rotate(Eigen::AngleAxisd(M_PI,Eigen::Vector3d::UnitX()));
+TEST(PNP_3D, PerturbedInitialCondition)
+{
 
-  setup.correspondences = getCorrespondences(camera_point,
-                                             target_point,
-                                             target);
+  unsigned target_rows = 5;
+  unsigned target_cols = 7;
+  double spacing = 0.025;
+  test::Target target(target_rows, target_cols, spacing);
 
-  Eigen::Isometry3d noise = camera_point;
-  noise.translate(Eigen::Vector3d(0.0001, 0.5, 0));
-  setup.camera_to_target_guess = noise;
+  Eigen::Isometry3d target_to_camera(Eigen::Isometry3d::Identity());
+  double x = static_cast<double>(target_rows) * spacing / 2.0;
+  double y = static_cast<double>(target_cols) * spacing / 2.0;
+  target_to_camera.translate(Eigen::Vector3d(x, y, 1.0));
+  target_to_camera.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
 
-  PnPResult res = rct_optimizations::optimize(setup);
+  PnPProblem3D problem;
+  problem.camera_to_target_guess = test::perturbPose(target_to_camera.inverse(), 0.05, 0.05);
+  problem.correspondences = test::getCorrespondences(target_to_camera,
+                                                     Eigen::Isometry3d::Identity(),
+                                                     target);
 
-  EXPECT_TRUE(res.converged);
-  //Starting with an incorrect first guess means that cost must decrease
-  EXPECT_LT(res.final_cost_per_obs, res.initial_cost_per_obs);
-  EXPECT_LT(res.final_cost_per_obs, 1.0e-20);
-  EXPECT_LT((res.camera_to_target.translation() - camera_point.translation()).norm(), 1.0e-10);
-  //can only achieve 5 decimal accuracy
-  EXPECT_TRUE(res.camera_to_target.isApprox(camera_point, 1.0e-5));
+  PnPResult result = optimize(problem);
+  EXPECT_TRUE(result.converged);
+  EXPECT_TRUE(result.camera_to_target.isApprox(target_to_camera.inverse(), 0.1));
+  EXPECT_LT(result.final_cost_per_obs, 1.0e-14);
 }
 
 int main(int argc, char **argv)

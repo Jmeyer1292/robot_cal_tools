@@ -8,7 +8,7 @@
 #include <rct_optimizations/ceres_math_utilities.h>
 
 //tolerance for oreintation difference, in radians
-#define ANGULAR_THRESHOLD 10*M_PI/180
+#define ANGULAR_THRESHOLD 6*M_PI/180
 
 using namespace rct_optimizations;
 
@@ -22,7 +22,6 @@ TEST(NoiseTest, QuatMeanTest)
   Eigen::Quaterniond quat_1 (0,1,0,0);
   Eigen::Quaterniond quat_2 (0,0,1,0);
 
-  //std::cout << quat_2.angularDistance(quat_1) << "\n";
   std::vector<Eigen::Quaterniond> poses = {quat_1, quat_2};
 
   //average new quats
@@ -33,7 +32,6 @@ TEST(NoiseTest, QuatMeanTest)
   //The two quaternions are 2 pi rad apart, so the mean should be ~PI away from both
   EXPECT_LT(mean_quat1.angularDistance(quat_1) - M_PI, ANGULAR_THRESHOLD);
   EXPECT_LT(mean_quat1.angularDistance(quat_2) - M_PI, ANGULAR_THRESHOLD);
-
 }
 
 TEST(NoiseTest, 2DPerfectTest)
@@ -390,8 +388,6 @@ TEST(NoiseTest, 3DNoiseTest)
   EXPECT_LT(output.x.std_dev, 1.5 * stddev);
   EXPECT_LT(output.y.std_dev, 1.5 * stddev);
   EXPECT_LT(output.z.std_dev, 1.5 * stddev);
-  double debug_dist = (Eigen::Quaterniond(output.q.qw.mean, output.q.qx.mean, output.q.qy.mean, output.q.qz.mean).angularDistance(q_ver));
-  std::cout << debug_dist << "\n";
   EXPECT_LT(Eigen::Quaterniond(output.q.qw.mean, output.q.qx.mean, output.q.qy.mean, output.q.qz.mean).angularDistance(q_ver), ANGULAR_THRESHOLD);
 
   //Absolute value of quaternion is taken, since quaternions equal their oppoisite
@@ -468,9 +464,7 @@ TEST(NoiseTest, 3DTwistNoiseTest)
   EXPECT_TRUE(output.z.std_dev < 1.5 * stddev);
   EXPECT_LT(Eigen::Quaterniond(output.q.qw.mean, output.q.qx.mean, output.q.qy.mean, output.q.qz.mean).angularDistance(q_ver), ANGULAR_THRESHOLD);
 
-  std::cout << Eigen::Quaterniond(output.q.qw.mean, output.q.qx.mean, output.q.qy.mean, output.q.qz.mean).angularDistance(q_ver) << " \n";
   //Absolute value of quaternion is taken, since quaternions equal their oppoisite
-
   EXPECT_LT(abs(output.x.mean - camera_loc.translation()(0)), 1.5 * stddev);;
   EXPECT_LT(abs(output.y.mean - camera_loc.translation()(1)), 1.5 * stddev);
   EXPECT_LT(abs(output.z.mean - camera_loc.translation()(2)), 1.5 * stddev);
