@@ -24,7 +24,7 @@ TEST(NoiseTest, QuatMeanTest)
   double stdev = M_PI / 8.0;
   std::normal_distribution<double> dist(0.0, stdev);
 
-  std::size_t n = 1000;
+  std::size_t n = 10000;
   std::vector<Eigen::Quaterniond> random_q;
   random_q.reserve(n);
   for (std::size_t i = 0; i < n; ++i)
