@@ -4,470 +4,340 @@
 #include <rct_optimizations_tests/utilities.h>
 #include <rct_optimizations_tests/observation_creator.h>
 #include <rct_optimizations/pnp.h>
-#include <rct_optimizations/validation/noise_qualifier.h>
+#include <rct_optimizations/validation/noise_qualification.h>
 #include <rct_optimizations/ceres_math_utilities.h>
-
-//tolerance for oreintation difference, in radians
-#define ANGULAR_THRESHOLD 8*M_PI/180
 
 using namespace rct_optimizations;
 
+static const unsigned TARGET_ROWS = 10;
+static const unsigned TARGET_COLS = 14;
+static const double SPACING = 0.025;
+static const double CAMERA_STANDOFF = 0.5;
+
 TEST(NoiseTest, QuatMeanTest)
 {
-  /*This test validate the method used to find the mean quaternion
-   * in noise_qualifier.cpp
-   */
-
   //base quaternion
-  Eigen::Quaterniond quat_1 (0,1,0,0);
-  Eigen::Quaterniond quat_2 (0,0,1,0);
+  Eigen::Quaterniond q_mean(1, 0, 0, 0);
 
-  std::vector<Eigen::Quaterniond> poses = {quat_1, quat_2};
+  // Make a lot of quaternions randomly oriented about the x-axis
+  std::mt19937 mt_rand(std::random_device{}());
+  double stdev = M_PI / 8.0;
+  std::normal_distribution<double> dist(0.0, stdev);
+
+  std::size_t n = 1000;
+  std::vector<Eigen::Quaterniond> random_q;
+  random_q.reserve(n);
+  for (std::size_t i = 0; i < n; ++i)
+  {
+    random_q.push_back(q_mean * Eigen::AngleAxisd(dist(mt_rand), Eigen::Vector3d::UnitX()));
+  }
 
   //average new quats
-  RotationStat r = FindQuaternionMean(poses);
-
-  Eigen::Quaterniond mean_quat1 (r.qw.mean, r.qx.mean, r.qy.mean, r.qz.mean);
+  QuaternionStats q_stats = computeQuaternionStats(random_q);
 
   //The two quaternions are 2 pi rad apart, so the mean should be ~PI away from both
-  EXPECT_LT(mean_quat1.angularDistance(quat_1) - M_PI, ANGULAR_THRESHOLD);
-  EXPECT_LT(mean_quat1.angularDistance(quat_2) - M_PI, ANGULAR_THRESHOLD);
+  EXPECT_LT(q_mean.angularDistance(q_stats.mean), 1.0 * M_PI / 180.0);
+  EXPECT_LT(std::abs(stdev - q_stats.stdev), 1.0 * M_PI / 180.0);
 }
 
-TEST(NoiseTest, 2DPerfectTest)
+class NoiseQualification2D : public ::testing::Test
 {
-  //make target
-  test::Target target(4, 4, 0.025);
+  public:
+  NoiseQualification2D()
+    : target(TARGET_ROWS, TARGET_COLS, SPACING)
+    , camera(test::makeKinectCamera())
+    , target_to_camera(Eigen::Isometry3d::Identity())
+    , mt_rand(std::random_device{}())
+  {
+    // Put the camera over the center of the target facing normal to the target
+    double x = static_cast<double>(TARGET_ROWS - 1) * SPACING / 2.0;
+    double y = static_cast<double>(TARGET_COLS - 1) * SPACING / 2.0;
+    target_to_camera.translate(Eigen::Vector3d(x, y, CAMERA_STANDOFF));
+    target_to_camera.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
+  }
 
-  //Load camera intrinsics
-  //camera is a kinect
-  auto camera = test::makeKinectCamera();
+  Correspondence2D3D::Set createCorrespondences()
+  {
+    Correspondence2D3D::Set out;
+    EXPECT_NO_THROW(out = test::getCorrespondences(target_to_camera,
+                                                   Eigen::Isometry3d::Identity(),
+                                                   camera,
+                                                   target,
+                                                   true););
+    return out;
+  }
 
+  Correspondence2D3D::Set createNoisyCorrespondences(double mean, double stdev)
+  {
+    std::normal_distribution<double> dist(mean, stdev);
+    Correspondence2D3D::Set out = createCorrespondences();
+    for (auto &correspondence : out)
+    {
+      Eigen::Vector2d noise;
+      noise << dist(mt_rand), dist(mt_rand);
+      correspondence.in_image += noise;
+    }
+    return out;
+  }
+
+  test::Target target;
+  test::Camera camera;
+  Eigen::Isometry3d target_to_camera;
+  Correspondence2D3D::Set correspondences;
+  std::mt19937 mt_rand;
+};
+
+TEST_F(NoiseQualification2D, PerfectData)
+{
   //reserve observations
-  std::size_t obs_cnt = 35;
+  const std::size_t obs_cnt = 35;
   std::vector<PnPProblem> ideal_problem_set;
   ideal_problem_set.reserve(obs_cnt);
 
-  Eigen::Isometry3d target_loc = Eigen::Isometry3d::Identity();
-  Eigen::Isometry3d camera_loc = Eigen::Isometry3d::Identity();
-
-  camera_loc.translate(Eigen::Vector3d(0.0,0.0,1.0));
-  camera_loc.rotate(Eigen::AngleAxisd(M_PI,Eigen::Vector3d::UnitX()));
-
-  Eigen::Quaterniond q_ver;
-  q_ver = camera_loc.rotation();
-
   //create observations
+  Eigen::Isometry3d expected_pose = target_to_camera.inverse();
   for (std::size_t i = 0; i < obs_cnt; ++i)
   {
-    PnPProblem instance;
-    //guess inital position
-    instance.camera_to_target_guess= camera_loc;
-    instance.intr = camera.intr;
+    PnPProblem problem;
+    problem.camera_to_target_guess = expected_pose;
+    problem.intr = camera.intr;
+    problem.correspondences = createCorrespondences();
 
-    Correspondence2D3D::Set corr;
-    EXPECT_NO_THROW
-    (
-    corr = getCorrespondences(camera_loc,
-                              target_loc,
-                              camera,
-                              target,
-                              true);
-    );
-
-   instance.correspondences = corr;
-   ideal_problem_set.push_back(instance);
-
+    ideal_problem_set.push_back(problem);
   }
 
- PnPNoiseStat output = rct_optimizations::qualifyNoise2D(ideal_problem_set);
+  PnPNoiseStat results = rct_optimizations::qualifyNoise2D(ideal_problem_set);
 
-  EXPECT_LT(output.x.std_dev, 1.0e-14);
-  EXPECT_LT(output.y.std_dev, 1.0e-14);
-  EXPECT_LT(output.z.std_dev, 1.0e-14);
-  EXPECT_LT(output.q.qx.std_dev, 1.0e-14);
-  EXPECT_LT(output.q.qy.std_dev, 1.0e-14);
-  EXPECT_LT(output.q.qz.std_dev, 1.0e-14);
-  EXPECT_LT(output.q.qw.std_dev, 1.0e-14);
-
-  //Absolute value of quaternion is taken, since quaternions equal their oppoisite
-  EXPECT_LT(abs(output.x.mean - camera_loc.translation()(0)), 1.0e-14);
-  EXPECT_LT(abs(output.y.mean - camera_loc.translation()(1)), 1.0e-14);
-  EXPECT_LT(abs(output.z.mean - camera_loc.translation()(2)), 1.0e-14);
-  EXPECT_LT(abs(output.q.qx.mean) - abs(q_ver.x()), 1.0e-14);
-  EXPECT_LT(abs(output.q.qy.mean) - abs(q_ver.y()), 1.0e-14);
-  EXPECT_LT(abs(output.q.qz.mean) - abs(q_ver.z()), 1.0e-14);
-  EXPECT_LT(abs(output.q.qw.mean) - abs(q_ver.w()), 1.0e-14);
+  EXPECT_TRUE(results.p_stat.mean.isApprox(expected_pose.translation()));
+  EXPECT_LT(results.p_stat.stdev.norm(), 1.0e-15);
+  EXPECT_LT(results.q_stat.mean.angularDistance(Eigen::Quaterniond(expected_pose.linear())), 1.0e-15);
+  EXPECT_LT(results.q_stat.stdev, 1.0e-15);
 }
 
-TEST(NoiseTest, 2DNoiseTest)
+TEST_F(NoiseQualification2D, NoisyData)
 {
-  //make target
-  test::Target target(4, 4, 0.025);
-
-  //Load camera intrinsics
-  //camera is a kinect
-  auto camera = test::makeKinectCamera();
-
   //reserve observations
   std::size_t obs_cnt = 35;
   std::vector<PnPProblem> perturbed_problem_set;
   perturbed_problem_set.reserve(obs_cnt);
 
-  Eigen::Isometry3d target_loc = Eigen::Isometry3d::Identity();
-  Eigen::Isometry3d camera_loc = Eigen::Isometry3d::Identity();
-
-  camera_loc.translate(Eigen::Vector3d(0.0,0.0,1.0));
-  camera_loc.rotate(Eigen::AngleAxisd(M_PI,Eigen::Vector3d::UnitX()));
-
-  Eigen::Quaterniond q_ver;
-  q_ver = camera_loc.rotation();
-
   //add noise boilerplate
   const double mean = 0.0;
-  const double stddev = 1.0;
-  std::random_device rd{};
-  std::mt19937 generator{rd()};
-  std::normal_distribution<double> dist(mean, stddev);
+  const double stdev = 2.0;
 
   //create observations
+  Eigen::Isometry3d expected_pose = target_to_camera.inverse();
   for (std::size_t i = 0; i < obs_cnt; ++i)
   {
-    PnPProblem instance;
-    //guess inital position
-    instance.camera_to_target_guess= camera_loc;
-    instance.intr = camera.intr;
+    PnPProblem problem;
+    problem.camera_to_target_guess = expected_pose;
+    problem.intr = camera.intr;
+    problem.correspondences = createNoisyCorrespondences(mean, stdev);
 
-    Correspondence2D3D::Set corr;
-    EXPECT_NO_THROW
-    (
-    corr = getCorrespondences(camera_loc,
-                              target_loc,
-                              camera,
-                              target,
-                              true);
-   );
-
-   instance.correspondences = corr;
-
-   for (std::size_t j = 0;  j < instance.correspondences.size(); ++j)
-   {
-     double wobblex = dist(generator);
-     double wobbley = dist(generator);
-     instance.correspondences[j].in_image(0) += wobblex;
-     instance.correspondences[j].in_image(1) += wobbley;
-   }
-
-   perturbed_problem_set.push_back(instance);
+    perturbed_problem_set.push_back(problem);
   }
 
-  PnPNoiseStat output = rct_optimizations::qualifyNoise2D(perturbed_problem_set);
+  PnPNoiseStat results = rct_optimizations::qualifyNoise2D(perturbed_problem_set);
 
-  //Project true target position into the camera
-  double  uv[2];
-  Eigen::Vector3d second_target_loc = camera_loc.translation();
-  rct_optimizations::projectPoint(camera.intr, second_target_loc.data(), uv);
+  // Project the mean camera to target translation into the camera
+  Eigen::Vector2d uv = projectPoint(camera.intr, results.p_stat.mean);
 
-  EXPECT_LT(output.x.std_dev, 1.5 * stddev);
-  EXPECT_LT(output.y.std_dev, 1.5 * stddev);
-  EXPECT_LT(output.z.std_dev, 1.5 * stddev);
+  // Take the differential of the camera projection equations to estimate the change in [x,y,z] that is expected from applying camera image noise of [stdev, stdev]
+  // u = fx * (x / z) + cx --> dx = du * (z / fx)
+  // v = fy * (y / z) + cy --> dy = du * (z / fy)
+  // z = fx * x / (u - cx) --> dz = du * -1.0 * (fx * x) / (u - cx)^2
+  Eigen::Vector3d delta;
+  delta.x() = stdev * results.p_stat.mean.z() / camera.intr.fx();
+  delta.y() = stdev * results.p_stat.mean.z() / camera.intr.fy();
+  delta.z() = stdev * -1.0 * camera.intr.fx() * results.p_stat.mean.x()
+              / std::pow((uv(0) - camera.intr.cx()), 2.0);
 
-  //Absolute value of quaternion is taken, since quaternions equal their oppoisite
-  EXPECT_LT(Eigen::Quaterniond(abs(output.q.qw.mean), abs(output.q.qx.mean), abs(output.q.qy.mean), abs(output.q.qz.mean)).angularDistance(q_ver), ANGULAR_THRESHOLD);
+  EXPECT_LT(results.p_stat.stdev.norm(), delta.norm());
+  EXPECT_TRUE(results.p_stat.mean.isApprox(expected_pose.translation(), delta.norm()));
 
-  EXPECT_LT(abs(output.x.mean - camera_loc.translation()(0)), (camera_loc.translation()(2)/camera.intr.fx()) * stddev);
-  EXPECT_LT(abs(output.y.mean - camera_loc.translation()(1)), (camera_loc.translation()(2)/camera.intr.fy()) * stddev);
-  //Max is taken in case the target location is is exactly correct & threshold goes to 0
-  EXPECT_LT(abs(output.z.mean - camera_loc.translation()(2)), std::max(1.5*stddev, camera.intr.fx() * camera_loc.translation()(0) * std::sqrt(uv[0] - camera.intr.cx()) * stddev));
+  // Expect the mean quaternion to be within 1 sigma of the expected orientation
+  EXPECT_LT(results.q_stat.mean.angularDistance(Eigen::Quaterniond(expected_pose.linear())),
+            results.q_stat.stdev);
 }
 
-TEST(NoiseTest, 2DTwistNoiseTest)
+TEST_F(NoiseQualification2D, NoisyDataPerturbedGuess)
 {
-  //make target
-  test::Target target(4, 4, 0.025);
-
-  //Load camera intrinsics
-  //camera is a kinect
-  auto camera = test::makeKinectCamera();
-
   //reserve observations
   std::size_t obs_cnt = 35;
   std::vector<PnPProblem> perturbed_problem_set;
   perturbed_problem_set.reserve(obs_cnt);
 
-  Eigen::Isometry3d target_loc = Eigen::Isometry3d::Identity();
-  Eigen::Isometry3d camera_loc = Eigen::Isometry3d::Identity();
-
-  camera_loc.translate(Eigen::Vector3d(0.0,0.0,1.0));
-  camera_loc.rotate(Eigen::AngleAxisd(M_PI,Eigen::Vector3d::UnitX()));
-  camera_loc.rotate(Eigen::AngleAxisd(M_PI/2,Eigen::Vector3d::UnitZ()));
-
-  Eigen::Quaterniond q_ver;
-  q_ver = camera_loc.rotation();
-
   //add noise boilerplate
   const double mean = 0.0;
-  const double stddev = 1.0;
-  std::random_device rd{};
-  std::mt19937 generator{rd()};
-  std::normal_distribution<double> dist(mean, stddev);
+  const double stdev = 2.0;
 
   //create observations
+  Eigen::Isometry3d expected_pose = target_to_camera.inverse();
   for (std::size_t i = 0; i < obs_cnt; ++i)
   {
-    PnPProblem instance;
-    //guess inital position
-    instance.camera_to_target_guess= camera_loc;
-    instance.intr = camera.intr;
+    PnPProblem problem;
+    problem.camera_to_target_guess = test::perturbPose(expected_pose, 0.01, 0.01);
+    problem.intr = camera.intr;
+    problem.correspondences = createNoisyCorrespondences(mean, stdev);
 
-    Correspondence2D3D::Set corr;
-    EXPECT_NO_THROW
-    (
-    corr = getCorrespondences(camera_loc,
-                              target_loc,
-                              camera,
-                              target,
-                              true);
-   );
-
-   instance.correspondences = corr;
-
-   for (std::size_t j = 0;  j < instance.correspondences.size(); ++j)
-   {
-     double wobblex = dist(generator);
-     double wobbley = dist(generator);
-     instance.correspondences[j].in_image(0) += wobblex;
-     instance.correspondences[j].in_image(1) += wobbley;
-   }
-
-   perturbed_problem_set.push_back(instance);
+    perturbed_problem_set.push_back(problem);
   }
 
- PnPNoiseStat output = rct_optimizations::qualifyNoise2D(perturbed_problem_set);
+  PnPNoiseStat results = rct_optimizations::qualifyNoise2D(perturbed_problem_set);
 
+  // Project the mean camera to target translation into the camera
+  Eigen::Vector2d uv = projectPoint(camera.intr, results.p_stat.mean);
 
- //find true target position in camera
- //target position relative to camera
- double  uv[2];
- Eigen::Vector3d second_target_loc = camera_loc.translation();
- rct_optimizations::projectPoint(camera.intr, second_target_loc.data(), uv);
+  // Take the differential of the camera projection equations to estimate the change in [x,y,z] that is expected from applying camera image noise of [stdev, stdev]
+  // u = fx * (x / z) + cx --> dx = du * (z / fx)
+  // v = fy * (y / z) + cy --> dy = du * (z / fy)
+  // z = fx * x / (u - cx) --> dz = du * -1.0 * (fx * x) / (u - cx)^2
+  Eigen::Vector3d delta;
+  delta.x() = stdev * results.p_stat.mean.z() / camera.intr.fx();
+  delta.y() = stdev * results.p_stat.mean.z() / camera.intr.fy();
+  delta.z() = stdev * -1.0 * camera.intr.fx() * results.p_stat.mean.x()
+              / std::pow((uv(0) - camera.intr.cx()), 2.0);
 
+  EXPECT_LT(results.p_stat.stdev.norm(), delta.norm());
+  EXPECT_TRUE(results.p_stat.mean.isApprox(expected_pose.translation(), delta.norm()));
 
- EXPECT_TRUE(output.x.std_dev < 1.5 * stddev);
- EXPECT_TRUE(output.y.std_dev < 1.5 * stddev);
- EXPECT_TRUE(output.z.std_dev < 1.5 * stddev);
- EXPECT_LT(Eigen::Quaterniond(output.q.qw.mean, output.q.qx.mean, output.q.qy.mean, output.q.qz.mean).angularDistance(q_ver), ANGULAR_THRESHOLD);
-
- //Absolute value of quaternion is taken, since quaternions equal their oppoisite
- EXPECT_LT(abs(output.x.mean - camera_loc.translation()(0)), (camera_loc.translation()(2)/camera.intr.fx()) * stddev);
- EXPECT_LT(abs(output.y.mean - camera_loc.translation()(1)), (camera_loc.translation()(2)/camera.intr.fy()) * stddev);
- EXPECT_LT(abs(output.z.mean - camera_loc.translation()(2)), std::max(1.5*stddev, camera.intr.fx() * camera_loc.translation()(0) * std::sqrt(uv[0] - camera.intr.cx()) * stddev));
+  // Expect the mean quaternion to be within 1 sigma of the expected orientation
+  EXPECT_LT(results.q_stat.mean.angularDistance(Eigen::Quaterniond(expected_pose.linear())),
+            results.q_stat.stdev);
 }
 
-TEST(NoiseTest, 3DPerfectTest)
+class NoiseQualification3D : public ::testing::Test
 {
-  //make target
-  test::Target target(4, 4, 0.025);
+  public:
+  NoiseQualification3D()
+    : target(test::Target(TARGET_ROWS, TARGET_COLS, SPACING))
+    , target_to_camera(Eigen::Isometry3d::Identity())
+    , mt_rand(std::random_device{}())
+  {
+    // Put the camera over the center of the target facing normal to the target
+    double x = static_cast<double>(TARGET_ROWS - 1) * SPACING / 2.0;
+    double y = static_cast<double>(TARGET_COLS - 1) * SPACING / 2.0;
+    target_to_camera.translate(Eigen::Vector3d(x, y, CAMERA_STANDOFF));
+    target_to_camera.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
+  }
 
+  Correspondence3D3D::Set createCorrespondences()
+  {
+    Correspondence3D3D::Set out;
+    EXPECT_NO_THROW(
+      out = test::getCorrespondences(target_to_camera, Eigen::Isometry3d::Identity(), target););
 
+    return out;
+  }
+
+  Correspondence3D3D::Set createNoisyCorrespondences(const double mean, const double stdev)
+  {
+    Correspondence3D3D::Set out = createCorrespondences();
+    std::normal_distribution<double> dist(mean, stdev);
+
+    for (auto &corr : out)
+    {
+      Eigen::Vector3d noise;
+      noise << dist(mt_rand), dist(mt_rand), dist(mt_rand);
+      corr.in_image += noise;
+    }
+
+    return out;
+  }
+
+  test::Target target;
+  Eigen::Isometry3d target_to_camera;
+  std::mt19937 mt_rand;
+};
+
+TEST_F(NoiseQualification3D, PerfectData)
+{
   //reserve observations
   std::size_t obs_cnt = 35;
   std::vector<PnPProblem3D> ideal_problem_set;
   ideal_problem_set.reserve(obs_cnt);
 
-  Eigen::Isometry3d target_loc = Eigen::Isometry3d::Identity();
-  Eigen::Isometry3d camera_loc = Eigen::Isometry3d::Identity();
-
-  camera_loc.translate(Eigen::Vector3d(0.0,0.0,1.0));
-  camera_loc.rotate(Eigen::AngleAxisd(M_PI,Eigen::Vector3d::UnitX()));
-
-  Eigen::Quaterniond q_ver;
-  q_ver = camera_loc.rotation();
-
   //create observations
+  Eigen::Isometry3d expected_pose = target_to_camera.inverse();
   for (std::size_t i = 0; i < obs_cnt; ++i)
   {
-    PnPProblem3D instance;
-    //start with a perfect guess
-    instance.camera_to_target_guess = camera_loc;
+    PnPProblem3D problem;
+    problem.camera_to_target_guess = expected_pose;
+    problem.correspondences = createCorrespondences();
 
-    Correspondence3D3D::Set corr;
-    EXPECT_NO_THROW(
-      corr = getCorrespondences(camera_loc,
-                                target_loc,
-                                target);
-    );
-
-    instance.correspondences = corr;
-    ideal_problem_set.push_back(instance);
-
+    ideal_problem_set.push_back(problem);
   }
 
-   PnPNoiseStat output = rct_optimizations::qualifyNoise3D(ideal_problem_set);
+  PnPNoiseStat result = rct_optimizations::qualifyNoise3D(ideal_problem_set);
 
-   EXPECT_LT(output.x.std_dev, 1.0e-14);
-   EXPECT_LT(output.y.std_dev, 1.0e-14);
-   EXPECT_LT(output.z.std_dev, 1.0e-14);
-   //Rotational accuracy is less than positional, possibly because orientation is not optimized directly
-   EXPECT_LT(output.q.qx.std_dev, ANGULAR_THRESHOLD);
-   EXPECT_LT(output.q.qy.std_dev, ANGULAR_THRESHOLD);
-   EXPECT_LT(output.q.qz.std_dev, ANGULAR_THRESHOLD);
-   EXPECT_LT(output.q.qw.std_dev, ANGULAR_THRESHOLD);
-
-   //Absolute value of quaternion is taken, since quaternions equal their oppoisite
-   EXPECT_LT(abs(output.x.mean - camera_loc.translation()(0)), 1.0e-14);
-   EXPECT_LT(abs(output.y.mean - camera_loc.translation()(1)), 1.0e-14);
-   EXPECT_LT(abs(output.z.mean - camera_loc.translation()(2)), 1.0e-14);
-   EXPECT_LT(abs(output.q.qx.mean) - abs(q_ver.x()), ANGULAR_THRESHOLD);
-   EXPECT_LT(abs(output.q.qy.mean) - abs(q_ver.y()), ANGULAR_THRESHOLD);
-   EXPECT_LT(abs(output.q.qz.mean) - abs(q_ver.z()), ANGULAR_THRESHOLD);
-   EXPECT_LT(abs(output.q.qw.mean) - abs(q_ver.w()), ANGULAR_THRESHOLD );
+  EXPECT_TRUE(result.p_stat.mean.isApprox(expected_pose.translation()));
+  EXPECT_LT(result.p_stat.stdev.norm(), 1.0e-15);
+  EXPECT_LT(result.q_stat.mean.angularDistance(Eigen::Quaterniond(expected_pose.linear())), 1.0e-15);
+  EXPECT_LT(result.q_stat.stdev, 1.0e-15);
 }
 
-TEST(NoiseTest, 3DNoiseTest)
+TEST_F(NoiseQualification3D, NoisyData)
 {
-  //make target
-  test::Target target(4, 4, 0.025);
-
   //reserve observations
   std::size_t obs_cnt = 35;
-  std::vector<PnPProblem3D> perturbed_problem_set;
-  perturbed_problem_set.reserve(obs_cnt);
+  std::vector<PnPProblem3D> ideal_problem_set;
+  ideal_problem_set.reserve(obs_cnt);
 
-  Eigen::Isometry3d target_loc = Eigen::Isometry3d::Identity();
-  Eigen::Isometry3d camera_loc = Eigen::Isometry3d::Identity();
-
-  camera_loc.translate(Eigen::Vector3d(0.05,0.01,1.0));
-  camera_loc.rotate(Eigen::AngleAxisd(M_PI,Eigen::Vector3d::UnitX()));
-
-  Eigen::Quaterniond q_ver;
-  q_ver = camera_loc.rotation();
-
-  //Noise boilerplate
-  const double mean = 0.0;
-  //Smaller std dev magnitude bc in meters, not pixels
-  const double stddev = 0.005;
-  std::random_device rd{};
-  std::mt19937 generator{rd()};
-  std::normal_distribution<double> dist(mean, stddev);
+  double mean = 0.0;
+  double stdev = 0.005;
 
   //create observations
+  Eigen::Isometry3d expected_pose = target_to_camera.inverse();
   for (std::size_t i = 0; i < obs_cnt; ++i)
   {
-    PnPProblem3D instance;
+    PnPProblem3D problem;
+    problem.camera_to_target_guess = expected_pose;
+    problem.correspondences = createNoisyCorrespondences(mean, stdev);
 
-    //start with a perfect guess
-    instance.camera_to_target_guess = camera_loc;
-
-    Correspondence3D3D::Set corr;
-
-    EXPECT_NO_THROW(
-      corr = getCorrespondences(camera_loc,
-                                target_loc,
-                                target);
-    );
-
-    instance.correspondences = corr;
-
-
-    //now add noise to correspondences
-    for (std::size_t j = 0;  j < instance.correspondences.size(); ++j)
-    {
-      double wobblex = dist(generator);
-      double wobbley = dist(generator);
-      instance.correspondences[j].in_image(0) += wobblex;
-      instance.correspondences[j].in_image(1) += wobbley;
-    }
-
-    perturbed_problem_set.push_back(instance);
-
+    ideal_problem_set.push_back(problem);
   }
 
-  PnPNoiseStat output = rct_optimizations::qualifyNoise3D(perturbed_problem_set);
+  PnPNoiseStat result = rct_optimizations::qualifyNoise3D(ideal_problem_set);
 
-  EXPECT_LT(output.x.std_dev, 1.5 * stddev);
-  EXPECT_LT(output.y.std_dev, 1.5 * stddev);
-  EXPECT_LT(output.z.std_dev, 1.5 * stddev);
-  EXPECT_LT(Eigen::Quaterniond(output.q.qw.mean, output.q.qx.mean, output.q.qy.mean, output.q.qz.mean).angularDistance(q_ver), ANGULAR_THRESHOLD);
+  // Create a variable for the magnitude of the standard deviation since it was applied in all three directions
+  double stdev_norm = std::sqrt(3) * stdev;
 
-  //Absolute value of quaternion is taken, since quaternions equal their oppoisite
-  //Comparing to Standard Deviation, because 3d camera does not have explicit instrinsics
-  EXPECT_LT(-1.0 * output.x.mean - camera_loc.translation()(0), 1.5 * stddev);
-  EXPECT_LT(-1.0 * output.y.mean - camera_loc.translation()(1), 1.5 * stddev);
-  EXPECT_LT(abs(output.z.mean - camera_loc.translation()(2)), 1.5 * stddev);
+  EXPECT_TRUE(result.p_stat.mean.isApprox(expected_pose.translation(), stdev_norm));
+  EXPECT_LT(result.p_stat.stdev.norm(), stdev_norm);
+  // Expect that the average quaternion is within one standard deviation of the expected orientation
+  EXPECT_LT(result.q_stat.mean.angularDistance(Eigen::Quaterniond(expected_pose.linear())), result.q_stat.stdev);
 }
 
-TEST(NoiseTest, 3DTwistNoiseTest)
+TEST_F(NoiseQualification3D, NoisyDataPerturbedGuess)
 {
-  //make target
-  test::Target target(4, 4, 0.025);
-
   //reserve observations
   std::size_t obs_cnt = 35;
-  std::vector<PnPProblem3D> perturbed_problem_set;
-  perturbed_problem_set.reserve(obs_cnt);
+  std::vector<PnPProblem3D> ideal_problem_set;
+  ideal_problem_set.reserve(obs_cnt);
 
-  Eigen::Isometry3d target_loc = Eigen::Isometry3d::Identity();
-  Eigen::Isometry3d camera_loc = Eigen::Isometry3d::Identity();
-
-  camera_loc.translate(Eigen::Vector3d(0.01,0.01,1.0));
-  camera_loc.rotate(Eigen::AngleAxisd(M_PI,Eigen::Vector3d::UnitX()));
-  camera_loc.rotate(Eigen::AngleAxisd(M_PI/2,Eigen::Vector3d::UnitZ()));
-
-  Eigen::Quaterniond q_ver;
-  q_ver = camera_loc.rotation();
-
-  //Noise boilerplate
-  const double mean = 0.0;
-  //Smaller std dev magnitude bc in meters, not pixels
-  const double stddev = 0.005;
-  std::random_device rd{};
-  std::mt19937 generator{rd()};
-  std::normal_distribution<double> dist(mean, stddev);
+  double mean = 0.0;
+  double stdev = 0.005;
 
   //create observations
+  Eigen::Isometry3d expected_pose = target_to_camera.inverse();
   for (std::size_t i = 0; i < obs_cnt; ++i)
   {
-    PnPProblem3D instance;
+    PnPProblem3D problem;
+    problem.camera_to_target_guess = test::perturbPose(expected_pose, 0.01, 0.01);
+    problem.correspondences = createNoisyCorrespondences(mean, stdev);
 
-    //start with a perfect guess
-    instance.camera_to_target_guess = camera_loc;
-
-    Correspondence3D3D::Set corr;
-
-    EXPECT_NO_THROW(
-      corr = getCorrespondences(camera_loc,
-                                target_loc,
-                                target);
-    );
-
-    instance.correspondences = corr;
-
-
-    //now add noise to correspondences
-    for (std::size_t j = 0;  j < instance.correspondences.size(); ++j)
-    {
-      double wobblex = dist(generator);
-      double wobbley = dist(generator);
-      instance.correspondences[j].in_image(0) += wobblex;
-      instance.correspondences[j].in_image(1) += wobbley;
-    }
-
-    perturbed_problem_set.push_back(instance);
-
+    ideal_problem_set.push_back(problem);
   }
 
-  PnPNoiseStat output = rct_optimizations::qualifyNoise3D(perturbed_problem_set);
+  PnPNoiseStat result = rct_optimizations::qualifyNoise3D(ideal_problem_set);
 
-  EXPECT_TRUE(output.x.std_dev < 1.5 * stddev);
-  EXPECT_TRUE(output.y.std_dev < 1.5 * stddev);
-  EXPECT_TRUE(output.z.std_dev < 1.5 * stddev);
-  EXPECT_LT(Eigen::Quaterniond(output.q.qw.mean, output.q.qx.mean, output.q.qy.mean, output.q.qz.mean).angularDistance(q_ver), ANGULAR_THRESHOLD);
+  // Create a variable for the magnitude of the standard deviation since it was applied in all three directions
+  double stdev_norm = std::sqrt(3) * stdev;
 
-  //Absolute value of quaternion is taken, since quaternions equal their oppoisite
-  EXPECT_LT(abs(output.x.mean - camera_loc.translation()(0)), 1.5 * stddev);;
-  EXPECT_LT(abs(output.y.mean - camera_loc.translation()(1)), 1.5 * stddev);
-  EXPECT_LT(abs(output.z.mean - camera_loc.translation()(2)), 1.5 * stddev);
+  EXPECT_TRUE(result.p_stat.mean.isApprox(expected_pose.translation(), stdev_norm));
+  EXPECT_LT(result.p_stat.stdev.norm(), stdev_norm);
+  // Expect that the average quaternion is within one standard deviation of the expected orientation
+  EXPECT_LT(result.q_stat.mean.angularDistance(Eigen::Quaterniond(expected_pose.linear())), result.q_stat.stdev);
 }
 
 int main(int argc, char **argv)

@@ -25,7 +25,7 @@ add_library(${PROJECT_NAME} SHARED
   # Validation Tools
   src/${PROJECT_NAME}/validation/camera_intrinsic_calibration_validation.cpp
   #Noise Qualification
-  src/validation/noise_qualifier.cpp
+  src/${PROJECT_NAME}/validation/noise_qualification.cpp
 )
 
 target_compile_options(${PROJECT_NAME} PUBLIC -std=c++14)
