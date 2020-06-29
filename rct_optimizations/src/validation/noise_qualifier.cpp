@@ -1,6 +1,3 @@
-#include <Eigen/Dense>
-#include <Eigen/Eigen>
-#include <Eigen/Geometry>
 #include <Eigen/Eigenvalues>
 #include <rct_optimizations/validation/noise_qualifier.h>
 #include <rct_optimizations/pnp.h>
@@ -15,84 +12,66 @@
 namespace rct_optimizations
 {
 
-RotationStat FindQuaternionMean(const std::vector<Eigen::Quaterniond>& quaterns)
+Eigen::Quaterniond computeQuaternionMean(const std::vector<Eigen::Quaterniond>& quaterns)
 {
-  /* Mean quaternion is found using method described by Markley et al: Quaternion Averaging
-  *  https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20070017872.pdf
-  *  All quaternions are equally weighted
+ /* Mean quaternion is found using method described by Markley et al: Quaternion Averaging
+  * https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20070017872.pdf
   *
-  *  Negative quaternions are left as such
+  * M = sum(w_i * q_i * q_i^T)    Eq. 12
+  * q_bar = argmax(q^T * M * q)   Eq. 13
+  *
+  * The solution of this maximization problem is well known. The average quaternion is
+  * the eigenvector of M corresponding to the maximum eigenvalue.
+  *
+  * In the above equations, w_i is the weight of the ith quaternion.
+  * In this case, all quaternions are equally weighted (i.e. w_i = 1)
   */
 
-  std::size_t count = quaterns.size();
-  std::vector<Eigen::Vector4d> orientations;
-  for (std::size_t i=0; i < quaterns.size(); ++i)
+  Eigen::Matrix4d M = Eigen::Matrix4d::Zero();
+
+  for(const Eigen::Quaterniond& q : quaterns)
   {
-    orientations.push_back(quaterns[i].coeffs());
+    M += q.coeffs() * q.coeffs().transpose();
   }
 
-  RotationStat q;
+  // Eigenvectors,values should be strictly real
+  Eigen::EigenSolver<Eigen::Matrix4d> E(M, true);
 
-  //Accumulator Matrix
-  Eigen::Matrix4d A = Eigen::Matrix4d::Zero();
-
-  for (std::size_t i = 0; i <= count; ++i)
-  {
-    //rank 1 update of 'A', the accumulator matrix, with the u,v = q,qT
-    Eigen::Matrix4d temp = (orientations[i] * orientations[i].transpose());
-    A += temp;
-  }
-
-  //scale A
-  A = (1.0/double(count)) * A;
-
-  //Eigenvectors,values should be strictly real
-  Eigen::EigenSolver<Eigen::Matrix4d> E(A, true);
-
-  //Each column of 4x4 vectors is an eigenvector; desired mean has max
-  //eigenvalue with index stored in max_evi
-  Eigen::Index max_evi, one;
+  // Each column of 4x4 vectors is an eigenvector; desired mean has max
+  Eigen::Index idx_max_ev; // Index of the largest eigenvalue
 
   //find maximium eigenvalue, and store its index in max_evi
-  E.eigenvalues().real().maxCoeff(&max_evi, &one);
-  Eigen::Vector4d mean = E.eigenvectors().real().col(max_evi);
+  E.eigenvalues().real().maxCoeff(&idx_max_ev);
 
-  q.qx.mean = mean[0];
-  q.qy.mean = mean[1];
-  q.qz.mean = mean[2];
-  q.qw.mean = mean[3];
+  Eigen::Quaterniond q;
+  q.coeffs() << E.eigenvectors().real().col(idx_max_ev);
 
-  assert(std::isnan(q.qx.mean) == false &&
-         std::isnan(q.qy.mean) == false &&
-         std::isnan(q.qz.mean) == false &&
-         std::isnan(q.qw.mean) == false);
-
-  //Manually calculate standard deviations from mean
-  Eigen::Array4d std_dev = Eigen::Array4d::Zero();
-  Eigen::Array4d sum = Eigen::Array4d::Zero();
-  for (std::size_t i =0; i< count; ++i)
-  {
-   //absolute value taken because a quaternion is equal to its opposite
-   Eigen::Array4d term = orientations[i].cwiseAbs() - mean.cwiseAbs();
-   term = term.square();
-   sum+= term;
-  }
-
-  std_dev = sum/double(count);
-  std_dev = std_dev.sqrt();
-
-  q.qx.std_dev = std_dev[0];
-  q.qy.std_dev = std_dev[1];
-  q.qz.std_dev = std_dev[2];
-  q.qw.std_dev = std_dev[3];
+  assert(std::isnan(q.w()) == false &&
+         std::isnan(q.x()) == false &&
+         std::isnan(q.y()) == false &&
+         std::isnan(q.z()) == false);
 
   return q;
 };
 
+QuaternionStats computeQuaternionStats(const std::vector<Eigen::Quaterniond> &quaternions)
+{
+  QuaternionStats q_stats;
+  q_stats.mean = computeQuaternionMean(quaternions);
 
- PnPNoiseStat qualifyNoise2D(const std::vector<PnPProblem>& params)
- {
+  double q_var = 0.0;
+  for (const Eigen::Quaterniond &q : quaternions)
+  {
+    q_var += std::pow(q_stats.mean.angularDistance(q), 2.0);
+  }
+  q_var /= static_cast<double>(quaternions.size());
+  q_stats.stdev = std::sqrt(q_var);
 
+  return q_stats;
+}
+
+PnPNoiseStat qualifyNoise2D(const std::vector<PnPProblem>& params)
+{
   PnPNoiseStat output;
   std::size_t count = params.size();
 
@@ -105,11 +84,10 @@ RotationStat FindQuaternionMean(const std::vector<Eigen::Quaterniond>& quaterns)
   std::vector<Eigen::Quaterniond> orientations;
   orientations.reserve(count);
 
-  using namespace boost::accumulators;
-  accumulator_set<double, stats<tag::mean, tag::variance>> x_acc;
-  accumulator_set<double, stats<tag::mean, tag::variance>> y_acc;
-  accumulator_set<double, stats<tag::mean, tag::variance>> z_acc;
-
+  namespace ba = boost::accumulators;
+  ba::accumulator_set<double, ba::stats<ba::tag::mean, ba::tag::variance>> x_acc;
+  ba::accumulator_set<double, ba::stats<ba::tag::mean, ba::tag::variance>> y_acc;
+  ba::accumulator_set<double, ba::stats<ba::tag::mean, ba::tag::variance>> z_acc;
 
   for (auto& prob : params)
   {
@@ -131,24 +109,15 @@ RotationStat FindQuaternionMean(const std::vector<Eigen::Quaterniond>& quaterns)
     }
   }
 
-  output.x.mean = boost::accumulators::mean(x_acc);
-  output.y.mean = boost::accumulators::mean(y_acc);
-  output.z.mean = boost::accumulators::mean(z_acc);
-  output.x.std_dev = sqrt(boost::accumulators::variance(x_acc));
-  output.y.std_dev = sqrt(boost::accumulators::variance(y_acc));
-  output.z.std_dev = sqrt(boost::accumulators::variance(z_acc));
+  output.p_stat.mean << ba::mean(x_acc), ba::mean(y_acc), ba::mean(z_acc);
+  output.p_stat.stdev << std::sqrt(ba::variance(x_acc)), std::sqrt(ba::variance(y_acc)), std::sqrt(ba::variance(z_acc));
+  output.q_stat = computeQuaternionStats(orientations);
 
-
-  RotationStat quater = FindQuaternionMean(orientations);
-  output.q = quater;
-
-  //Output: mean & standard deviation of x,y,z,qx,qy,qz,qw
   return output;
 }
 
- PnPNoiseStat qualifyNoise3D(const std::vector<PnPProblem3D>& params)
- {
-
+PnPNoiseStat qualifyNoise3D(const std::vector<PnPProblem3D>& params)
+{
   PnPNoiseStat output;
   std::size_t count = params.size();
 
@@ -161,11 +130,10 @@ RotationStat FindQuaternionMean(const std::vector<Eigen::Quaterniond>& quaterns)
   std::vector<Eigen::Quaterniond> orientations;
   orientations.reserve(count);
 
-  using namespace boost::accumulators;
-  accumulator_set<double, stats<tag::mean, tag::variance>> x_acc;
-  accumulator_set<double, stats<tag::mean, tag::variance>> y_acc;
-  accumulator_set<double, stats<tag::mean, tag::variance>> z_acc;
-
+  namespace ba = boost::accumulators;
+  ba::accumulator_set<double, ba::stats<ba::tag::mean, ba::tag::variance>> x_acc;
+  ba::accumulator_set<double, ba::stats<ba::tag::mean, ba::tag::variance>> y_acc;
+  ba::accumulator_set<double, ba::stats<ba::tag::mean, ba::tag::variance>> z_acc;
 
   for (auto& prob : params)
   {
@@ -187,17 +155,10 @@ RotationStat FindQuaternionMean(const std::vector<Eigen::Quaterniond>& quaterns)
     }
   }
 
-  output.x.mean = boost::accumulators::mean(x_acc);
-  output.y.mean = boost::accumulators::mean(y_acc);
-  output.z.mean = boost::accumulators::mean(z_acc);
-  output.x.std_dev = sqrt(boost::accumulators::variance(x_acc));
-  output.y.std_dev = sqrt(boost::accumulators::variance(y_acc));
-  output.z.std_dev = sqrt(boost::accumulators::variance(z_acc));
+  output.p_stat.mean << ba::mean(x_acc), ba::mean(y_acc), ba::mean(z_acc);
+  output.p_stat.stdev << std::sqrt(ba::variance(x_acc)), std::sqrt(ba::variance(y_acc)), std::sqrt(ba::variance(z_acc));
+  output.q_stat = computeQuaternionStats(orientations);
 
-  RotationStat quater = FindQuaternionMean(orientations);
-  output.q = quater;
-
-  //Output: mean & standard deviation of x,y,z,qx,qy,qz,qw
   return output;
 }
 
