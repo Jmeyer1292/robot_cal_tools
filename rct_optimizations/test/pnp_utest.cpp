@@ -10,6 +10,19 @@ static const unsigned TARGET_COLS = 14;
 static const double SPACING = 0.025;
 static const double CORRELATION_COEFFICIENT_THRESHOLD = 0.8;
 
+void checkCorrelation(const Eigen::MatrixXd& cov)
+{
+  for (Eigen::Index row = 0; row < cov.rows(); ++row)
+  {
+    for (Eigen::Index col = 0; col < cov.cols(); ++col)
+    {
+      // Since the covariance matrix is symmetric, just check the values in the top triangle
+      if(row < col)
+        EXPECT_LT(std::abs(cov(row, col)), CORRELATION_COEFFICIENT_THRESHOLD);
+    }
+  }
+}
+
 class PnP2DTest : public ::testing::Test
 {
   public:
@@ -22,19 +35,6 @@ class PnP2DTest : public ::testing::Test
     double y = static_cast<double>(TARGET_COLS - 1) * SPACING / 2.0;
     target_to_camera.translate(Eigen::Vector3d(x, y, 0.4));
     target_to_camera.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
-  }
-
-  void checkCovariance(const Eigen::MatrixXd& cov)
-  {
-    for (Eigen::Index row = 0; row < cov.rows(); ++row)
-    {
-      for (Eigen::Index col = 0; col < cov.cols(); ++col)
-      {
-        // Since the covariance matrix is symmetric, just check the values in the top triangle
-        if(row <= col)
-          EXPECT_LT(std::abs(cov(row, col)), CORRELATION_COEFFICIENT_THRESHOLD);
-      }
-    }
   }
 
   test::Camera camera;
@@ -55,10 +55,10 @@ TEST_F(PnP2DTest, PerfectInitialConditions)
   EXPECT_TRUE(result.camera_to_target.isApprox(target_to_camera.inverse()));
   EXPECT_LT(result.initial_cost_per_obs, 1.0e-15);
   EXPECT_LT(result.final_cost_per_obs, 1.0e-15);
-  checkCovariance(result.camera_to_target_covariance);
+  checkCorrelation(result.camera_to_target_covariance);
 
-  Eigen::IOFormat fmt(4, 0, " | ", "\n", "|", "|");
-  std::cout << "Covariance:\n" << result.camera_to_target_covariance.format(fmt) << std::endl;
+//  Eigen::IOFormat fmt(4, 0, " | ", "\n", "|", "|");
+//  std::cout << "Covariance:\n" << result.camera_to_target_covariance.format(fmt) << std::endl;
 }
 
 TEST_F(PnP2DTest, PerturbedInitialCondition)
@@ -76,7 +76,7 @@ TEST_F(PnP2DTest, PerturbedInitialCondition)
   EXPECT_TRUE(result.converged);
   EXPECT_TRUE(result.camera_to_target.isApprox(target_to_camera.inverse(), 1.0e-8));
   EXPECT_LT(result.final_cost_per_obs, 1.0e-12);
-  checkCovariance(result.camera_to_target_covariance);
+  checkCorrelation(result.camera_to_target_covariance);
 
 //  Eigen::IOFormat fmt(4, 0, " | ", "\n", "|", "|");
 //  std::cout << "Covariance:\n" << result.camera_to_target_covariance.format(fmt) << std::endl;
@@ -107,25 +107,31 @@ TEST_F(PnP2DTest, BadIntrinsicParameters)
   EXPECT_TRUE(result.converged);
   EXPECT_FALSE(result.camera_to_target.isApprox(target_to_camera.inverse(), 1.0e-3));
   EXPECT_GT(result.final_cost_per_obs, 1.0e-3);
-  checkCovariance(result.camera_to_target_covariance);
+  checkCorrelation(result.camera_to_target_covariance);
 
 //  Eigen::IOFormat fmt(4, 0, " | ", "\n", "|", "|");
 //  std::cout << "Covariance:\n" << result.camera_to_target_covariance.format(fmt) << std::endl;
 }
 
-TEST(PNP_3D, PerfectInitialConditions)
+class PnP3DTest : public ::testing::Test
 {
-  unsigned target_rows = 5;
-  unsigned target_cols = 7;
-  double spacing = 0.025;
-  test::Target target(target_rows, target_cols, spacing);
+  public:
+  PnP3DTest()
+    : target(TARGET_ROWS, TARGET_COLS, SPACING)
+    , target_to_camera(Eigen::Isometry3d::Identity())
+  {
+    double x = static_cast<double>(TARGET_ROWS - 1) * SPACING / 2.0;
+    double y = static_cast<double>(TARGET_COLS - 1) * SPACING / 2.0;
+    target_to_camera.translate(Eigen::Vector3d(x, y, 0.4));
+    target_to_camera.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
+  }
 
-  Eigen::Isometry3d target_to_camera(Eigen::Isometry3d::Identity());
-  double x = static_cast<double>(target_rows - 1) * spacing / 2.0;
-  double y = static_cast<double>(target_cols - 1) * spacing / 2.0;
-  target_to_camera.translate(Eigen::Vector3d(x, y, 1.0));
-  target_to_camera.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
+  test::Target target;
+  Eigen::Isometry3d target_to_camera;
+};
 
+TEST_F(PnP3DTest, PerfectInitialConditions)
+{
   PnPProblem3D problem;
   problem.camera_to_target_guess = target_to_camera.inverse();
   EXPECT_NO_THROW(problem.correspondences =
@@ -136,22 +142,14 @@ TEST(PNP_3D, PerfectInitialConditions)
   EXPECT_TRUE(result.camera_to_target.isApprox(target_to_camera.inverse()));
   EXPECT_LT(result.initial_cost_per_obs, 1.0e-15);
   EXPECT_LT(result.final_cost_per_obs, 1.0e-15);
+  checkCorrelation(result.camera_to_target_covariance);
+
+//  Eigen::IOFormat fmt(4, 0, " | ", "\n", "|", "|");
+//  std::cout << "Covariance:\n" << result.camera_to_target_covariance.format(fmt) << std::endl;
 }
 
-TEST(PNP_3D, PerturbedInitialCondition)
+TEST_F(PnP3DTest, PerturbedInitialCondition)
 {
-
-  unsigned target_rows = 5;
-  unsigned target_cols = 7;
-  double spacing = 0.025;
-  test::Target target(target_rows, target_cols, spacing);
-
-  Eigen::Isometry3d target_to_camera(Eigen::Isometry3d::Identity());
-  double x = static_cast<double>(target_rows) * spacing / 2.0;
-  double y = static_cast<double>(target_cols) * spacing / 2.0;
-  target_to_camera.translate(Eigen::Vector3d(x, y, 1.0));
-  target_to_camera.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
-
   PnPProblem3D problem;
   problem.camera_to_target_guess = test::perturbPose(target_to_camera.inverse(), 0.05, 0.05);
   problem.correspondences = test::getCorrespondences(target_to_camera,
@@ -160,8 +158,12 @@ TEST(PNP_3D, PerturbedInitialCondition)
 
   PnPResult result = optimize(problem);
   EXPECT_TRUE(result.converged);
-  EXPECT_TRUE(result.camera_to_target.isApprox(target_to_camera.inverse(), 0.1));
-  EXPECT_LT(result.final_cost_per_obs, 1.0e-14);
+  EXPECT_TRUE(result.camera_to_target.isApprox(target_to_camera.inverse(), 1.0e-6));
+  EXPECT_LT(result.final_cost_per_obs, 1.0e-12);
+  checkCorrelation(result.camera_to_target_covariance);
+
+//  Eigen::IOFormat fmt(4, 0, " | ", "\n", "|", "|");
+//  std::cout << "Covariance:\n" << result.camera_to_target_covariance.format(fmt) << std::endl;
 }
 
 int main(int argc, char **argv)
