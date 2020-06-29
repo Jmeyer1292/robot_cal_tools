@@ -1,4 +1,4 @@
-#include <Eigen/Eigenvalues>
+#include <Eigen/SVD>
 #include <rct_optimizations/validation/noise_qualification.h>
 #include <rct_optimizations/pnp.h>
 
@@ -20,8 +20,8 @@ Eigen::Quaterniond computeQuaternionMean(const std::vector<Eigen::Quaterniond>& 
   * M = sum(w_i * q_i * q_i^T)    Eq. 12
   * q_bar = argmax(q^T * M * q)   Eq. 13
   *
-  * The solution of this maximization problem is well known. The average quaternion is
-  * the eigenvector of M corresponding to the maximum eigenvalue.
+  * "The solution of this maximization problem is well known. The average quaternion is
+  * the eigenvector of M corresponding to the maximum eigenvalue."
   *
   * In the above equations, w_i is the weight of the ith quaternion.
   * In this case, all quaternions are equally weighted (i.e. w_i = 1)
@@ -34,17 +34,12 @@ Eigen::Quaterniond computeQuaternionMean(const std::vector<Eigen::Quaterniond>& 
     M += q.coeffs() * q.coeffs().transpose();
   }
 
-  // Eigenvectors,values should be strictly real
-  Eigen::EigenSolver<Eigen::Matrix4d> E(M, true);
+  // Calculate the SVD of the M matrix
+  Eigen::JacobiSVD<Eigen::Matrix4d> svd(M, Eigen::ComputeFullU);
 
-  // Each column of 4x4 vectors is an eigenvector; desired mean has max
-  Eigen::Index idx_max_ev; // Index of the largest eigenvalue
-
-  //find maximium eigenvalue, and store its index in max_evi
-  E.eigenvalues().real().maxCoeff(&idx_max_ev);
-
+  // The eigenvectors are represented by the columns of the U matrix; the eigenvector corresponding to the largest eigenvalue is in row 0
   Eigen::Quaterniond q;
-  q.coeffs() << E.eigenvectors().real().col(idx_max_ev);
+  q.coeffs() << svd.matrixU().col(0);
 
   assert(std::isnan(q.w()) == false &&
          std::isnan(q.x()) == false &&
@@ -64,7 +59,7 @@ QuaternionStats computeQuaternionStats(const std::vector<Eigen::Quaterniond> &qu
   {
     q_var += std::pow(q_stats.mean.angularDistance(q), 2.0);
   }
-  q_var /= static_cast<double>(quaternions.size());
+  q_var /= static_cast<double>(quaternions.size() - 1);
   q_stats.stdev = std::sqrt(q_var);
 
   return q_stats;
