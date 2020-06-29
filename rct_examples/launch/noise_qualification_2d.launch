@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="data_path" default="$(find rct_examples)/data/test_set_10x10"/>
+  <arg name="data_file" default="$(find rct_examples)/config/noise_qualification/data.yaml"/>
+  <arg name="pose_file" default="$(find rct_examples)/config/noise_qualification/camera_to_target_guess.yaml"/>
+  <arg name="target_file" default="$(find rct_examples)/config/target_10x10.yaml"/>
+  <arg name="camera_intr_file" default="$(find rct_examples)/config/kinect_camera_intr.yaml"/>
+
+  <node name="noise_qualification_2d" pkg="rct_examples" type="noise_qualification_2d" output="screen">
+    <param name="data_path" value="$(arg data_path)"/>
+    <param name="data_file" value="$(arg data_file)"/>
+    <rosparam command="load" file="$(arg pose_file)"/>
+    <rosparam command="load" file="$(arg target_file)"/>
+    <rosparam command="load" file="$(arg camera_intr_file)"/>
+  </node>
+</launch>
