@@ -103,6 +103,57 @@ TEST(PNP_2D, BadIntrinsicParameters)
   EXPECT_GT(result.final_cost_per_obs, 1.0e-3);
 }
 
+TEST(PNP_3D, PerfectInitialConditions)
+{
+  unsigned target_rows = 5;
+  unsigned target_cols = 7;
+  double spacing = 0.025;
+  test::Target target(target_rows, target_cols, spacing);
+
+  Eigen::Isometry3d target_to_camera(Eigen::Isometry3d::Identity());
+  double x = static_cast<double>(target_rows - 1) * spacing / 2.0;
+  double y = static_cast<double>(target_cols - 1) * spacing / 2.0;
+  target_to_camera.translate(Eigen::Vector3d(x, y, 1.0));
+  target_to_camera.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
+
+  PnPProblem3D problem;
+  problem.camera_to_target_guess = target_to_camera.inverse();
+  EXPECT_NO_THROW(problem.correspondences =
+                    test::getCorrespondences(target_to_camera, Eigen::Isometry3d::Identity(), target));
+
+  PnPResult result = optimize(problem);
+  EXPECT_TRUE(result.converged);
+  EXPECT_TRUE(result.camera_to_target.isApprox(target_to_camera.inverse()));
+  EXPECT_LT(result.initial_cost_per_obs, 1.0e-15);
+  EXPECT_LT(result.final_cost_per_obs, 1.0e-15);
+}
+
+TEST(PNP_3D, PerturbedInitialCondition)
+{
+
+  unsigned target_rows = 5;
+  unsigned target_cols = 7;
+  double spacing = 0.025;
+  test::Target target(target_rows, target_cols, spacing);
+
+  Eigen::Isometry3d target_to_camera(Eigen::Isometry3d::Identity());
+  double x = static_cast<double>(target_rows) * spacing / 2.0;
+  double y = static_cast<double>(target_cols) * spacing / 2.0;
+  target_to_camera.translate(Eigen::Vector3d(x, y, 1.0));
+  target_to_camera.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
+
+  PnPProblem3D problem;
+  problem.camera_to_target_guess = test::perturbPose(target_to_camera.inverse(), 0.05, 0.05);
+  problem.correspondences = test::getCorrespondences(target_to_camera,
+                                                     Eigen::Isometry3d::Identity(),
+                                                     target);
+
+  PnPResult result = optimize(problem);
+  EXPECT_TRUE(result.converged);
+  EXPECT_TRUE(result.camera_to_target.isApprox(target_to_camera.inverse(), 0.1));
+  EXPECT_LT(result.final_cost_per_obs, 1.0e-14);
+}
+
 int main(int argc, char **argv)
 {
   testing::InitGoogleTest(&argc, argv);

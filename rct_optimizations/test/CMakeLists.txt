@@ -6,10 +6,12 @@ add_library(${PROJECT_NAME}_test_support
   src/observation_creator.cpp
   src/dh_chain_observation_creator.cpp
   src/utilities.cpp)
+
 target_link_libraries(${PROJECT_NAME}_test_support ${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME}_test_support PUBLIC include)
 
 # The actual tests...
+
 # Conversions
 add_executable(${PROJECT_NAME}_conversion_tests conversion_utest.cpp)
 target_link_libraries(${PROJECT_NAME}_conversion_tests PRIVATE ${PROJECT_NAME}_test_support GTest::GTest GTest::Main)
@@ -65,6 +67,12 @@ rct_gtest_discover_tests(${PROJECT_NAME}_camera_intrinsic_validation_tests)
 add_dependencies(${PROJECT_NAME}_camera_intrinsic_validation_tests ${PROJECT_NAME})
 add_dependencies(run_tests ${PROJECT_NAME}_camera_intrinsic_validation_tests)
 
+add_executable(${PROJECT_NAME}_noise_tests noise_qualification_utest.cpp)
+target_link_libraries(${PROJECT_NAME}_noise_tests PRIVATE ${PROJECT_NAME}_test_support GTest::GTest GTest::Main)
+rct_gtest_discover_tests(${PROJECT_NAME}_noise_tests)
+add_dependencies(${PROJECT_NAME}_noise_tests ${PROJECT_NAME})
+add_dependencies(run_tests ${PROJECT_NAME}_noise_tests)
+
 # Install the test executables so they can be run independently later if needed
 install(
   TARGETS
@@ -76,6 +84,8 @@ install(
     ${PROJECT_NAME}_extrinsic_hand_eye_dh_chain_tests
     ${PROJECT_NAME}_pnp_tests
     ${PROJECT_NAME}_camera_intrinsic_validation_tests
+    ${PROJECT_NAME}_noise_tests
+
   RUNTIME DESTINATION bin/tests
   LIBRARY DESTINATION lib/tests
   ARCHIVE DESTINATION lib/tests

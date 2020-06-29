@@ -124,6 +124,15 @@ add_dependencies(${PROJECT_NAME}_camera_intrinsic_calibration_validation ${${PRO
 target_link_libraries(${PROJECT_NAME}_camera_intrinsic_calibration_validation ${catkin_LIBRARIES} rct::rct_optimizations rct::rct_image_tools)
 
 
+#Executable for testing camera noise
+add_executable(${PROJECT_NAME}_noise_qualification_2d src/tools/noise_qualification_2d.cpp)
+
+set_target_properties(${PROJECT_NAME}_noise_qualification_2d PROPERTIES OUTPUT_NAME noise_qualification_2d PREFIX "")
+
+add_dependencies(${PROJECT_NAME}_noise_qualification_2d ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(${PROJECT_NAME}_noise_qualification_2d ${catkin_LIBRARIES} rct::rct_optimizations rct::rct_image_tools)
+
 #############
 ## Testing ##
 #############
@@ -145,6 +154,7 @@ install(TARGETS
     ${PROJECT_NAME}_intr
     ${PROJECT_NAME}_pnp
     ${PROJECT_NAME}_camera_intrinsic_calibration_validation
+    ${PROJECT_NAME}_noise_qualification_2d
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
