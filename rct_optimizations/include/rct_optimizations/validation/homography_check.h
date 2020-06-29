@@ -16,11 +16,9 @@ namespace rct_optimizations
  * @return A boolian indicating wheather the target points are sequenced
  * corectly in the observation
  */
-bool checkObservationSequence(const rct_optimizations::CameraIntrinsics& intr,
-                      const int& rows,
-                      const int& cols,
-                      const double& spacing,
-                      const rct_optimizations::Observation2D3D& ob,
-                      const double& max_residual);
+bool checkObservationSequence(const int& rows,
+                              const int& cols,
+                              const rct_optimizations::Observation2D3D& ob,
+                              const double& max_residual);
 
 }//rct_optimizations
