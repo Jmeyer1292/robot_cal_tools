@@ -1,5 +1,5 @@
 #include <Eigen/Eigenvalues>
-#include <rct_optimizations/validation/noise_qualifier.h>
+#include <rct_optimizations/validation/noise_qualification.h>
 #include <rct_optimizations/pnp.h>
 
 //accumulators
