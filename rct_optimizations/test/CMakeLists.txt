@@ -23,7 +23,8 @@ add_dependencies(run_tests ${PROJECT_NAME}_conversion_tests)
 add_executable(${PROJECT_NAME}_extrinsic_multi_static_camera_tests extrinsic_multi_static_camera_utest.cpp)
 target_link_libraries(${PROJECT_NAME}_extrinsic_multi_static_camera_tests PRIVATE ${PROJECT_NAME}_test_support GTest::GTest GTest::Main)
 rct_gtest_discover_tests(${PROJECT_NAME}_extrinsic_multi_static_camera_tests)
-add_dependencies(${PROJECT_NAME}_extrinsic_multi_static_camera_tests ${PROJECT_NAME})
+add_dependencies(${PROJECT_NAME}_extrinCT_NAME}_extrinsic_hand_eye_dh_chain_tests
+    ${PROJECsic_multi_static_camera_tests ${PROJECT_NAME})
 add_dependencies(run_tests ${PROJECT_NAME}_extrinsic_multi_static_camera_tests)
 
 # Extrinsic hand-eye
@@ -53,6 +54,13 @@ add_executable(${PROJECT_NAME}_covariance_tests covariance_utest.cpp)
 target_link_libraries(${PROJECT_NAME}_covariance_tests PRIVATE ${PROJECT_NAME} GTest::GTest GTest::Main)
 add_dependencies(${PROJECT_NAME}_covariance_tests ${PROJECT_NAME})
 
+# Homography
+add_executable(${PROJECT_NAME}_homography_tests homography_utest.cpp)
+target_link_libraries(${PROJECT_NAME}_homography_tests PRIVATE ${PROJECT_NAME}_test_support GTest::GTest GTest::Main)
+rct_gtest_discover_tests(${PROJECT_NAME}_homography_tests)
+add_dependencies(${PROJECT_NAME}_homography_tests ${PROJECT_NAME})
+add_dependencies(run_tests ${PROJECT_NAME}_homography_tests)
+
 # PnP
 add_executable(${PROJECT_NAME}_pnp_tests pnp_utest.cpp)
 target_link_libraries(${PROJECT_NAME}_pnp_tests PRIVATE ${PROJECT_NAME}_test_support GTest::GTest GTest::Main)
@@ -67,6 +75,7 @@ rct_gtest_discover_tests(${PROJECT_NAME}_camera_intrinsic_validation_tests)
 add_dependencies(${PROJECT_NAME}_camera_intrinsic_validation_tests ${PROJECT_NAME})
 add_dependencies(run_tests ${PROJECT_NAME}_camera_intrinsic_validation_tests)
 
+#Sensor noise
 add_executable(${PROJECT_NAME}_noise_tests noise_qualification_utest.cpp)
 target_link_libraries(${PROJECT_NAME}_noise_tests PRIVATE ${PROJECT_NAME}_test_support GTest::GTest GTest::Main)
 rct_gtest_discover_tests(${PROJECT_NAME}_noise_tests)
@@ -82,6 +91,7 @@ install(
     ${PROJECT_NAME}_extrinsic_hand_eye_tests
     ${PROJECT_NAME}_dh_parameter_tests
     ${PROJECT_NAME}_extrinsic_hand_eye_dh_chain_tests
+    ${PROJECT_NAME}_homography_tests
     ${PROJECT_NAME}_pnp_tests
     ${PROJECT_NAME}_camera_intrinsic_validation_tests
     ${PROJECT_NAME}_noise_tests

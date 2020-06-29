@@ -1,15 +1,13 @@
 #include <rct_optimizations/validation/homography_check.h>
 #include <Eigen/Dense>
 
-bool checkObservationHomogrpahy(const rct_optimizations::CameraIntrinsics& intr,
-                                const int& rows,
-                                const int& cols,
-                                const double& spacing,
-                                const rct_optimizations::Observation2D3D& ob,
-                                const double& max_residual)
+bool checkObservationSequence(const int& rows,
+                              const int& cols,
+                              rct_optimizations::Observation2D3D& ob,
+                              const double& max_residual)
 {
 
-  /*points used for homogrpahy; cannot represent more than 1/2
+  /*points used for homography; cannot represent more than 1/2
   * target points (to keep an adequate validaiton set) and cannot
   * be less than 4
   */
@@ -28,8 +26,6 @@ bool checkObservationHomogrpahy(const rct_optimizations::CameraIntrinsics& intr,
 
   //U,V coordinates of sampled points
   Eigen::MatrixXd B(1,2 * sampled_points);
-
-  //TODO: Check requires 4 points; corner points used for maximum planar area
   std::vector<int> selected_point_index;
   int points_selected = 0;
   while (points_selected < sampled_points)
