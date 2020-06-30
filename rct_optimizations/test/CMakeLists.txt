@@ -23,8 +23,7 @@ add_dependencies(run_tests ${PROJECT_NAME}_conversion_tests)
 add_executable(${PROJECT_NAME}_extrinsic_multi_static_camera_tests extrinsic_multi_static_camera_utest.cpp)
 target_link_libraries(${PROJECT_NAME}_extrinsic_multi_static_camera_tests PRIVATE ${PROJECT_NAME}_test_support GTest::GTest GTest::Main)
 rct_gtest_discover_tests(${PROJECT_NAME}_extrinsic_multi_static_camera_tests)
-add_dependencies(${PROJECT_NAME}_extrinsic_multi_static_camera_tests
-    ${PROJECT_NAME}_extrinsic_multi_static_camera_tests ${PROJECT_NAME})
+add_dependencies(${PROJECT_NAME}_extrinsic_multi_static_camera_tests ${PROJECT_NAME})
 add_dependencies(run_tests ${PROJECT_NAME}_extrinsic_multi_static_camera_tests)
 
 # Extrinsic hand-eye
