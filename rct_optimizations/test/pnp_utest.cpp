@@ -75,7 +75,7 @@ TEST_F(PnP2DTest, PerturbedInitialCondition)
   PnPResult result = optimize(problem);
   EXPECT_TRUE(result.converged);
   EXPECT_TRUE(result.camera_to_target.isApprox(target_to_camera.inverse(), 1.0e-8));
-  EXPECT_LT(result.final_cost_per_obs, 1.0e-12);
+  EXPECT_LT(result.final_cost_per_obs, 1.0e-10);
   checkCorrelation(result.camera_to_target_covariance);
 
 //  Eigen::IOFormat fmt(4, 0, " | ", "\n", "|", "|");
@@ -159,7 +159,7 @@ TEST_F(PnP3DTest, PerturbedInitialCondition)
   PnPResult result = optimize(problem);
   EXPECT_TRUE(result.converged);
   EXPECT_TRUE(result.camera_to_target.isApprox(target_to_camera.inverse(), 1.0e-6));
-  EXPECT_LT(result.final_cost_per_obs, 1.0e-12);
+  EXPECT_LT(result.final_cost_per_obs, 1.0e-10);
   checkCorrelation(result.camera_to_target_covariance);
 
 //  Eigen::IOFormat fmt(4, 0, " | ", "\n", "|", "|");
