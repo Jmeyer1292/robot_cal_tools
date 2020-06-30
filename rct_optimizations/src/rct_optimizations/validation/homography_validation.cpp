@@ -1,4 +1,4 @@
-#include <rct_optimizations/validation/homography_check.h>
+#include <rct_optimizations/validation/homography_validation.h>
 #include <Eigen/Dense>
 #include <rct_optimizations/types.h>
 

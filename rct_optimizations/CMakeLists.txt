@@ -27,7 +27,7 @@ add_library(${PROJECT_NAME} SHARED
   #Noise Qualification
   src/${PROJECT_NAME}/validation/noise_qualification.cpp
   #Target Homography
-  src/${PROJECT_NAME}/validation/homography_check.cpp
+  src/${PROJECT_NAME}/validation/homography_validation.cpp
 )
 
 target_compile_options(${PROJECT_NAME} PUBLIC -std=c++14)

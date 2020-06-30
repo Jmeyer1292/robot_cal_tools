@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <random>
-#include <rct_optimizations/validation/homography_check.h>
+#include <rct_optimizations/validation/homography_validation.h>
 #include <rct_optimizations_tests/observation_creator.h>
 #include <rct_optimizations_tests/utilities.h>
 
