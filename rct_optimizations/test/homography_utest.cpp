@@ -1,86 +1,110 @@
 #include <gtest/gtest.h>
+#include <random>
 #include <rct_optimizations/validation/homography_check.h>
 #include <rct_optimizations_tests/observation_creator.h>
 #include <rct_optimizations_tests/utilities.h>
 
 using namespace rct_optimizations;
 
-/*plan:
- * each homography sample needs:
- * camera intr
- * target (row, col, spacing)
- * observation set
- * Threshold for error (max residual)
- *
- * A run returns:
- * a bool that it worked
-*/
-TEST(Homography, PerfectInitialConditions)
+const unsigned TARGET_ROWS = 5;
+const unsigned TARGET_COLS = 7;
+const double SPACING = 0.025;
+
+class HomographyTest : public ::testing::Test
 {
-  test::Camera camera = test::makeKinectCamera();
+  public:
+  HomographyTest()
+    : camera(test::makeKinectCamera())
+    , target(TARGET_ROWS, TARGET_COLS, SPACING)
+    , target_to_camera(Eigen::Isometry3d::Identity())
+    , sampler(TARGET_ROWS, TARGET_COLS)
+  {
+    double x = static_cast<double>(TARGET_ROWS - 1) * SPACING / 2.0;
+    double y = static_cast<double>(TARGET_COLS - 1) * SPACING / 2.0;
+    target_to_camera.translate(Eigen::Vector3d(x, y, 0.5));
+    target_to_camera.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
+  }
 
-  const double max_residual = 0.5;
-  const unsigned target_rows = 5;
-  const unsigned target_cols = 7;
-  double spacing = 0.025;
-  test::Target target(target_rows, target_cols, spacing);
+  test::Camera camera;
+  test::Target target;
+  Eigen::Isometry3d target_to_camera;
+  ModifiedCircleGridCorrespondenceSampler sampler;
+};
 
-  Eigen::Isometry3d target_to_camera(Eigen::Isometry3d::Identity());
-  double x = static_cast<double>(target_rows - 1) * spacing / 2.0;
-  double y = static_cast<double>(target_cols - 1) * spacing / 2.0;
-  target_to_camera.translate(Eigen::Vector3d(x, y, 1.0));
-  target_to_camera.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
+TEST_F(HomographyTest, PerfectInitialConditions)
+{
+  rct_optimizations::Correspondence2D3D::Set correspondence_set;
+  EXPECT_NO_THROW(correspondence_set = test::getCorrespondences(target_to_camera,
+                                                                Eigen::Isometry3d::Identity(),
+                                                                camera,
+                                                                target,
+                                                                true));
 
-  rct_optimizations::Observation2D3D obs;
-  EXPECT_NO_THROW(obs.correspondence_set=
-                    test::getCorrespondences(target_to_camera, Eigen::Isometry3d::Identity(), camera, target, true));
-
-  auto ob = std::make_shared<rct_optimizations::Observation2D3D>(obs);
-  bool res = checkObservationSequence(target_rows, target_cols, obs, max_residual);
-  // bool res = checkObservationSequence(target_rows, target_cols, obs, max_residual);
-  //bool res = true;
-  EXPECT_TRUE(res);
+  Eigen::VectorXd error = calculateHomographyError(correspondence_set, sampler);
+  // Expect all of the errors to be extremely small
+  EXPECT_LT(error.maxCoeff(), 1.0e-12);
 }
 
-//TEST(Homography, BadIntrinsicParameters)
-//{
-//  test::Camera camera = test::makeKinectCamera();
+TEST_F(HomographyTest, SwapCorrespondencesConditions)
+{
+  rct_optimizations::Correspondence2D3D::Set correspondence_set;
+  EXPECT_NO_THROW(correspondence_set = test::getCorrespondences(target_to_camera,
+                                                                Eigen::Isometry3d::Identity(),
+                                                                camera,
+                                                                target,
+                                                                true));
 
-//  unsigned target_rows = 5;
-//  unsigned target_cols = 7;
-//  double spacing = 0.025;
-//  test::Target target(target_rows, target_cols, spacing);
 
-//  Eigen::Isometry3d target_to_camera(Eigen::Isometry3d::Identity());
-//  double x = static_cast<double>(target_rows) * spacing / 2.0;
-//  double y = static_cast<double>(target_cols) * spacing / 2.0;
-//  target_to_camera.translate(Eigen::Vector3d(x, y, 1.0));
-//  target_to_camera.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
 
-//  PnPProblem problem;
-//  problem.camera_to_target_guess = target_to_camera.inverse();
-//  problem.correspondences = test::getCorrespondences(target_to_camera,
-//                                                     Eigen::Isometry3d::Identity(),
-//                                                     camera,
-//                                                     target,
-//                                                     true);
 
-//  // Tweak the camera intrinsics such that we are optimizing with different values (+/- 1%)
-//  // than were used to generate the observations
-//  problem.intr = camera.intr;
-//  problem.intr.fx() *= 1.01;
-//  problem.intr.fy() *= 0.99;
-//  problem.intr.cx() *= 1.01;
-//  problem.intr.cy() *= 0.99;
+  // Swap the image measurements between 2 arbitrary correspondences
+  Correspondence2D3D &c1 = correspondence_set.at(10);
+  Eigen::Vector2d in_image_1 = c1.in_image;
+  Correspondence2D3D &c2 = correspondence_set.at(21);
+  Eigen::Vector2d in_image_2 = c2.in_image;
+  c1.in_image = in_image_2;
+  c2.in_image = in_image_1;
 
-//  PnPResult result = optimize(problem);
+  Eigen::VectorXd error = calculateHomographyError(correspondence_set, sampler);
 
-//  // The optimization should still converge by moving the camera further away from the target,
-//  // but the residual error and error in the resulting transform should be much higher
-//  EXPECT_TRUE(result.converged);
-//  EXPECT_FALSE(result.camera_to_target.isApprox(target_to_camera.inverse(), 1.0e-3));
-//  EXPECT_GT(result.final_cost_per_obs, 1.0e-3);
-//}
+  // Expect the error of the points used to create the homography matrix to be very small
+  std::vector<std::size_t> sample_indices = sampler.getSampleCorrespondenceIndices();
+  for (std::size_t idx : sample_indices)
+  {
+    EXPECT_LT(error(idx), 1.0e-12);
+  }
+
+  // Expect the homography to be off by more than one pixel because of the swap
+  EXPECT_GT(error.maxCoeff(), 1.0);
+}
+
+TEST_F(HomographyTest, NoisyCorrespondences)
+{
+  rct_optimizations::Correspondence2D3D::Set correspondence_set;
+  EXPECT_NO_THROW(correspondence_set = test::getCorrespondences(target_to_camera,
+                                                                Eigen::Isometry3d::Identity(),
+                                                                camera,
+                                                                target,
+                                                                true));
+
+  // Add Gaussian noise to the image features
+  std::mt19937 mt_rand(std::random_device{}());
+  const double stdev = 1.0;
+  std::normal_distribution<double> dist(0.0, stdev);
+  for (Correspondence2D3D &corr : correspondence_set)
+  {
+    Eigen::Vector2d noise;
+    noise << dist(mt_rand), dist(mt_rand);
+    corr.in_image += noise;
+  }
+
+  Eigen::VectorXd error = calculateHomographyError(correspondence_set, sampler);
+
+  // TODO: create an informed expectation for the max or average error. Initial testing indicates that the average error can occasionally be > 4 * stddev
+  double stdev_mag = stdev * std::sqrt(2.0);
+  EXPECT_GT(error.maxCoeff(), stdev_mag);
+  EXPECT_GT(error.mean(), stdev_mag);
+}
 
 int main(int argc, char **argv)
 {
