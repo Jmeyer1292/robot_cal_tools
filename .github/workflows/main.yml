@@ -17,7 +17,7 @@ jobs:
              VERBOSE_TESTS: true,
              TARGET_CMAKE_ARGS: "-DRCT_BUILD_TESTS=ON",
              CTEST_OUTPUT_ON_FAILURE: true,
-             AFTER_SCRIPT: 'catkin build -w $target_ws --no-deps --verbose rct_optimizations --make-args test'}
+             AFTER_SCRIPT: 'catkin build -w $target_ws --no-deps --verbose rct_optimizations --cmake-args -DRCT_RUN_TESTS=ON'}
           - {BADGE: xenial,
              OS_NAME: ubuntu,
              OS_CODE_NAME: xenial,
@@ -27,7 +27,7 @@ jobs:
              VERBOSE_TESTS: true,
              TARGET_CMAKE_ARGS: "-DRCT_BUILD_TESTS=ON",
              CTEST_OUTPUT_ON_FAILURE: true,
-             AFTER_SCRIPT: 'catkin build -w $target_ws --no-deps --verbose rct_optimizations --make-args test'}
+             AFTER_SCRIPT: 'catkin build -w $target_ws --no-deps --verbose rct_optimizations --cmake-args -DRCT_RUN_TESTS=ON'}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
