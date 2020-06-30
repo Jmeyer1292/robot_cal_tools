@@ -8,20 +8,36 @@
 namespace rct_optimizations
 {
 
+Eigen::Isometry3d createTransform(const Eigen::Vector3d& t, const Eigen::Vector3d& aa)
+{
+  Eigen::Isometry3d result = Eigen::Isometry3d::Identity() * Eigen::Translation3d(t);
+
+  double aa_norm = aa.norm();
+  if (aa_norm > std::numeric_limits<double>::epsilon())
+  {
+    result *= Eigen::AngleAxisd(aa_norm, aa.normalized());
+  }
+
+  return result;
+}
+
 KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &params)
 {
   // Initialize the optimization variables
   // Camera mount to camera (cm_to_c) quaternion and translation
-  Eigen::Quaterniond q_cm_to_c(params.camera_mount_to_camera_guess.rotation());
   Eigen::Vector3d t_cm_to_c(params.camera_mount_to_camera_guess.translation());
+  Eigen::AngleAxisd rot_cm_to_c(params.camera_mount_to_camera_guess.rotation());
+  Eigen::Vector3d aa_cm_to_c(rot_cm_to_c.angle() * rot_cm_to_c.axis());
 
   // Target mount to target (cm_to_c) quaternion and translation
   Eigen::Vector3d t_tm_to_t(params.target_mount_to_target_guess.translation());
-  Eigen::Quaterniond q_tm_to_t(params.target_mount_to_target_guess.rotation());
+  Eigen::AngleAxisd rot_tm_to_t(params.target_mount_to_target_guess.rotation());
+  Eigen::Vector3d aa_tm_to_t(rot_tm_to_t.angle() * rot_tm_to_t.axis());
 
   // Camera chain base to target_chain_base (ccb_to_tcb) quaternion and translation
   Eigen::Vector3d t_ccb_to_tcb(params.camera_base_to_target_base_guess.translation());
-  Eigen::Quaterniond q_ccb_to_tcb(params.camera_base_to_target_base_guess.rotation());
+  Eigen::AngleAxisd rot_ccb_to_tcb(params.camera_base_to_target_base_guess.rotation());
+  Eigen::Vector3d aa_ccb_to_tcb(rot_ccb_to_tcb.angle() * rot_ccb_to_tcb.axis());
 
   // Create containers for the kinematic chain DH offsets
   // Ceres will not work with parameter blocks of size zero, so create a dummy set of DH offsets for chains with DoF == 0
@@ -38,15 +54,15 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &param
     target_chain_dh_offsets = Eigen::MatrixX4d::Zero(1, 4);
 
   // Create a vector of the pointers to the optimization variables in the order that the cost function expects them
-  std::vector<double *> parameters;
-  parameters.push_back(camera_chain_dh_offsets.data());
-  parameters.push_back(target_chain_dh_offsets.data());
-  parameters.push_back(t_cm_to_c.data());
-  parameters.push_back(q_cm_to_c.coeffs().data());
-  parameters.push_back(t_tm_to_t.data());
-  parameters.push_back(q_tm_to_t.coeffs().data());
-  parameters.push_back(t_ccb_to_tcb.data());
-  parameters.push_back(q_ccb_to_tcb.coeffs().data());
+  std::vector<double *> parameters
+    = DualDHChainCost2D3D::constructParameters(camera_chain_dh_offsets,
+                                               target_chain_dh_offsets,
+                                               t_cm_to_c,
+                                               aa_cm_to_c,
+                                               t_tm_to_t,
+                                               aa_tm_to_t,
+                                               t_ccb_to_tcb,
+                                               aa_ccb_to_tcb);
 
   // Set up the problem
   ceres::Problem problem;
@@ -65,7 +81,7 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &param
                                               observation.camera_chain_joints,
                                               observation.target_chain_joints);
 
-      auto *cost_block = new ceres::DynamicAutoDiffCostFunction<DualDHChainCost2D3D, 4>(cost_fn);
+      auto *cost_block = new ceres::DynamicAutoDiffCostFunction<DualDHChainCost2D3D>(cost_fn);
 
       // Add the optimization parameters
       // DH parameters for both kinematic chains
@@ -74,15 +90,15 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &param
 
       // Camera mount to camera transform
       cost_block->AddParameterBlock(3);
-      cost_block->AddParameterBlock(4);
+      cost_block->AddParameterBlock(3);
 
       // Target mount to target transform
       cost_block->AddParameterBlock(3);
-      cost_block->AddParameterBlock(4);
+      cost_block->AddParameterBlock(3);
 
       // Camera kinematic chain to target kinematic chain transform
       cost_block->AddParameterBlock(3);
-      cost_block->AddParameterBlock(4);
+      cost_block->AddParameterBlock(3);
 
       // Residual error
       cost_block->SetNumResiduals(2);
@@ -91,15 +107,6 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &param
       problem.AddResidualBlock(cost_block, NULL, parameters);
     }
   }
-
-  // Set the local parameterization for the quaternions
-  // We want to represent the quaternions with the minimum number of variables (3 vs. 4) in the optimization
-  problem.SetParameterization(q_cm_to_c.coeffs().data(),
-                              new ceres::EigenQuaternionParameterization());
-  problem.SetParameterization(q_tm_to_t.coeffs().data(),
-                              new ceres::EigenQuaternionParameterization());
-  problem.SetParameterization(q_ccb_to_tcb.coeffs().data(),
-                              new ceres::EigenQuaternionParameterization());
 
   // Tell the optimization to keep constant the dummy DH offsets that might have been added to the 0-DoF chains
   if (params.camera_chain.dof() == 0)
@@ -130,9 +137,9 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &param
   result.final_cost_per_obs = summary.final_cost / summary.num_residuals;
 
   // Save the transforms
-  result.camera_mount_to_camera = Eigen::Translation3d(t_cm_to_c) * q_cm_to_c;
-  result.target_mount_to_target = Eigen::Translation3d(t_tm_to_t) * q_tm_to_t;
-  result.camera_base_to_target_base = Eigen::Translation3d(t_ccb_to_tcb) * q_ccb_to_tcb;
+  result.camera_mount_to_camera = createTransform(t_cm_to_c, aa_cm_to_c);
+  result.target_mount_to_target = createTransform(t_tm_to_t, aa_tm_to_t);
+  result.camera_base_to_target_base = createTransform(t_ccb_to_tcb, aa_ccb_to_tcb);
 
   // Save the DH parameter offsets
   if (params.camera_chain.dof() == 0)

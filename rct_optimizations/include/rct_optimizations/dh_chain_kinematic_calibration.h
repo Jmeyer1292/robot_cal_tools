@@ -2,7 +2,6 @@
 
 #include <rct_optimizations/types.h>
 #include <rct_optimizations/dh_chain.h>
-
 #include <rct_optimizations/ceres_math_utilities.h>
 
 namespace rct_optimizations
@@ -66,8 +65,38 @@ class DualDHChainCost2D3D
   Isometry3<T> createTransform(T const *const *params, const std::size_t idx) const
   {
     Eigen::Map<const Vector3<T>> t(params[idx]);
-    Eigen::Map<const Eigen::Quaternion<T>> q(params[idx + 1]);
-    return Eigen::Translation<T, 3>(t) * q;
+    Eigen::Map<const Vector3<T>> aa(params[idx + 1]);
+
+    Isometry3<T> result = Isometry3<T>::Identity() * Eigen::Translation<T, 3>(t);
+
+    T aa_norm = aa.norm();
+    if (aa_norm > std::numeric_limits<T>::epsilon())
+    {
+      result *= Eigen::AngleAxis<T>(aa_norm, aa.normalized());
+    }
+
+    return result;
+  }
+
+  static std::vector<double *> constructParameters(Eigen::MatrixX4d &camera_chain_dh_offsets,
+                                                   Eigen::MatrixX4d &target_chain_dh_offsets,
+                                                   Eigen::Vector3d &t_cm_to_c,
+                                                   Eigen::Vector3d &aa_cm_to_c,
+                                                   Eigen::Vector3d &t_tm_to_t,
+                                                   Eigen::Vector3d &aa_tm_to_t,
+                                                   Eigen::Vector3d &t_ccb_to_tcb,
+                                                   Eigen::Vector3d &aa_ccb_to_tcb)
+  {
+    std::vector<double *> parameters;
+    parameters.push_back(camera_chain_dh_offsets.data());
+    parameters.push_back(target_chain_dh_offsets.data());
+    parameters.push_back(t_cm_to_c.data());
+    parameters.push_back(aa_cm_to_c.data());
+    parameters.push_back(t_tm_to_t.data());
+    parameters.push_back(aa_tm_to_t.data());
+    parameters.push_back(t_ccb_to_tcb.data());
+    parameters.push_back(aa_ccb_to_tcb.data());
+    return parameters;
   }
 
   template<typename T>

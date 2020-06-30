@@ -43,15 +43,18 @@ TEST_F(DHChainKinematicCalibration, TestCostFunction)
   // Initialize the optimization variables
   // Camera mount to camera (cm_to_c) quaternion and translation
   Eigen::Vector3d t_cm_to_c(camera_mount_to_camera.translation());
-  Eigen::Quaterniond q_cm_to_c(camera_mount_to_camera.rotation());
+  Eigen::AngleAxisd rot_cm_to_c(camera_mount_to_camera.rotation());
+  Eigen::Vector3d aa_cm_to_c(rot_cm_to_c.angle() * rot_cm_to_c.axis());
 
   // Target mount to target (cm_to_c) quaternion and translation
   Eigen::Vector3d t_tm_to_t(target_mount_to_target.translation());
-  Eigen::Quaterniond q_tm_to_t(target_mount_to_target.rotation());
+  Eigen::AngleAxisd rot_tm_to_t(target_mount_to_target.rotation());
+  Eigen::Vector3d aa_tm_to_t(rot_tm_to_t.angle() * rot_tm_to_t.axis());
 
   // Camera chain base to target_chain_base (ccb_to_tcb) quaternion and translation
   Eigen::Vector3d t_ccb_to_tcb(camera_base_to_target_base.translation());
-  Eigen::Quaterniond q_ccb_to_tcb(camera_base_to_target_base.rotation());
+  Eigen::AngleAxisd rot_ccb_to_tcb(camera_base_to_target_base.rotation());
+  Eigen::Vector3d aa_ccb_to_tcb(rot_ccb_to_tcb.angle() * rot_ccb_to_tcb.axis());
 
   // Create containers for the kinematic chain DH offsets
   // Ceres will not work with parameter blocks of size zero, so create a dummy set of DH offsets for chains with DoF == 0
@@ -59,15 +62,15 @@ TEST_F(DHChainKinematicCalibration, TestCostFunction)
   Eigen::MatrixX4d target_chain_dh_offsets = Eigen::MatrixX4d::Zero(target_chain.dof(), 4);
 
   // Create a vector of the pointers to the optimization variables in the order that the cost function expects them
-  std::vector<double *> parameters;
-  parameters.push_back(camera_chain_dh_offsets.data());
-  parameters.push_back(target_chain_dh_offsets.data());
-  parameters.push_back(t_cm_to_c.data());
-  parameters.push_back(q_cm_to_c.coeffs().data());
-  parameters.push_back(t_tm_to_t.data());
-  parameters.push_back(q_tm_to_t.coeffs().data());
-  parameters.push_back(t_ccb_to_tcb.data());
-  parameters.push_back(q_ccb_to_tcb.coeffs().data());
+  std::vector<double *> parameters
+    = DualDHChainCost2D3D::constructParameters(camera_chain_dh_offsets,
+                                               target_chain_dh_offsets,
+                                               t_cm_to_c,
+                                               aa_cm_to_c,
+                                               t_tm_to_t,
+                                               aa_tm_to_t,
+                                               t_ccb_to_tcb,
+                                               aa_ccb_to_tcb);
 
   // Create observations
   KinObservation2D3D::Set observations = test::createKinematicObservations(camera_chain,
@@ -127,6 +130,7 @@ TEST_F(DHChainKinematicCalibration, TestCalibrationPerfectGuessPerfectDH)
   EXPECT_TRUE(result.converged);
   EXPECT_LT(result.initial_cost_per_obs, 1.0e-15);
   EXPECT_LT(result.final_cost_per_obs, 1.0e-15);
+
   EXPECT_TRUE(result.camera_mount_to_camera.isApprox(camera_mount_to_camera));
   EXPECT_TRUE(result.target_mount_to_target.isApprox(target_mount_to_target));
   EXPECT_TRUE(result.camera_base_to_target_base.isApprox(camera_base_to_target_base));
