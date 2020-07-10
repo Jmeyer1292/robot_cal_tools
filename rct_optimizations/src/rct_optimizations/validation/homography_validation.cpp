@@ -76,8 +76,10 @@ Eigen::VectorXd calculateHomographyError(const Correspondence2D3D::Set &correspo
   Eigen::Matrix<double, 3, 3, Eigen::RowMajor> H = Eigen::Matrix3d::Ones();
 
   // Map the elements of the H matrix into a column vector and solve for the first 8
-  Eigen::Map<Eigen::VectorXd> hv(H.data(), 9);
-  hv.head<8>() = A.fullPivLu().solve(b);
+  {
+    Eigen::Map<Eigen::VectorXd> hv(H.data(), 9);
+    hv.head<8>() = A.fullPivLu().solve(b);
+  }
 
   // Estimate the image locations of all the target observations and compare to the actual image locations
   Eigen::VectorXd error(correspondences.size());
@@ -86,7 +88,7 @@ Eigen::VectorXd calculateHomographyError(const Correspondence2D3D::Set &correspo
     const Correspondence2D3D &corr = correspondences[i];
 
     // Calculate the scaling factor
-    double ki = 1.0 / (hv(6) * corr.in_target.x() + hv(7) * corr.in_target.y() + 1.0);
+    double ki = 1.0 / (H(2, 0) * corr.in_target.x() + H(2, 1) * corr.in_target.y() + 1.0);
 
     // Replace the z-element of the point with 1
     Eigen::Vector3d xy(corr.in_target);
