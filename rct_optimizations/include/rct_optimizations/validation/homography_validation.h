@@ -25,29 +25,24 @@ struct ModifiedCircleGridCorrespondenceSampler : CorrespondenceSampler
 
   virtual std::vector<std::size_t> getSampleCorrespondenceIndices() const final override
   {
+    const std::size_t n_samples = 4;
+
     // Make sure there are at least two times as many points as the number of sample points
-    if ((rows * cols / 2) < 8)
+    if ((rows * cols / 2) < n_samples)
     {
       std::stringstream ss;
-      ss << "Number of correspondences does not exceed minimum of 16 (" << rows * cols << " provided)";
+      ss << "Number of correspondences does not exceed minimum of " << n_samples * 2 << " (" << rows * cols << " provided)";
       throw std::runtime_error(ss.str());
     }
 
-    // For a modified circle target grid, these points should be the corners of the grid
     std::vector<std::size_t> correspondence_indices;
-    correspondence_indices.reserve(8);
+    correspondence_indices.reserve(n_samples);
 
-    // Corner Points
+    // For a modified circle target grid, the sample points should be the corners of the grid
     correspondence_indices.push_back(0); // upper left point
     correspondence_indices.push_back(rows - 1); // upper right point
     correspondence_indices.push_back(rows * cols - cols - 1); // lower left point
     correspondence_indices.push_back(rows * cols - 1); // lower right point
-
-    // Points near the corners of the modified circle grid (increases the accuracy of the homography matrix calculation when there is noise)
-    correspondence_indices.push_back(1); // nearby to point1
-    correspondence_indices.push_back(rows - 2); // nearby to point2
-    correspondence_indices.push_back(rows * cols - cols - 2); // nearby to point3
-    correspondence_indices.push_back(rows * cols - 2); // nearby to point4
 
     return correspondence_indices;
   }
