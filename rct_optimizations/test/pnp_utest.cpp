@@ -1,3 +1,5 @@
+#include <boost/accumulators/accumulators.hpp>
+#include <boost/accumulators/statistics.hpp>
 #include <gtest/gtest.h>
 #include <rct_optimizations/pnp.h>
 #include <rct_optimizations_tests/observation_creator.h>
@@ -9,6 +11,7 @@ static const unsigned TARGET_ROWS = 10;
 static const unsigned TARGET_COLS = 14;
 static const double SPACING = 0.025;
 static const double CORRELATION_COEFFICIENT_THRESHOLD = 0.8;
+static const std::size_t N_RANDOM_SAMPLES = 30;
 
 void checkCorrelation(const Eigen::MatrixXd& cov)
 {
@@ -21,6 +24,12 @@ void checkCorrelation(const Eigen::MatrixXd& cov)
         EXPECT_LT(std::abs(cov(row, col)), CORRELATION_COEFFICIENT_THRESHOLD);
     }
   }
+}
+
+void printCovariance(const Eigen::MatrixXd& cov)
+{
+  Eigen::IOFormat fmt(4, 0, " | ", "\n", "|", "|");
+  std::cout << "Covariance:\n" << cov.format(fmt) << std::endl;
 }
 
 class PnP2DTest : public ::testing::Test
@@ -56,15 +65,12 @@ TEST_F(PnP2DTest, PerfectInitialConditions)
   EXPECT_LT(result.initial_cost_per_obs, 1.0e-15);
   EXPECT_LT(result.final_cost_per_obs, 1.0e-15);
   checkCorrelation(result.camera_to_target_covariance);
-
-//  Eigen::IOFormat fmt(4, 0, " | ", "\n", "|", "|");
-//  std::cout << "Covariance:\n" << result.camera_to_target_covariance.format(fmt) << std::endl;
+  printCovariance(result.camera_to_target_covariance);
 }
 
 TEST_F(PnP2DTest, PerturbedInitialCondition)
 {
   PnPProblem problem;
-  problem.camera_to_target_guess = test::perturbPose(target_to_camera.inverse(), 0.05, 0.05);
   problem.intr = camera.intr;
   problem.correspondences = test::getCorrespondences(target_to_camera,
                                                      Eigen::Isometry3d::Identity(),
@@ -72,14 +78,33 @@ TEST_F(PnP2DTest, PerturbedInitialCondition)
                                                      target,
                                                      true);
 
-  PnPResult result = optimize(problem);
-  EXPECT_TRUE(result.converged);
-  EXPECT_TRUE(result.camera_to_target.isApprox(target_to_camera.inverse(), 1.0e-8));
-  EXPECT_LT(result.final_cost_per_obs, 1.0e-10);
-  checkCorrelation(result.camera_to_target_covariance);
+  namespace ba = boost::accumulators;
+  ba::accumulator_set<double, ba::features<ba::stats<ba::tag::mean, ba::tag::variance>>> residual_acc;
+  ba::accumulator_set<double, ba::features<ba::stats<ba::tag::mean, ba::tag::variance>>> pos_acc;
+  ba::accumulator_set<double, ba::features<ba::stats<ba::tag::mean, ba::tag::variance>>> ori_acc;
 
-//  Eigen::IOFormat fmt(4, 0, " | ", "\n", "|", "|");
-//  std::cout << "Covariance:\n" << result.camera_to_target_covariance.format(fmt) << std::endl;
+  for (std::size_t i = 0; i < N_RANDOM_SAMPLES; ++i)
+  {
+    problem.camera_to_target_guess = test::perturbPose(target_to_camera.inverse(), 0.05, 0.05);
+
+    PnPResult result = optimize(problem);
+
+    EXPECT_TRUE(result.converged);
+    checkCorrelation(result.camera_to_target_covariance);
+
+    // Calculate the difference between the transforms (ideally, an identity matrix)
+    Eigen::Isometry3d diff = result.camera_to_target * target_to_camera;
+
+    // Accumulate the positional, rotational, and residual errors
+    pos_acc(diff.translation().norm());
+    ori_acc(Eigen::Quaterniond::Identity().angularDistance(Eigen::Quaterniond(diff.linear())));
+    residual_acc(result.final_cost_per_obs);
+  }
+
+  // Expect 99% of the outputs (i.e. 3 standard deviations) to be within the corresponding threshold
+  EXPECT_LT(ba::mean(pos_acc) + 3 * std::sqrt(ba::variance(pos_acc)), 1.0e-7);
+  EXPECT_LT(ba::mean(ori_acc) + 3 * std::sqrt(ba::variance(ori_acc)), 1.0e-6);
+  EXPECT_LT(ba::mean(residual_acc) + 3 * std::sqrt(ba::variance(residual_acc)), 1.0e-10);
 }
 
 TEST_F(PnP2DTest, BadIntrinsicParameters)
@@ -108,9 +133,7 @@ TEST_F(PnP2DTest, BadIntrinsicParameters)
   EXPECT_FALSE(result.camera_to_target.isApprox(target_to_camera.inverse(), 1.0e-3));
   EXPECT_GT(result.final_cost_per_obs, 1.0e-3);
   checkCorrelation(result.camera_to_target_covariance);
-
-//  Eigen::IOFormat fmt(4, 0, " | ", "\n", "|", "|");
-//  std::cout << "Covariance:\n" << result.camera_to_target_covariance.format(fmt) << std::endl;
+  printCovariance(result.camera_to_target_covariance);
 }
 
 class PnP3DTest : public ::testing::Test
@@ -143,27 +166,42 @@ TEST_F(PnP3DTest, PerfectInitialConditions)
   EXPECT_LT(result.initial_cost_per_obs, 1.0e-15);
   EXPECT_LT(result.final_cost_per_obs, 1.0e-15);
   checkCorrelation(result.camera_to_target_covariance);
-
-//  Eigen::IOFormat fmt(4, 0, " | ", "\n", "|", "|");
-//  std::cout << "Covariance:\n" << result.camera_to_target_covariance.format(fmt) << std::endl;
+  printCovariance(result.camera_to_target_covariance);
 }
 
 TEST_F(PnP3DTest, PerturbedInitialCondition)
 {
   PnPProblem3D problem;
-  problem.camera_to_target_guess = test::perturbPose(target_to_camera.inverse(), 0.05, 0.05);
   problem.correspondences = test::getCorrespondences(target_to_camera,
                                                      Eigen::Isometry3d::Identity(),
                                                      target);
 
-  PnPResult result = optimize(problem);
-  EXPECT_TRUE(result.converged);
-  EXPECT_TRUE(result.camera_to_target.isApprox(target_to_camera.inverse(), 1.0e-6));
-  EXPECT_LT(result.final_cost_per_obs, 1.0e-10);
-  checkCorrelation(result.camera_to_target_covariance);
+  namespace ba = boost::accumulators;
+  ba::accumulator_set<double, ba::features<ba::stats<ba::tag::mean, ba::tag::variance>>> residual_acc;
+  ba::accumulator_set<double, ba::features<ba::stats<ba::tag::mean, ba::tag::variance>>> pos_acc;
+  ba::accumulator_set<double, ba::features<ba::stats<ba::tag::mean, ba::tag::variance>>> ori_acc;
 
-//  Eigen::IOFormat fmt(4, 0, " | ", "\n", "|", "|");
-//  std::cout << "Covariance:\n" << result.camera_to_target_covariance.format(fmt) << std::endl;
+  for (std::size_t i = 0; i < N_RANDOM_SAMPLES; ++i)
+  {
+    problem.camera_to_target_guess = test::perturbPose(target_to_camera.inverse(), 0.05, 0.05);
+
+    PnPResult result = optimize(problem);
+    EXPECT_TRUE(result.converged);
+    checkCorrelation(result.camera_to_target_covariance);
+
+    // Calculate the difference between the transforms (ideally, an identity matrix)
+    Eigen::Isometry3d diff = result.camera_to_target * target_to_camera;
+
+    // Accumulate the positional, rotational, and residual errors
+    pos_acc(diff.translation().norm());
+    ori_acc(Eigen::Quaterniond::Identity().angularDistance(Eigen::Quaterniond(diff.linear())));
+    residual_acc(result.final_cost_per_obs);
+  }
+
+  // Expect 99% of the outputs (i.e. 3 standard deviations) to be within the corresponding threshold
+  EXPECT_LT(ba::mean(pos_acc) + 3 * std::sqrt(ba::variance(pos_acc)), 1.0e-7);
+  EXPECT_LT(ba::mean(ori_acc) + 3 * std::sqrt(ba::variance(ori_acc)), 1.0e-6);
+  EXPECT_LT(ba::mean(residual_acc) + 3 * std::sqrt(ba::variance(residual_acc)), 1.0e-10);
 }
 
 int main(int argc, char **argv)
