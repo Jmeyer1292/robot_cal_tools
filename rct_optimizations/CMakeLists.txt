@@ -26,6 +26,8 @@ add_library(${PROJECT_NAME} SHARED
   src/${PROJECT_NAME}/validation/camera_intrinsic_calibration_validation.cpp
   #Noise Qualification
   src/${PROJECT_NAME}/validation/noise_qualification.cpp
+  #Target Homography
+  src/${PROJECT_NAME}/validation/homography_validation.cpp
 )
 
 target_compile_options(${PROJECT_NAME} PUBLIC -std=c++14)
