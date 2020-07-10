@@ -17,16 +17,18 @@ struct SolvePnPCostFunc
   }
 
   template<typename T>
-  bool operator()(const T *const target_aa, const T *const target_t, T *const residual) const
+  bool operator()(const T *const cam_to_tgt_angle_axis_ptr, const T *const cam_to_tgt_translation_ptr, T *const residual) const
   {
     using Isometry3 = Eigen::Transform<T, 3, Eigen::Isometry>;
     using Vector3 = Eigen::Matrix<T, 3, 1>;
     using Vector2 = Eigen::Matrix<T, 2, 1>;
 
-    Eigen::Map<const Vector3> aa(target_aa);
-    Eigen::Map<const Vector3> t(target_t);
+    Eigen::Map<const Vector3> cam_to_tgt_angle_axis(cam_to_tgt_angle_axis_ptr);
+    Eigen::Map<const Vector3> cam_to_tgt_translation(cam_to_tgt_translation_ptr);
     Isometry3 camera_to_target = Isometry3::Identity();
-    camera_to_target = Eigen::Translation<T, 3>(t) * Eigen::AngleAxis<T>(aa.norm(), aa.normalized());
+    camera_to_target = Eigen::Translation<T, 3>(cam_to_tgt_translation)
+                       * Eigen::AngleAxis<T>(cam_to_tgt_angle_axis.norm(),
+                                             cam_to_tgt_angle_axis.normalized());
 
     // Transform points into camera coordinates
     Vector3 camera_pt = camera_to_target * in_target_.cast<T>();
@@ -53,15 +55,17 @@ public:
   {}
 
   template<typename T>
-  bool operator()(const T *const target_aa, const T *const target_t, T *const residual) const
+  bool operator()(const T *const cam_to_tgt_angle_axis_ptr, const T *const cam_to_tgt_translation_ptr, T *const residual) const
   {
     using Isometry3 = Eigen::Transform<T, 3, Eigen::Isometry>;
     using Vector3 = Eigen::Matrix<T, 3, 1>;
 
-    Eigen::Map<const Vector3> aa(target_aa);
-    Eigen::Map<const Vector3> t(target_t);
+    Eigen::Map<const Vector3> cam_to_tgt_angle_axis(cam_to_tgt_angle_axis_ptr);
+    Eigen::Map<const Vector3> cam_to_tgt_translation(cam_to_tgt_translation_ptr);
     Isometry3 camera_to_target = Isometry3::Identity();
-    camera_to_target = Eigen::Translation<T, 3>(t) * Eigen::AngleAxis<T>(aa.norm(), aa.normalized());
+    camera_to_target = Eigen::Translation<T, 3>(cam_to_tgt_translation)
+                       * Eigen::AngleAxis<T>(cam_to_tgt_angle_axis.norm(),
+                                             cam_to_tgt_angle_axis.normalized());
 
     // Transform points into camera coordinates
     Vector3 camera_pt = camera_to_target * in_target_.cast<T>();
@@ -84,9 +88,9 @@ namespace rct_optimizations
 PnPResult optimize(const PnPProblem &params)
 {
   // Create the optimization variables from the input guess
-  Eigen::AngleAxisd rot(params.camera_to_target_guess.rotation());
-  Eigen::Vector3d aa = rot.angle() * rot.axis();
-  Eigen::Vector3d t(params.camera_to_target_guess.translation());
+  Eigen::AngleAxisd cam_to_tgt_rotation(params.camera_to_target_guess.rotation());
+  Eigen::Vector3d cam_to_tgt_angle_axis = cam_to_tgt_rotation.angle() * cam_to_tgt_rotation.axis();
+  Eigen::Vector3d cam_to_tgt_translation(params.camera_to_target_guess.translation());
 
   ceres::Problem problem;
 
@@ -99,7 +103,7 @@ PnPResult optimize(const PnPProblem &params)
 
     auto *cost_block = new ceres::AutoDiffCostFunction<SolvePnPCostFunc, 2, 3, 3>(cost_fn);
 
-    problem.AddResidualBlock(cost_block, nullptr, aa.data(), t.data());
+    problem.AddResidualBlock(cost_block, nullptr, cam_to_tgt_angle_axis.data(), cam_to_tgt_translation.data());
   }
 
   ceres::Solver::Summary summary;
@@ -110,12 +114,14 @@ PnPResult optimize(const PnPProblem &params)
   result.converged = summary.termination_type == ceres::CONVERGENCE;
   result.initial_cost_per_obs = summary.initial_cost / summary.num_residuals;
   result.final_cost_per_obs = summary.final_cost / summary.num_residuals;
-  result.camera_to_target = Eigen::Translation3d(t) * Eigen::AngleAxisd(aa.norm(), aa.normalized());
+  result.camera_to_target = Eigen::Translation3d(cam_to_tgt_translation)
+                            * Eigen::AngleAxisd(cam_to_tgt_angle_axis.norm(),
+                                                cam_to_tgt_angle_axis.normalized());
   result.camera_to_target_covariance = computeFullDV2DVCovariance(problem,
-                                                                  t.data(),
-                                                                  t.size(),
-                                                                  aa.data(),
-                                                                  aa.size());
+                                                                  cam_to_tgt_translation.data(),
+                                                                  cam_to_tgt_translation.size(),
+                                                                  cam_to_tgt_angle_axis.data(),
+                                                                  cam_to_tgt_angle_axis.size());
 
   return result;
 }
@@ -123,9 +129,9 @@ PnPResult optimize(const PnPProblem &params)
 PnPResult optimize(const rct_optimizations::PnPProblem3D& params)
 {
   // Create the optimization variables from the input guess
-  Eigen::AngleAxisd rot(params.camera_to_target_guess.rotation());
-  Eigen::Vector3d aa(rot.angle() * rot.axis());
-  Eigen::Vector3d t(params.camera_to_target_guess.translation());
+  Eigen::AngleAxisd cam_to_tgt_rotation(params.camera_to_target_guess.rotation());
+  Eigen::Vector3d cam_to_tgt_angle_axis(cam_to_tgt_rotation.angle() * cam_to_tgt_rotation.axis());
+  Eigen::Vector3d cam_to_tgt_translation(params.camera_to_target_guess.translation());
 
   ceres::Problem problem;
 
@@ -139,7 +145,7 @@ PnPResult optimize(const rct_optimizations::PnPProblem3D& params)
 
     auto* cost_block = new ceres::AutoDiffCostFunction<SolvePnPCostFunc3D, 3, 3, 3>(cost_fn);
 
-    problem.AddResidualBlock(cost_block, nullptr, aa.data(), t.data());
+    problem.AddResidualBlock(cost_block, nullptr, cam_to_tgt_angle_axis.data(), cam_to_tgt_translation.data());
   }
 
   ceres::Solver::Options options;
@@ -150,12 +156,14 @@ PnPResult optimize(const rct_optimizations::PnPProblem3D& params)
   result.converged = summary.termination_type == ceres::CONVERGENCE;
   result.initial_cost_per_obs = summary.initial_cost / summary.num_residuals;
   result.final_cost_per_obs = summary.final_cost / summary.num_residuals;
-  result.camera_to_target = Eigen::Translation3d(t) * Eigen::AngleAxisd(aa.norm(), aa.normalized());
+  result.camera_to_target = Eigen::Translation3d(cam_to_tgt_translation)
+                            * Eigen::AngleAxisd(cam_to_tgt_angle_axis.norm(),
+                                                cam_to_tgt_angle_axis.normalized());
   result.camera_to_target_covariance = computeFullDV2DVCovariance(problem,
-                                                                  t.data(),
-                                                                  t.size(),
-                                                                  aa.data(),
-                                                                  aa.size());
+                                                                  cam_to_tgt_translation.data(),
+                                                                  cam_to_tgt_translation.size(),
+                                                                  cam_to_tgt_angle_axis.data(),
+                                                                  cam_to_tgt_angle_axis.size());
 
   return result;
 }
