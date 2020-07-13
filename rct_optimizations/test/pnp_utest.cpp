@@ -1,3 +1,5 @@
+#include <boost/accumulators/accumulators.hpp>
+#include <boost/accumulators/statistics.hpp>
 #include <gtest/gtest.h>
 #include <rct_optimizations/pnp.h>
 #include <rct_optimizations_tests/observation_creator.h>
@@ -5,21 +7,52 @@
 
 using namespace rct_optimizations;
 
-TEST(PNP_2D, PerfectInitialConditions)
+static const unsigned TARGET_ROWS = 10;
+static const unsigned TARGET_COLS = 14;
+static const double SPACING = 0.025;
+static const double CORRELATION_COEFFICIENT_THRESHOLD = 0.8;
+static const std::size_t N_RANDOM_SAMPLES = 30;
+
+void checkCorrelation(const Eigen::MatrixXd& cov)
 {
-  test::Camera camera = test::makeKinectCamera();
+  for (Eigen::Index row = 0; row < cov.rows(); ++row)
+  {
+    for (Eigen::Index col = 0; col < cov.cols(); ++col)
+    {
+      // Since the covariance matrix is symmetric, just check the values in the top triangle
+      if(row < col)
+        EXPECT_LT(std::abs(cov(row, col)), CORRELATION_COEFFICIENT_THRESHOLD);
+    }
+  }
+}
 
-  unsigned target_rows = 5;
-  unsigned target_cols = 7;
-  double spacing = 0.025;
-  test::Target target(target_rows, target_cols, spacing);
+void printCovariance(const Eigen::MatrixXd& cov)
+{
+  Eigen::IOFormat fmt(4, 0, " | ", "\n", "|", "|");
+  std::cout << "Covariance:\n" << cov.format(fmt) << std::endl;
+}
 
-  Eigen::Isometry3d target_to_camera(Eigen::Isometry3d::Identity());
-  double x = static_cast<double>(target_rows - 1) * spacing / 2.0;
-  double y = static_cast<double>(target_cols - 1) * spacing / 2.0;
-  target_to_camera.translate(Eigen::Vector3d(x, y, 1.0));
-  target_to_camera.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
+class PnP2DTest : public ::testing::Test
+{
+  public:
+  PnP2DTest()
+    : camera(test::makeKinectCamera())
+    , target(TARGET_ROWS, TARGET_COLS, SPACING)
+    , target_to_camera(Eigen::Isometry3d::Identity())
+  {
+    double x = static_cast<double>(TARGET_ROWS - 1) * SPACING / 2.0;
+    double y = static_cast<double>(TARGET_COLS - 1) * SPACING / 2.0;
+    target_to_camera.translate(Eigen::Vector3d(x, y, 0.4));
+    target_to_camera.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
+  }
 
+  test::Camera camera;
+  test::Target target;
+  Eigen::Isometry3d target_to_camera;
+};
+
+TEST_F(PnP2DTest, PerfectInitialConditions)
+{
   PnPProblem problem;
   problem.camera_to_target_guess = target_to_camera.inverse();
   problem.intr = camera.intr;
@@ -31,25 +64,13 @@ TEST(PNP_2D, PerfectInitialConditions)
   EXPECT_TRUE(result.camera_to_target.isApprox(target_to_camera.inverse()));
   EXPECT_LT(result.initial_cost_per_obs, 1.0e-15);
   EXPECT_LT(result.final_cost_per_obs, 1.0e-15);
+  checkCorrelation(result.camera_to_target_covariance);
+  printCovariance(result.camera_to_target_covariance);
 }
 
-TEST(PNP_2D, PerturbedInitialCondition)
+TEST_F(PnP2DTest, PerturbedInitialCondition)
 {
-  test::Camera camera = test::makeKinectCamera();
-
-  unsigned target_rows = 5;
-  unsigned target_cols = 7;
-  double spacing = 0.025;
-  test::Target target(target_rows, target_cols, spacing);
-
-  Eigen::Isometry3d target_to_camera(Eigen::Isometry3d::Identity());
-  double x = static_cast<double>(target_rows) * spacing / 2.0;
-  double y = static_cast<double>(target_cols) * spacing / 2.0;
-  target_to_camera.translate(Eigen::Vector3d(x, y, 1.0));
-  target_to_camera.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
-
   PnPProblem problem;
-  problem.camera_to_target_guess = test::perturbPose(target_to_camera.inverse(), 0.05, 0.05);
   problem.intr = camera.intr;
   problem.correspondences = test::getCorrespondences(target_to_camera,
                                                      Eigen::Isometry3d::Identity(),
@@ -57,27 +78,37 @@ TEST(PNP_2D, PerturbedInitialCondition)
                                                      target,
                                                      true);
 
-  PnPResult result = optimize(problem);
-  EXPECT_TRUE(result.converged);
-  EXPECT_TRUE(result.camera_to_target.isApprox(target_to_camera.inverse(), 1.0e-8));
-  EXPECT_LT(result.final_cost_per_obs, 1.0e-14);
+  namespace ba = boost::accumulators;
+  ba::accumulator_set<double, ba::features<ba::stats<ba::tag::mean, ba::tag::variance>>> residual_acc;
+  ba::accumulator_set<double, ba::features<ba::stats<ba::tag::mean, ba::tag::variance>>> pos_acc;
+  ba::accumulator_set<double, ba::features<ba::stats<ba::tag::mean, ba::tag::variance>>> ori_acc;
+
+  for (std::size_t i = 0; i < N_RANDOM_SAMPLES; ++i)
+  {
+    problem.camera_to_target_guess = test::perturbPose(target_to_camera.inverse(), 0.05, 0.05);
+
+    PnPResult result = optimize(problem);
+
+    EXPECT_TRUE(result.converged);
+    checkCorrelation(result.camera_to_target_covariance);
+
+    // Calculate the difference between the transforms (ideally, an identity matrix)
+    Eigen::Isometry3d diff = result.camera_to_target * target_to_camera;
+
+    // Accumulate the positional, rotational, and residual errors
+    pos_acc(diff.translation().norm());
+    ori_acc(Eigen::Quaterniond::Identity().angularDistance(Eigen::Quaterniond(diff.linear())));
+    residual_acc(result.final_cost_per_obs);
+  }
+
+  // Expect 99% of the outputs (i.e. 3 standard deviations) to be within the corresponding threshold
+  EXPECT_LT(ba::mean(pos_acc) + 3 * std::sqrt(ba::variance(pos_acc)), 1.0e-7);
+  EXPECT_LT(ba::mean(ori_acc) + 3 * std::sqrt(ba::variance(ori_acc)), 1.0e-6);
+  EXPECT_LT(ba::mean(residual_acc) + 3 * std::sqrt(ba::variance(residual_acc)), 1.0e-10);
 }
 
-TEST(PNP_2D, BadIntrinsicParameters)
+TEST_F(PnP2DTest, BadIntrinsicParameters)
 {
-  test::Camera camera = test::makeKinectCamera();
-
-  unsigned target_rows = 5;
-  unsigned target_cols = 7;
-  double spacing = 0.025;
-  test::Target target(target_rows, target_cols, spacing);
-
-  Eigen::Isometry3d target_to_camera(Eigen::Isometry3d::Identity());
-  double x = static_cast<double>(target_rows) * spacing / 2.0;
-  double y = static_cast<double>(target_cols) * spacing / 2.0;
-  target_to_camera.translate(Eigen::Vector3d(x, y, 1.0));
-  target_to_camera.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
-
   PnPProblem problem;
   problem.camera_to_target_guess = target_to_camera.inverse();
   problem.correspondences = test::getCorrespondences(target_to_camera,
@@ -101,21 +132,29 @@ TEST(PNP_2D, BadIntrinsicParameters)
   EXPECT_TRUE(result.converged);
   EXPECT_FALSE(result.camera_to_target.isApprox(target_to_camera.inverse(), 1.0e-3));
   EXPECT_GT(result.final_cost_per_obs, 1.0e-3);
+  checkCorrelation(result.camera_to_target_covariance);
+  printCovariance(result.camera_to_target_covariance);
 }
 
-TEST(PNP_3D, PerfectInitialConditions)
+class PnP3DTest : public ::testing::Test
 {
-  unsigned target_rows = 5;
-  unsigned target_cols = 7;
-  double spacing = 0.025;
-  test::Target target(target_rows, target_cols, spacing);
+  public:
+  PnP3DTest()
+    : target(TARGET_ROWS, TARGET_COLS, SPACING)
+    , target_to_camera(Eigen::Isometry3d::Identity())
+  {
+    double x = static_cast<double>(TARGET_ROWS - 1) * SPACING / 2.0;
+    double y = static_cast<double>(TARGET_COLS - 1) * SPACING / 2.0;
+    target_to_camera.translate(Eigen::Vector3d(x, y, 0.4));
+    target_to_camera.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
+  }
 
-  Eigen::Isometry3d target_to_camera(Eigen::Isometry3d::Identity());
-  double x = static_cast<double>(target_rows - 1) * spacing / 2.0;
-  double y = static_cast<double>(target_cols - 1) * spacing / 2.0;
-  target_to_camera.translate(Eigen::Vector3d(x, y, 1.0));
-  target_to_camera.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
+  test::Target target;
+  Eigen::Isometry3d target_to_camera;
+};
 
+TEST_F(PnP3DTest, PerfectInitialConditions)
+{
   PnPProblem3D problem;
   problem.camera_to_target_guess = target_to_camera.inverse();
   EXPECT_NO_THROW(problem.correspondences =
@@ -126,32 +165,43 @@ TEST(PNP_3D, PerfectInitialConditions)
   EXPECT_TRUE(result.camera_to_target.isApprox(target_to_camera.inverse()));
   EXPECT_LT(result.initial_cost_per_obs, 1.0e-15);
   EXPECT_LT(result.final_cost_per_obs, 1.0e-15);
+  checkCorrelation(result.camera_to_target_covariance);
+  printCovariance(result.camera_to_target_covariance);
 }
 
-TEST(PNP_3D, PerturbedInitialCondition)
+TEST_F(PnP3DTest, PerturbedInitialCondition)
 {
-
-  unsigned target_rows = 5;
-  unsigned target_cols = 7;
-  double spacing = 0.025;
-  test::Target target(target_rows, target_cols, spacing);
-
-  Eigen::Isometry3d target_to_camera(Eigen::Isometry3d::Identity());
-  double x = static_cast<double>(target_rows) * spacing / 2.0;
-  double y = static_cast<double>(target_cols) * spacing / 2.0;
-  target_to_camera.translate(Eigen::Vector3d(x, y, 1.0));
-  target_to_camera.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()));
-
   PnPProblem3D problem;
-  problem.camera_to_target_guess = test::perturbPose(target_to_camera.inverse(), 0.05, 0.05);
   problem.correspondences = test::getCorrespondences(target_to_camera,
                                                      Eigen::Isometry3d::Identity(),
                                                      target);
 
-  PnPResult result = optimize(problem);
-  EXPECT_TRUE(result.converged);
-  EXPECT_TRUE(result.camera_to_target.isApprox(target_to_camera.inverse(), 0.1));
-  EXPECT_LT(result.final_cost_per_obs, 1.0e-14);
+  namespace ba = boost::accumulators;
+  ba::accumulator_set<double, ba::features<ba::stats<ba::tag::mean, ba::tag::variance>>> residual_acc;
+  ba::accumulator_set<double, ba::features<ba::stats<ba::tag::mean, ba::tag::variance>>> pos_acc;
+  ba::accumulator_set<double, ba::features<ba::stats<ba::tag::mean, ba::tag::variance>>> ori_acc;
+
+  for (std::size_t i = 0; i < N_RANDOM_SAMPLES; ++i)
+  {
+    problem.camera_to_target_guess = test::perturbPose(target_to_camera.inverse(), 0.05, 0.05);
+
+    PnPResult result = optimize(problem);
+    EXPECT_TRUE(result.converged);
+    checkCorrelation(result.camera_to_target_covariance);
+
+    // Calculate the difference between the transforms (ideally, an identity matrix)
+    Eigen::Isometry3d diff = result.camera_to_target * target_to_camera;
+
+    // Accumulate the positional, rotational, and residual errors
+    pos_acc(diff.translation().norm());
+    ori_acc(Eigen::Quaterniond::Identity().angularDistance(Eigen::Quaterniond(diff.linear())));
+    residual_acc(result.final_cost_per_obs);
+  }
+
+  // Expect 99% of the outputs (i.e. 3 standard deviations) to be within the corresponding threshold
+  EXPECT_LT(ba::mean(pos_acc) + 3 * std::sqrt(ba::variance(pos_acc)), 1.0e-7);
+  EXPECT_LT(ba::mean(ori_acc) + 3 * std::sqrt(ba::variance(ori_acc)), 1.0e-6);
+  EXPECT_LT(ba::mean(residual_acc) + 3 * std::sqrt(ba::variance(residual_acc)), 1.0e-10);
 }
 
 int main(int argc, char **argv)
