@@ -80,22 +80,22 @@ class DualDHChainCost2D3D
 
   static std::vector<double *> constructParameters(Eigen::MatrixX4d &camera_chain_dh_offsets,
                                                    Eigen::MatrixX4d &target_chain_dh_offsets,
-                                                   Eigen::Vector3d &t_cm_to_c,
-                                                   Eigen::Vector3d &aa_cm_to_c,
-                                                   Eigen::Vector3d &t_tm_to_t,
-                                                   Eigen::Vector3d &aa_tm_to_t,
-                                                   Eigen::Vector3d &t_ccb_to_tcb,
-                                                   Eigen::Vector3d &aa_ccb_to_tcb)
+                                                   Eigen::Vector3d &camera_mount_to_camera_position,
+                                                   Eigen::Vector3d &camera_mount_to_camera_angle_axis,
+                                                   Eigen::Vector3d &target_mount_to_target_position,
+                                                   Eigen::Vector3d &target_mount_to_target_angle_axis,
+                                                   Eigen::Vector3d &camera_chain_base_to_target_chain_base_position,
+                                                   Eigen::Vector3d &camera_chain_base_to_target_chain_base_angle_axis)
   {
     std::vector<double *> parameters;
     parameters.push_back(camera_chain_dh_offsets.data());
     parameters.push_back(target_chain_dh_offsets.data());
-    parameters.push_back(t_cm_to_c.data());
-    parameters.push_back(aa_cm_to_c.data());
-    parameters.push_back(t_tm_to_t.data());
-    parameters.push_back(aa_tm_to_t.data());
-    parameters.push_back(t_ccb_to_tcb.data());
-    parameters.push_back(aa_ccb_to_tcb.data());
+    parameters.push_back(camera_mount_to_camera_position.data());
+    parameters.push_back(camera_mount_to_camera_angle_axis.data());
+    parameters.push_back(target_mount_to_target_position.data());
+    parameters.push_back(target_mount_to_target_angle_axis.data());
+    parameters.push_back(camera_chain_base_to_target_chain_base_position.data());
+    parameters.push_back(camera_chain_base_to_target_chain_base_angle_axis.data());
     return parameters;
   }
 
@@ -109,15 +109,15 @@ class DualDHChainCost2D3D
     // The next parameter is a pointer to the DH parameter offsets of the target kinematic chain
     Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 4>> target_chain_dh_offsets(parameters[1], target_chain_.dof(), 4);
 
-    // The next two parameters are pointers to the quaternion and translation of the transform from the camera mount to the camera
+    // The next two parameters are pointers to the position and angle axis of the transform from the camera mount to the camera
     std::size_t cm_to_c_idx = 2;
     const Isometry3<T> camera_mount_to_camera = createTransform(parameters, cm_to_c_idx);
 
-    // The next two parameters are pointers to the quaternion and translation of the transform from the target mount to the target
+    // The next two parameters are pointers to the position and angle axis of the transform from the target mount to the target
     std::size_t tm_to_t_idx = cm_to_c_idx + 2;
     const Isometry3<T> target_mount_to_target = createTransform(parameters, tm_to_t_idx);
 
-    // The next two parameters are pointers to the quaternion and translation of the transform from chain 1 to chain 2
+    // The next two parameters are pointers to the position and angle axis of the transform from the camera chain base to the target chain base
     std::size_t cb_to_tb_idx = tm_to_t_idx + 2;
     const Isometry3<T> camera_base_to_target_base = createTransform(parameters, cb_to_tb_idx);
 
