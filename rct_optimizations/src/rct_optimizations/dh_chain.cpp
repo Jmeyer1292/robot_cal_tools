@@ -5,7 +5,7 @@ namespace rct_optimizations
 {
 // DH Transform
 
-DHTransform::DHTransform(const Eigen::Vector4d& params_, DHJointType type_)
+DHTransform::DHTransform(const Eigen::Vector4d &params_, DHJointType type_)
   : params(params_)
   , type(type_)
 {
@@ -13,8 +13,12 @@ DHTransform::DHTransform(const Eigen::Vector4d& params_, DHJointType type_)
 
 double DHTransform::createRandomJointValue() const
 {
-  std::mt19937 mt_rand = std::mt19937(std::random_device{}());
+  // Create a static random number generator so that this object does not get continuously re-instantiated
+  static std::mt19937 mt_rand = std::mt19937(std::random_device{}());
+
+  // Create a new uniform distribution object with the current min and max values
   std::uniform_real_distribution<double> dist(min, max);
+
   return dist(mt_rand);
 }
 
