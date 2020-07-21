@@ -144,6 +144,18 @@ using KinObservation2D3D = KinematicObservation<2, 3>;
 /** @brief Typedef for kinematic observations of 3D sensor to 3D target correspondences */
 using KinObservation3D3D = KinematicObservation<3, 3>;
 
+struct KinematicMeasurement
+{
+  using Set = std::vector<KinematicMeasurement>;
+
+  /** @brief A measurement of the full 6-DoF target pose */
+  Eigen::Isometry3d pose;
+  /** @brief The joint values of the kinematic chain to which the camera is mounted */
+  Eigen::VectorXd camera_chain_joints;
+  /** @brief The joint values of the kinematic chain to which the target is mounted */
+  Eigen::VectorXd target_chain_joints;
+};
+
 struct OptimizationException : public std::runtime_error
 {
 public:
