@@ -1,6 +1,7 @@
 #ifndef RCT_CAMERA_INTRINSIC_H
 #define RCT_CAMERA_INTRINSIC_H
 
+#include <rct_optimizations/covariance_types.h>
 #include "rct_optimizations/types.h"
 #include "boost/optional.hpp"
 
@@ -13,6 +14,10 @@ struct IntrinsicEstimationProblem
   CameraIntrinsics intrinsics_guess;
   bool use_extrinsic_guesses;
   std::vector<Eigen::Isometry3d> extrinsic_guesses;
+
+  std::string label_extr = "pose";
+  const std::array<std::string, 9> labels_intrinsic_params = {"fx", "fy", "cx", "cy", "k1", "k2", "p1", "p2", "k3"};
+  const std::array<std::string, 6> labels_isometry3d = {"x", "y", "z", "rx", "ry", "rz"};
 };
 
 struct IntrinsicEstimationResult
@@ -26,7 +31,7 @@ struct IntrinsicEstimationResult
 
   std::vector<Eigen::Isometry3d> target_transforms;
 
-  Eigen::MatrixXd covariance_intr;
+  CovarianceResult covariance;
 };
 
 IntrinsicEstimationResult optimize(const IntrinsicEstimationProblem& params);
