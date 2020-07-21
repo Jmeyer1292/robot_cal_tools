@@ -50,7 +50,7 @@ struct ExtrinsicMultiStaticCameraOnlyProblem
   /** @brief Your best guess at the "base frame" to "camera frame" transform; one for each camera */
   std::vector<Eigen::Isometry3d> base_to_camera_guess;
 
-  std::array<std::string, 6> labels_isometry3d = {"x", "y", "z", "rx", "ry", "rz"};
+  std::array<std::string, 6> labels_isometry3d = {{"x", "y", "z", "rx", "ry", "rz"}};
 
   std::string label_base_to_target = "base_to_target";
 
