@@ -150,6 +150,7 @@ TEST_F(DHChainKinematicCalibration, TestCalibrationPerfectGuessPerfectDH)
   }
 
   std::cout << result.covariance.toString() << std::endl;
+  std::cout << result.covariance.printCorrelationCoeffAboveThreshold(0.3) << std::endl;
 }
 
 int main(int argc, char **argv)

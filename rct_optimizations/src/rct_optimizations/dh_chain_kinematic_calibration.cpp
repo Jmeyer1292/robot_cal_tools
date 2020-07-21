@@ -26,33 +26,36 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &param
   // Initialize the optimization variables
   // Camera mount to camera (cm_to_c) quaternion and translation
   Eigen::Vector3d t_cm_to_c(params.camera_mount_to_camera_guess.translation());
+  Eigen::AngleAxisd rot_cm_to_c(params.camera_mount_to_camera_guess.rotation());
+  Eigen::Vector3d aa_cm_to_c(rot_cm_to_c.angle() * rot_cm_to_c.axis());
+
   std::array<std::string, 3> t_cm_to_c_labels({params.label_camera_mount_to_camera + "_x",
                                                params.label_camera_mount_to_camera + "_y",
                                                params.label_camera_mount_to_camera + "_z"});
-  Eigen::AngleAxisd rot_cm_to_c(params.camera_mount_to_camera_guess.rotation());
-  Eigen::Vector3d aa_cm_to_c(rot_cm_to_c.angle() * rot_cm_to_c.axis());
   std::array<std::string, 3> aa_cm_to_c_labels({params.label_camera_mount_to_camera + "_rx",
                                                 params.label_camera_mount_to_camera + "_ry",
                                                 params.label_camera_mount_to_camera + "_rz"});
 
   // Target mount to target (cm_to_c) quaternion and translation
   Eigen::Vector3d t_tm_to_t(params.target_mount_to_target_guess.translation());
+  Eigen::AngleAxisd rot_tm_to_t(params.target_mount_to_target_guess.rotation());
+  Eigen::Vector3d aa_tm_to_t(rot_tm_to_t.angle() * rot_tm_to_t.axis());
+
   std::array<std::string, 3> t_tm_to_t_labels({params.label_target_mount_to_target + "_x",
                                                params.label_target_mount_to_target + "_y",
                                                params.label_target_mount_to_target + "_z"});
-  Eigen::AngleAxisd rot_tm_to_t(params.target_mount_to_target_guess.rotation());
-  Eigen::Vector3d aa_tm_to_t(rot_tm_to_t.angle() * rot_tm_to_t.axis());
   std::array<std::string, 3> aa_tm_to_t_labels({params.label_target_mount_to_target + "_rx",
                                                 params.label_target_mount_to_target + "_ry",
                                                 params.label_target_mount_to_target + "_rz"});
 
   // Camera chain base to target_chain_base (ccb_to_tcb) quaternion and translation
   Eigen::Vector3d t_ccb_to_tcb(params.camera_base_to_target_base_guess.translation());
+  Eigen::AngleAxisd rot_ccb_to_tcb(params.camera_base_to_target_base_guess.rotation());
+  Eigen::Vector3d aa_ccb_to_tcb(rot_ccb_to_tcb.angle() * rot_ccb_to_tcb.axis());
+
   std::array<std::string, 3> t_ccb_to_tcb_labels({params.label_camera_base_to_target + "_x",
                                                   params.label_camera_base_to_target + "_y",
                                                   params.label_camera_base_to_target + "_z"});
-  Eigen::AngleAxisd rot_ccb_to_tcb(params.camera_base_to_target_base_guess.rotation());
-  Eigen::Vector3d aa_ccb_to_tcb(rot_ccb_to_tcb.angle() * rot_ccb_to_tcb.axis());
   std::array<std::string, 3> aa_ccb_to_tcb_labels({params.label_camera_base_to_target + "_rx",
                                                    params.label_camera_base_to_target + "_ry",
                                                    params.label_camera_base_to_target + "_rz"});
@@ -69,7 +72,7 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &param
   else
   {
     camera_chain_dh_offsets = Eigen::MatrixX4d::Zero(1, 4);
-    camera_chain_param_labels = {{"camera_ph_d", "camera_ph_theta", "camera_ph_r", "camera_ph_alpha"}};
+    camera_chain_param_labels = {{"camera_chain_placeholder_d", "camera_chain_placeholder_theta", "camera_chain_placeholder_r", "camera_chain_placeholder_alpha"}};
   }
 
 
@@ -83,7 +86,7 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &param
   else
   {
     target_chain_dh_offsets = Eigen::MatrixX4d::Zero(1, 4);
-    target_chain_param_labels = {{"target_ph_d", "target_ph_theta", "target_ph_r", "target_ph_alpha"}};
+    target_chain_param_labels = {{"target_chain_placeholder_d", "target_chain_placeholder_theta", "target_chain_placeholder_r", "target_chain_placeholder_alpha"}};
   }
 
   // Create a vector of the pointers to the optimization variables in the order that the cost function expects them
@@ -97,14 +100,15 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &param
                                                t_ccb_to_tcb,
                                                aa_ccb_to_tcb);
 
-  std::vector<std::vector<std::string>> param_labels = DualDHChainCost2D3D::constructParameterLabels(camera_chain_param_labels,
-                                                                                                     target_chain_param_labels,
-                                                                                                     t_cm_to_c_labels,
-                                                                                                     aa_cm_to_c_labels,
-                                                                                                     t_tm_to_t_labels,
-                                                                                                     aa_tm_to_t_labels,
-                                                                                                     t_ccb_to_tcb_labels,
-                                                                                                     aa_ccb_to_tcb_labels);
+  std::vector<std::vector<std::string>> param_labels
+      = DualDHChainCost2D3D::constructParameterLabels(camera_chain_param_labels,
+                                                      target_chain_param_labels,
+                                                      t_cm_to_c_labels,
+                                                      aa_cm_to_c_labels,
+                                                      t_tm_to_t_labels,
+                                                      aa_tm_to_t_labels,
+                                                      t_ccb_to_tcb_labels,
+                                                      aa_ccb_to_tcb_labels);
 
   // Set up the problem
   ceres::Problem problem;
@@ -146,7 +150,7 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &param
       cost_block->SetNumResiduals(2);
 
       // Add the residual block to the problem
-      problem.AddResidualBlock(cost_block, NULL, parameters);
+      problem.AddResidualBlock(cost_block, nullptr, parameters);
     }
   }
 
@@ -194,17 +198,8 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &param
   else
     result.target_chain_dh_offsets = target_chain_dh_offsets;
 
-  // TODO: Calculate the covariance
-  // 1. Camera DH parameters
-  // 2. Target DH parameters
-  // 3. Camera pose to camera
-  // 4. Target mount to target
-  // 5. Camera base to target
-  // 6. All parameters relative to each other
-
-  // TODO: fix calculation of near-rank-deficient covariance matrix
   ceres::Covariance::Options cov_options = rct_optimizations::DefaultCovarianceOptions();
-  cov_options.min_reciprocal_condition_number = -1;
+  cov_options.null_space_rank = -1;  // automatically drop terms below min_reciprocal_condition_number
   result.covariance = computeCovariance(problem, std::vector<const double*>(parameters.begin(), parameters.end()), param_labels, cov_options);
 
   return result;
