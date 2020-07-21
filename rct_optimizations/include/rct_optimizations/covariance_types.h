@@ -108,7 +108,7 @@ struct CovarianceResult
     std::string out("\nCorrelation Coeff. > " + std::to_string(threshold) + ":\n");
     for (auto corr : above_thresh)
     {
-      out.append(corr.toString());
+      out.append(corr.toString() + "\n");
     }
     return out;
   }
