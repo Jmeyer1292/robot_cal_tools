@@ -148,6 +148,8 @@ TEST_F(DHChainKinematicCalibration, TestCalibrationPerfectGuessPerfectDH)
       EXPECT_LT(result.camera_chain_dh_offsets(row, col), 1.0e-15);
     }
   }
+
+  std::cout << result.covariance.toString() << std::endl;
 }
 
 int main(int argc, char **argv)

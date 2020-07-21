@@ -3,6 +3,7 @@
 #include <rct_optimizations/types.h>
 #include <rct_optimizations/dh_chain.h>
 #include <rct_optimizations/ceres_math_utilities.h>
+#include <rct_optimizations/covariance_analysis.h>
 
 namespace rct_optimizations
 {
@@ -24,6 +25,10 @@ struct KinematicCalibrationProblem2D3D
   Eigen::Isometry3d camera_mount_to_camera_guess;
   Eigen::Isometry3d target_mount_to_target_guess;
   Eigen::Isometry3d camera_base_to_target_base_guess;
+
+  std::string label_camera_mount_to_camera = "camera_mount_to_camera";
+  std::string label_target_mount_to_target = "target_mount_to_target";
+  std::string label_camera_base_to_target = "camera_base_to_target";
 };
 
 struct KinematicCalibrationResult
@@ -38,7 +43,7 @@ struct KinematicCalibrationResult
   Eigen::MatrixX4d target_chain_dh_offsets;
 
   // TODO: Add covariance matrix/matrices
-//  Eigen::MatrixXd covariance;
+  CovarianceResult covariance;
 };
 
 class DualDHChainCost2D3D
@@ -97,6 +102,39 @@ class DualDHChainCost2D3D
     parameters.push_back(camera_chain_base_to_target_chain_base_position.data());
     parameters.push_back(camera_chain_base_to_target_chain_base_angle_axis.data());
     return parameters;
+  }
+
+  static std::vector<std::vector<std::string>> constructParameterLabels(const std::vector<std::array<std::string, 4>>& camera_chain_labels,
+                                                                        const std::vector<std::array<std::string, 4>>& target_chain_labels,
+                                                                        const std::array<std::string, 3>& camera_mount_to_camera_position_labels,
+                                                                        const std::array<std::string, 3>& camera_mount_to_camera_angle_axis_labels,
+                                                                        const std::array<std::string, 3>& target_mount_to_target_position_labels,
+                                                                        const std::array<std::string, 3>& target_mount_to_target_angle_axis_labels,
+                                                                        const std::array<std::string, 3>& camera_chain_base_to_target_chain_base_position_labels,
+                                                                        const std::array<std::string, 3>& camera_chain_base_to_target_chain_base_angle_axis_labels)
+  {
+    std::vector<std::vector<std::string>> param_labels;
+    std::vector<std::string> cc_labels_concatenated;
+    for (auto cc_label : camera_chain_labels)
+    {
+      cc_labels_concatenated.insert(cc_labels_concatenated.end(), cc_label.begin(), cc_label.end());
+    }
+    param_labels.push_back(cc_labels_concatenated);
+
+    std::vector<std::string> tc_labels_concatenated;
+    for (auto tc_label : target_chain_labels)
+    {
+      tc_labels_concatenated.insert(tc_labels_concatenated.end(), tc_label.begin(), tc_label.end());
+    }
+    param_labels.push_back(tc_labels_concatenated);
+
+    param_labels.emplace_back(camera_mount_to_camera_position_labels.begin(), camera_mount_to_camera_position_labels.end());
+    param_labels.emplace_back(camera_mount_to_camera_angle_axis_labels.begin(), camera_mount_to_camera_angle_axis_labels.end());
+    param_labels.emplace_back(target_mount_to_target_position_labels.begin(), target_mount_to_target_position_labels.end());
+    param_labels.emplace_back(target_mount_to_target_angle_axis_labels.begin(), target_mount_to_target_angle_axis_labels.end());
+    param_labels.emplace_back(camera_chain_base_to_target_chain_base_position_labels.begin(), camera_chain_base_to_target_chain_base_position_labels.end());
+    param_labels.emplace_back(camera_chain_base_to_target_chain_base_angle_axis_labels.begin(), camera_chain_base_to_target_chain_base_angle_axis_labels.end());
+    return param_labels;
   }
 
   template<typename T>

@@ -38,6 +38,8 @@ struct DHTransform
 {
   DHTransform(const Eigen::Vector4d& params_, DHJointType type_);
 
+  DHTransform(const Eigen::Vector4d& params_, DHJointType type_, const std::string& name_);
+
   /**
    * @brief Creates the homogoneous transformation from the previous link to the current link
    * @param joint_value - The joint value to apply when caluclating the transform
@@ -90,6 +92,8 @@ struct DHTransform
 
   double createRandomJointValue() const;
 
+  std::array<std::string, 4> getParamLabels() const;
+
   /** @brief DH parameters
    *  d: The linear offset in Z
    *  theta: The rotational offset about Z
@@ -100,6 +104,7 @@ struct DHTransform
   DHJointType type; /** @brief The type of actuation of the joint */
   double max = M_PI; /** @brief Joint max */
   double min = -M_PI; /** @brief Joint min */
+  std::string name; /** @brief Label for this transform */
 };
 
 /**
@@ -170,6 +175,8 @@ public:
    * @return
    */
   std::vector<DHJointType> getJointTypes() const;
+
+  std::vector<std::array<std::string, 4>> getParamLabels() const;
 
 protected:
   /** @brief The DH transforms that make up the chain */

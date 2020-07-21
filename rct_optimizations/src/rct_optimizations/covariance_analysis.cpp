@@ -1,4 +1,5 @@
-#include <rct_optimizations/covariance_analysis.h>
+﻿#include <rct_optimizations/covariance_analysis.h>
+#include <sstream>
 
 namespace rct_optimizations
 {
@@ -94,7 +95,12 @@ CovarianceResult computeCovariance(ceres::Problem &problem,
   {
     int block_size = problem.ParameterBlockSize(parameter_blocks[index_block]);
     if (static_cast<std::size_t>(block_size) != parameter_names[index_block].size())
-      throw CovarianceException("Vector of parameter names at index " + std::to_string(index_block) + " in parameter_names is not same length as number of parameter block at index " + std::to_string(index_block) + " in problem");
+    {
+      std::stringstream ss;
+      ss << "Number of parameter labels provided for block " << index_block << " does not match actual number of parameters in that block: " \
+         << "have " << parameter_names[index_block].size() << " labels and " << block_size << " parameters";
+      throw CovarianceException(ss.str());
+    }
     n_params_in_selected += block_size;
   }
 
