@@ -169,5 +169,35 @@ Observation2D3D::Set createObservations(const DHChain &to_camera_chain,
   return obs_set;
 }
 
+KinematicMeasurement::Set createKinematicMeasurements(
+  const DHChain &to_camera_chain,
+  const DHChain &to_target_chain,
+  const Eigen::Isometry3d &true_mount_to_camera,
+  const Eigen::Isometry3d &true_mount_to_target,
+  const Eigen::Isometry3d &camera_base_to_target_base,
+  const std::size_t n)
+{
+  KinematicMeasurement::Set measurements;
+  measurements.reserve(n);
+
+  for (std::size_t i = 0; i < n; ++i)
+  {
+    KinematicMeasurement m;
+    m.camera_chain_joints = to_camera_chain.createUniformlyRandomPose();
+    m.target_chain_joints = to_target_chain.createUniformlyRandomPose();
+
+    const Eigen::Isometry3d camera_base_to_camera = to_camera_chain.getFK(m.camera_chain_joints)
+                                                    * true_mount_to_camera;
+    const Eigen::Isometry3d camera_base_to_target = camera_base_to_target_base
+                                                    * to_target_chain.getFK(m.target_chain_joints)
+                                                    * true_mount_to_target;
+    m.pose = camera_base_to_camera.inverse() * camera_base_to_target;
+
+    measurements.push_back(m);
+  }
+
+  return measurements;
+}
+
 } // namespace test
 } // namespace rct_optimizations
