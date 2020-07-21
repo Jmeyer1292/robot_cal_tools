@@ -62,14 +62,14 @@ CovarianceResult computeCovariance(ceres::Problem &problem,
 /**
  * @brief Compute covariance results for specified parameter blocks in a Ceres optimization problem and label them with the provided names.
  * @param problem The Ceres problem (after optimization).
- * @param parameter_blocks Specific parameter blocks to compute covariance between.
+ * @param parameter_blocks Specific parameter blocks for which covariance will be calculated.
  * @param parameter_names Labels for optimization parameters in the specified blocks.
  * @param options ceres::Covariance::Options to use when calculating covariance.
  * @return CovarianceResult for the problem.
  * @throw CovarianceException if covariance.Compute fails.
  * @throw CovarianceException if covariance.GetCovarianceMatrix fails.
  * @throw CovarianceException if parameter_names.size() != parameter_blocks.size().
- * @throw CovarianceException if the number of parameter label strings for a block is different than the number of parameters in that block.
+ * @throw CovarianceException if the number of parameter label strings provided for a block is different than the number of parameters in that block.
  */
 CovarianceResult computeCovariance(ceres::Problem &problem,
                                    const std::vector<const double *>& parameter_blocks,

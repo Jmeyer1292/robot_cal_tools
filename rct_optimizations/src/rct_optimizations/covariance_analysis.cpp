@@ -6,7 +6,7 @@ namespace rct_optimizations
 Eigen::MatrixXd computeCorrelationsFromCovariance(const Eigen::MatrixXd& covariance_matrix)
 {
   if(covariance_matrix.rows() != covariance_matrix.cols())
-    throw CovarianceException("Cannot compute correlations from non-square covariance matrix");
+    throw CovarianceException("Cannot compute correlations from a non-square matrix");
 
   Eigen::Index num_vars = covariance_matrix.rows();
 
@@ -86,7 +86,7 @@ CovarianceResult computeCovariance(ceres::Problem &problem,
                                    const ceres::Covariance::Options& options)
   {
   // 0. Check user-specified arguments
-  if (parameter_blocks.size() != parameter_names.size())  // BUG: wrong for variable number of blocks
+  if (parameter_blocks.size() != parameter_names.size())
     throw CovarianceException("Provided vector parameter_names is not same length as provided number of parameter blocks");
 
   Eigen::Index n_params_in_selected = 0;
@@ -110,21 +110,29 @@ CovarianceResult computeCovariance(ceres::Problem &problem,
     throw CovarianceException("GetCovarianceMatrix failed in computeCovariance()");
   }
 
-  // 2. Save original covariance output
+  // 2. Save original covariance matrix output
+  // For parameter blocks [p1, p2], the structure of this matrix will be:
+  /*    |     p1    |     p2    |
+   * ---|-----------|-----------|
+   * p1 | C(p1, p1) | C(p1, p2) |
+   * p2 | C(p2, p1) | C(p2, p2) |
+   */
   CovarianceResult res;
   res.covariance_matrix = cov_matrix;
 
-  // 3. Compute matrix of standard deviations and correlation coefficients, and save to result
+  // 3. Compute matrix of standard deviations and correlation coefficients.
+  // The arrangement of elements in the correlation matrix matches the order in the covariance matrix.
   Eigen::MatrixXd correlation_matrix = computeCorrelationsFromCovariance(cov_matrix);
   res.correlation_matrix = correlation_matrix;
 
+  // 4. Compose parameter label strings
   std::vector<std::string> parameter_names_concatenated;
   for (auto names : parameter_names)
   {
     parameter_names_concatenated.insert(parameter_names_concatenated.end(), names.begin(), names.end());
   }
 
-  // 4. Create NamedParams for covariance and correlation results, which include labels and values for the parameters. Uses top-right triangular part of matrix.
+  // 5. Create NamedParams for covariance and correlation results, which include labels and values for the parameters. Uses top-right triangular part of matrix.
   Eigen::Index col_start = 0;
   for (Eigen::Index row = 0; row < correlation_matrix.rows(); row++)
   {
@@ -155,39 +163,4 @@ CovarianceResult computeCovariance(ceres::Problem &problem,
 
   return res;
 }
-
-//Eigen::MatrixXd computeFullDV2DVCovariance(ceres::Problem &problem,
-//                                           const double *dptr1,
-//                                           const std::size_t num_vars1,
-//                                           const double *dptr2,
-//                                           const std::size_t num_vars2,
-//                                           const ceres::Covariance::Options &options)
-//{
-//  // Calculate the individual covariance matrices
-//  // Covariance of parameter 1 with itself
-//  Eigen::MatrixXd cov_p1 = computeDVCovariance(problem, dptr1, num_vars1, options);
-//  // Covariance of parameter 2 with itself
-//  Eigen::MatrixXd cov_p2 = computeDVCovariance(problem, dptr2, num_vars2, options);
-//  // Covariance of parameter 1 with parameter 2
-//  Eigen::MatrixXd cov_p1p2
-//    = computeDV2DVCovariance(problem, dptr1, num_vars1, dptr2, num_vars2, options);
-
-//  // Total covariance matrix
-//  Eigen::MatrixXd cov;
-//  const std::size_t n = num_vars1 + num_vars2;
-//  cov.resize(n, n);
-
-//  /*    |     P1    |     P2    |
-//   * ---|-----------|-----------|
-//   * P1 | C(p1, p1) | C(p1, p2) |
-//   * P2 | C(p2, p1) | C(p2, p2) |
-//   */
-//  cov.block(0, 0, num_vars1, num_vars1) = cov_p1;
-//  cov.block(num_vars1, num_vars1, num_vars2, num_vars2) = cov_p2;
-//  cov.block(0, num_vars1, num_vars1, num_vars2) = cov_p1p2;
-//  cov.block(num_vars1, 0, num_vars2, num_vars1) = cov_p1p2.transpose();
-
-//  return cov;
-//}
-
 }  // namespace rct_optimizations
