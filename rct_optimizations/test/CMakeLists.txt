@@ -74,7 +74,7 @@ rct_gtest_discover_tests(${PROJECT_NAME}_camera_intrinsic_validation_tests)
 add_dependencies(${PROJECT_NAME}_camera_intrinsic_validation_tests ${PROJECT_NAME})
 add_dependencies(run_tests ${PROJECT_NAME}_camera_intrinsic_validation_tests)
 
-# Sensor noise
+# Noise Qualification
 add_executable(${PROJECT_NAME}_noise_tests noise_qualification_utest.cpp)
 target_link_libraries(${PROJECT_NAME}_noise_tests PRIVATE ${PROJECT_NAME}_test_support GTest::GTest GTest::Main)
 rct_gtest_discover_tests(${PROJECT_NAME}_noise_tests)
@@ -87,6 +87,13 @@ target_link_libraries(${PROJECT_NAME}_maximum_likelihood_tests PRIVATE ${PROJECT
 rct_gtest_discover_tests(${PROJECT_NAME}_maximum_likelihood_tests)
 add_dependencies(${PROJECT_NAME}_maximum_likelihood_tests ${PROJECT_NAME})
 add_dependencies(run_tests ${PROJECT_NAME}_maximum_likelihood_tests)
+
+# DH Chain Kinematic Calibration
+add_executable(${PROJECT_NAME}_dh_chain_kinematic_calibration_tests dh_chain_kinematic_calibration_utest.cpp)
+target_link_libraries(${PROJECT_NAME}_dh_chain_kinematic_calibration_tests PRIVATE ${PROJECT_NAME}_test_support GTest::GTest GTest::Main)
+rct_gtest_discover_tests(${PROJECT_NAME}_dh_chain_kinematic_calibration_tests)
+add_dependencies(${PROJECT_NAME}_dh_chain_kinematic_calibration_tests ${PROJECT_NAME})
+add_dependencies(run_tests ${PROJECT_NAME}_dh_chain_kinematic_calibration_tests)
 
 # Install the test executables so they can be run independently later if needed
 install(
@@ -102,6 +109,7 @@ install(
     ${PROJECT_NAME}_camera_intrinsic_validation_tests
     ${PROJECT_NAME}_noise_tests
     ${PROJECT_NAME}_maximum_likelihood_tests
+    ${PROJECT_NAME}_dh_chain_kinematic_calibration_tests
   RUNTIME DESTINATION bin/tests
   LIBRARY DESTINATION lib/tests
   ARCHIVE DESTINATION lib/tests

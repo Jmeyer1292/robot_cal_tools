@@ -124,13 +124,32 @@ using Observation2D3D = Observation<2, 3>;
 /** @brief Typedef for observations of 3D sensor to 3D target correspondences */
 using Observation3D3D = Observation<3, 3>;
 
+/**
+ * @brief A set of data representing a single observation of a calibration target
+ */
+template<Eigen::Index IMAGE_DIM, Eigen::Index WORLD_DIM>
+struct KinematicObservation
+{
+  using Set = std::vector<KinematicObservation>;
+
+  /** @brief A set of feature correspondences between the sensor output and target */
+  typename Correspondence<IMAGE_DIM, WORLD_DIM>::Set correspondence_set;
+  /** @brief The joint values of the camera kinematic chain for the observation */
+  Eigen::VectorXd camera_chain_joints;
+  /** @brief The joint values of the target kinematic chain for the observation */
+  Eigen::VectorXd target_chain_joints;
+};
+/** @brief Typedef for kinematic observations of 2D image to 3D target correspondences */
+using KinObservation2D3D = KinematicObservation<2, 3>;
+/** @brief Typedef for kinematic observations of 3D sensor to 3D target correspondences */
+using KinObservation3D3D = KinematicObservation<3, 3>;
+
 
 struct OptimizationException : public std::runtime_error
 {
 public:
   OptimizationException(const std::string& what) : std::runtime_error(what) {}
 };
-
 
 struct CovarianceException : public std::runtime_error
 {

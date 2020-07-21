@@ -5,6 +5,35 @@ namespace rct_optimizations
 {
 namespace test
 {
+KinObservation3D3D::Set createKinematicObservations(const DHChain &to_camera_chain,
+                                                    const DHChain &to_target_chain,
+                                                    const Eigen::Isometry3d &true_mount_to_camera,
+                                                    const Eigen::Isometry3d &true_mount_to_target,
+                                                    const Eigen::Isometry3d &camera_base_to_target_base,
+                                                    const Target &target,
+                                                    const std::size_t n)
+{
+  KinObservation3D3D::Set observations;
+  observations.reserve(n);
+
+  for (std::size_t i = 0; i < n; ++i)
+  {
+    KinObservation3D3D obs;
+    obs.camera_chain_joints = to_camera_chain.createUniformlyRandomPose();
+    obs.target_chain_joints = to_target_chain.createUniformlyRandomPose();
+
+    Eigen::Isometry3d to_camera_mount = to_camera_chain.getFK<double>(obs.camera_chain_joints);
+    Eigen::Isometry3d to_target_mount = to_target_chain.getFK<double>(obs.target_chain_joints);
+
+    obs.correspondence_set = getCorrespondences(to_camera_mount * true_mount_to_camera,
+                                                camera_base_to_target_base * to_target_mount * true_mount_to_target,
+                                                target);
+    observations.push_back(obs);
+  }
+
+  return observations;
+}
+
 Observation3D3D::Set createObservations(const DHChain &to_camera_chain,
                                         const DHChain &to_target_chain,
                                         const Eigen::Isometry3d &true_mount_to_camera,
@@ -13,34 +42,40 @@ Observation3D3D::Set createObservations(const DHChain &to_camera_chain,
                                         const Target &target,
                                         const std::size_t n)
 {
-  Observation3D3D::Set observations;
-  observations.reserve(n);
+  // Get a set of kinematic observations
+  KinObservation3D3D::Set kin_obs_set = createKinematicObservations(to_camera_chain,
+                                                                    to_target_chain,
+                                                                    true_mount_to_camera,
+                                                                    true_mount_to_target,
+                                                                    camera_base_to_target_base,
+                                                                    target,
+                                                                    n);
 
-  for (std::size_t i = 0; i < n; ++i)
+  // Convert the joint states of the kinematic observations into Cartesian poses
+  Observation3D3D::Set obs_set;
+  obs_set.reserve(kin_obs_set.size());
+  for (const auto &kin_obs : kin_obs_set)
   {
     Observation3D3D obs;
-    obs.to_camera_mount = to_camera_chain.createUniformlyRandomPose();
-    obs.to_target_mount = to_target_chain.createUniformlyRandomPose();
-
-    obs.correspondence_set = getCorrespondences(obs.to_camera_mount * true_mount_to_camera,
-                                                camera_base_to_target_base * obs.to_target_mount * true_mount_to_target,
-                                                target);
-    observations.push_back(obs);
+    obs.to_camera_mount = to_camera_chain.getFK(kin_obs.camera_chain_joints);
+    obs.to_target_mount = to_target_chain.getFK(kin_obs.target_chain_joints);
+    obs.correspondence_set = kin_obs.correspondence_set;
+    obs_set.push_back(obs);
   }
 
-  return observations;
+  return obs_set;
 }
 
-Observation2D3D::Set createObservations(const DHChain &to_camera_chain,
-                                        const DHChain &to_target_chain,
-                                        const Eigen::Isometry3d &true_mount_to_camera,
-                                        const Eigen::Isometry3d &true_mount_to_target,
-                                        const Eigen::Isometry3d &camera_base_to_target_base,
-                                        const Target &target,
-                                        const Camera &camera,
-                                        const std::size_t n)
+KinObservation2D3D::Set createKinematicObservations(const DHChain &to_camera_chain,
+                                                    const DHChain &to_target_chain,
+                                                    const Eigen::Isometry3d &true_mount_to_camera,
+                                                    const Eigen::Isometry3d &true_mount_to_target,
+                                                    const Eigen::Isometry3d &camera_base_to_target_base,
+                                                    const Target &target,
+                                                    const Camera &camera,
+                                                    const std::size_t n)
 {
-  Observation2D3D::Set observations;
+  KinObservation2D3D::Set observations;
   observations.reserve(n);
 
   std::size_t correspondences = 0;
@@ -48,12 +83,15 @@ Observation2D3D::Set createObservations(const DHChain &to_camera_chain,
   const std::size_t max_attempts = 10000;
   while (correspondences < n * target.points.size() && attempts < max_attempts)
   {
-    Observation2D3D obs;
-    obs.to_camera_mount = to_camera_chain.createUniformlyRandomPose();
-    obs.to_target_mount = to_target_chain.createUniformlyRandomPose();
+    KinObservation2D3D obs;
+    obs.camera_chain_joints = to_camera_chain.createUniformlyRandomPose();
+    obs.target_chain_joints = to_target_chain.createUniformlyRandomPose();
 
-    const Eigen::Isometry3d base_to_camera = obs.to_camera_mount * true_mount_to_camera;
-    const Eigen::Isometry3d base_to_target = camera_base_to_target_base * obs.to_target_mount
+    Eigen::Isometry3d to_camera_mount = to_camera_chain.getFK(obs.camera_chain_joints);
+    Eigen::Isometry3d to_target_mount = to_target_chain.getFK(obs.target_chain_joints);
+
+    const Eigen::Isometry3d base_to_camera = to_camera_mount * true_mount_to_camera;
+    const Eigen::Isometry3d base_to_target = camera_base_to_target_base * to_target_mount
                                              * true_mount_to_target;
 
     const Eigen::Vector3d &camera_z = base_to_camera.matrix().col(2).head<3>();
@@ -95,6 +133,40 @@ Observation2D3D::Set createObservations(const DHChain &to_camera_chain,
   }
 
   return observations;
+}
+
+Observation2D3D::Set createObservations(const DHChain &to_camera_chain,
+                                        const DHChain &to_target_chain,
+                                        const Eigen::Isometry3d &true_mount_to_camera,
+                                        const Eigen::Isometry3d &true_mount_to_target,
+                                        const Eigen::Isometry3d &camera_base_to_target_base,
+                                        const Target &target,
+                                        const Camera &camera,
+                                        const std::size_t n)
+{
+  // Get a set of kinematic observations
+  KinObservation2D3D::Set kin_obs_set = createKinematicObservations(to_camera_chain,
+                                                                    to_target_chain,
+                                                                    true_mount_to_camera,
+                                                                    true_mount_to_target,
+                                                                    camera_base_to_target_base,
+                                                                    target,
+                                                                    camera,
+                                                                    n);
+
+  // Convert the joint states of the kinematic observations into Cartesian poses
+  Observation2D3D::Set obs_set;
+  obs_set.reserve(kin_obs_set.size());
+  for (const auto &kin_obs : kin_obs_set)
+  {
+    Observation2D3D obs;
+    obs.to_camera_mount = to_camera_chain.getFK(kin_obs.camera_chain_joints);
+    obs.to_target_mount = to_target_chain.getFK(kin_obs.target_chain_joints);
+    obs.correspondence_set = kin_obs.correspondence_set;
+    obs_set.push_back(obs);
+  }
+
+  return obs_set;
 }
 
 } // namespace test

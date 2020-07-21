@@ -7,12 +7,27 @@
 
 namespace rct_optimizations
 {
+/**
+ * @brief The joint types for DH representation
+ */
 enum class DHJointType : unsigned
 {
   LINEAR,
   REVOLUTE,
   FIXED
 };
+
+template<typename T>
+using Isometry3 = Eigen::Transform<T, 3, Eigen::Isometry>;
+
+template<typename T>
+using Vector4 = Eigen::Matrix<T, 4, 1>;
+
+template<typename T>
+using Vector3 = Eigen::Matrix<T, 3, 1>;
+
+template<typename T>
+using Vector2 = Eigen::Matrix<T, 2, 1>;
 
 /**
  * @brief Struct representing the DH parameters of a single transformation between adjacent links.
@@ -21,17 +36,57 @@ enum class DHJointType : unsigned
  */
 struct DHTransform
 {
-  using Ptr = std::unique_ptr<DHTransform>;
-
-  DHTransform(std::array<double, 4> params_, DHJointType type_);
-  virtual ~DHTransform() = default;
+  DHTransform(const Eigen::Vector4d& params_, DHJointType type_);
 
   /**
    * @brief Creates the homogoneous transformation from the previous link to the current link
-   * @param joint_value
+   * @param joint_value - The joint value to apply when caluclating the transform
+   * @param offsets - The DH parameter offsets to apply when calculating the transform
    * @return
    */
-  virtual Eigen::Isometry3d createRelativeTransform(const double joint_value) const;
+  template<typename T>
+  Isometry3<T> createRelativeTransform(const T joint_value,
+                                       const Eigen::Matrix<T, 1, 4>& offsets) const
+  {
+    Isometry3<T> transform(Isometry3<T>::Identity());
+
+    // Create an DH parameter vector with offsets ([d, theta, r, alpha]
+    Vector4<T> updated_params = params.cast<T>() + offsets.transpose();
+
+    switch (type)
+    {
+    case DHJointType::LINEAR:
+      // Add the joint value to d (index 0) if the joint is linear
+      updated_params(0) += joint_value;
+      break;
+    case DHJointType::REVOLUTE:
+      // Add the joint value to theta (index 1) if the joint is revolute
+      updated_params(1) += joint_value;
+      break;
+    default:
+      break;
+    }
+
+    // Perform the DH transformations
+    transform *= Eigen::Translation<T, 3>(T(0.0), T(0.0), updated_params(0));
+    transform.rotate(Eigen::AngleAxis<T>(updated_params(1), Vector3<T>::UnitZ()));
+    transform *= Eigen::Translation<T, 3>(updated_params(2), T(0.0), T(0.0));
+    transform.rotate(Eigen::AngleAxis<T>(updated_params(3), Vector3<T>::UnitX()));
+
+    return transform;
+  }
+
+  /**
+   * @brief Creates the homogoneous transformation from the previous link to the current link without applying DH parameter offsets
+   * @param joint_value - The joint value to apply when calculating the transform
+   * @return
+   */
+  template<typename T>
+  Isometry3<T> createRelativeTransform(const T joint_value) const
+  {
+    Eigen::Matrix<T, 1, 4> offsets = Eigen::Matrix<T, 1, 4>::Zero();
+    return createRelativeTransform(joint_value, offsets);
+  }
 
   double createRandomJointValue() const;
 
@@ -41,26 +96,10 @@ struct DHTransform
    *  r: The linear offset in X
    *  alpha: The rotational offset about X
    */
-  std::array<double, 4> params;
+  Eigen::Vector4d params;
   DHJointType type; /** @brief The type of actuation of the joint */
   double max = M_PI; /** @brief Joint max */
   double min = -M_PI; /** @brief Joint min */
-};
-
-/**
- * @brief Override of the @ref DHTransform class to provide Gaussian noise for the joint value when calculating forward kinematics
- */
-struct GaussianNoiseDHTransform : public DHTransform
-{
-  GaussianNoiseDHTransform(std::array<double, 4> params_,
-                           DHJointType type_,
-                           double mean_,
-                           double std_dev_);
-
-  virtual Eigen::Isometry3d createRelativeTransform(const double joint) const override;
-
-  double mean;
-  double std_dev;
 };
 
 /**
@@ -69,7 +108,7 @@ struct GaussianNoiseDHTransform : public DHTransform
 class DHChain
 {
 public:
-    DHChain(std::vector<DHTransform::Ptr> transforms);
+    DHChain(std::vector<DHTransform> transforms);
 
   /**
    * @brief Calculates forward kinematics for the robot with the joints provided.
@@ -78,20 +117,63 @@ public:
    * @return
    * @throws Exception if the size of joint values is larger than the number of DH transforms in the robot
    */
-  Eigen::Isometry3d getFK(const std::vector<double> &joint_values) const;
+  template<typename T>
+  Isometry3<T> getFK(const Eigen::Matrix<T, Eigen::Dynamic, 1> &joint_values) const
+  {
+    Isometry3<T> transform(Isometry3<T>::Identity());
+    for (Eigen::Index i = 0; i < joint_values.size(); ++i)
+    {
+      transform = transform * transforms_.at(i).createRelativeTransform(joint_values[i]);
+    }
+    return transform;
+  }
 
   /**
    * @brief Override function of @ref getFK but using a data pointer for easier integration with Ceres
    * @param joint_values
-   * @param n_joints
+   * @param offsets
    * @return
    */
-  Eigen::Isometry3d getFK(const double *joint_values, const std::size_t n_joints) const;
+  template<typename T>
+  Isometry3<T> getFK(const Eigen::Matrix<T, Eigen::Dynamic, 1>& joint_values,
+                     const Eigen::Matrix<T, Eigen::Dynamic, 4>& offsets) const
+  {
+    Isometry3<T> transform(Isometry3<T>::Identity());
+    for (Eigen::Index i = 0; i < joint_values.size(); ++i)
+    {
+      const Eigen::Matrix<T, 1, 4> &offset = offsets.row(i);
+      transform = transform * transforms_.at(i).createRelativeTransform(joint_values[i], offset);
+    }
+    return transform;
+  }
 
-  Eigen::Isometry3d createUniformlyRandomPose() const;
+  /**
+   * @brief Creates a random joint pose by choosing a random uniformly distributed joint value for each joint in the chain
+   * @return
+   */
+  Eigen::VectorXd createUniformlyRandomPose() const;
+
+  /**
+   * @brief Returns the number of degrees of freedom (i.e. DH transforms) of the chain
+   * @return
+   */
+  std::size_t dof() const;
+
+  /**
+   * @brief Gets a dof x 4 matrix of the DH parameters
+   * @return
+   */
+  Eigen::MatrixX4d getDHTable() const;
+
+  /**
+   * @brief Returns a the joint types of the kinematic chain in order
+   * @return
+   */
+  std::vector<DHJointType> getJointTypes() const;
 
 protected:
-  std::vector<DHTransform::Ptr> transforms_;
+  /** @brief The DH transforms that make up the chain */
+  std::vector<DHTransform> transforms_;
 };
 
 } // namespace rct_optimizations
