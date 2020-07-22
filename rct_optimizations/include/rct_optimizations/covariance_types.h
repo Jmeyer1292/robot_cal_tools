@@ -61,7 +61,7 @@ struct CovarianceResult
       if (std::abs(corr.value) > threshold)
         out.push_back(corr);
     }
-    std::sort(out.begin(), out.end(), [](NamedParam a, NamedParam b) { return a.value > b.value; });
+    std::sort(out.begin(), out.end(), [](NamedParam a, NamedParam b) { return std::abs(a.value) > std::abs(b.value); });
     return out;
   }
 
