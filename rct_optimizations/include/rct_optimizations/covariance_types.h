@@ -25,10 +25,9 @@ struct NamedParam
    */
   std::string toString() const
   {
-    std::stringbuf buf;
-    std::ostream os(&buf);
-    os << names.first.c_str() << " " << names.second.c_str() << " " << value;;
-    return buf.str();
+    std::stringstream ss;
+    ss << names.first.c_str() << " " << names.second.c_str() << " " << value;
+    return ss.str();
   }
 };
 
