@@ -383,7 +383,7 @@ TEST_F(CircleFitUnit_TwoObsX, FitCircleToTwoPoints)
   EXPECT_GE(result.covariance.covariance_matrix(2, 2), 0.0);
 
   // expect covariance.covariance_matrix between Y and R to be close to 1
-  EXPECT_NEAR(abs(result.covariance.correlation_matrix(1, 2)), 1.0, 1e-5);
+  EXPECT_NEAR(fabs(result.covariance.correlation_matrix(1, 2)), 1.0, 1e-5);
 
   // expect covariance between X and R to be somewhat close to 0
   // TODO: fix, not always close to zero due to random initial conditions of problem
@@ -417,7 +417,7 @@ TEST_F(CircleFitUnit_TwoObsY, FitCircleToTwoPoints)
   EXPECT_GE(result.covariance.covariance_matrix(2, 2), 0.0);
 
   // expect covariance between X and R to be close to 1
-  EXPECT_NEAR(abs(result.covariance.correlation_matrix(0, 2)), 1.0, 1e-5);
+  EXPECT_NEAR(fabs(result.covariance.correlation_matrix(0, 2)), 1.0, 1e-5);
 
   // expect covariance between Y and R to be somewhat close to 0
   // TODO: fix, not always close to zero due to random initial conditions of problem
@@ -451,9 +451,9 @@ TEST_F(CircleFitUnit_OneObs, FitCircleToOnePoint)
   EXPECT_GE(result.covariance.covariance_matrix(2, 2), 0.0);
 
   // expect magnitudes of all off-diagonal elements to be close to 1
-  EXPECT_NEAR(abs(result.covariance.correlation_matrix(0, 1)), 1.0, 1e-5);
-  EXPECT_NEAR(abs(result.covariance.correlation_matrix(0, 2)), 1.0, 1e-5);
-  EXPECT_NEAR(abs(result.covariance.correlation_matrix(1, 2)), 1.0, 1e-5);
+  EXPECT_NEAR(fabs(result.covariance.correlation_matrix(0, 1)), 1.0, 1e-5);
+  EXPECT_NEAR(fabs(result.covariance.correlation_matrix(0, 2)), 1.0, 1e-5);
+  EXPECT_NEAR(fabs(result.covariance.correlation_matrix(1, 2)), 1.0, 1e-5);
 
   // expect all correlation coefficients to be greater than 0.1
   std::vector<rct_optimizations::NamedParam> outside_thresh = result.covariance.getCorrelationCoeffOutsideThreshold(0.1);

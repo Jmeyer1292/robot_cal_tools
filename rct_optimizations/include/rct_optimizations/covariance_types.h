@@ -58,7 +58,7 @@ struct CovarianceResult
     std::vector<NamedParam> out;
     for (auto corr : correlation_coeffs)
     {
-      if (abs(corr.value) > threshold)
+      if (std::abs(corr.value) > threshold)
         out.push_back(corr);
     }
     return out;
