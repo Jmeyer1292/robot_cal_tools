@@ -26,10 +26,10 @@ void checkCorrelation(const Eigen::MatrixXd& cov)
   }
 }
 
-void printCovariance(const Eigen::MatrixXd& cov)
+void printMatrix(const Eigen::MatrixXd& mat, const std::string& title)
 {
   Eigen::IOFormat fmt(4, 0, " | ", "\n", "|", "|");
-  std::cout << "Covariance:\n" << cov.format(fmt) << std::endl;
+  std::cout << title << ":\n" << mat.format(fmt) << std::endl;
 }
 
 class PnP2DTest : public ::testing::Test
@@ -64,8 +64,11 @@ TEST_F(PnP2DTest, PerfectInitialConditions)
   EXPECT_TRUE(result.camera_to_target.isApprox(target_to_camera.inverse()));
   EXPECT_LT(result.initial_cost_per_obs, 1.0e-15);
   EXPECT_LT(result.final_cost_per_obs, 1.0e-15);
-  checkCorrelation(result.camera_to_target_covariance);
-  printCovariance(result.camera_to_target_covariance);
+
+  checkCorrelation(result.covariance.correlation_matrix);
+  printMatrix(result.covariance.correlation_matrix, "Correlation");
+
+  std::cout << result.covariance.toString() << std::endl;
 }
 
 TEST_F(PnP2DTest, PerturbedInitialCondition)
@@ -90,7 +93,7 @@ TEST_F(PnP2DTest, PerturbedInitialCondition)
     PnPResult result = optimize(problem);
 
     EXPECT_TRUE(result.converged);
-    checkCorrelation(result.camera_to_target_covariance);
+    checkCorrelation(result.covariance.correlation_matrix);
 
     // Calculate the difference between the transforms (ideally, an identity matrix)
     Eigen::Isometry3d diff = result.camera_to_target * target_to_camera;
@@ -105,6 +108,7 @@ TEST_F(PnP2DTest, PerturbedInitialCondition)
   EXPECT_LT(ba::mean(pos_acc) + 3 * std::sqrt(ba::variance(pos_acc)), 1.0e-7);
   EXPECT_LT(ba::mean(ori_acc) + 3 * std::sqrt(ba::variance(ori_acc)), 1.0e-6);
   EXPECT_LT(ba::mean(residual_acc) + 3 * std::sqrt(ba::variance(residual_acc)), 1.0e-10);
+
 }
 
 TEST_F(PnP2DTest, BadIntrinsicParameters)
@@ -132,8 +136,10 @@ TEST_F(PnP2DTest, BadIntrinsicParameters)
   EXPECT_TRUE(result.converged);
   EXPECT_FALSE(result.camera_to_target.isApprox(target_to_camera.inverse(), 1.0e-3));
   EXPECT_GT(result.final_cost_per_obs, 1.0e-3);
-  checkCorrelation(result.camera_to_target_covariance);
-  printCovariance(result.camera_to_target_covariance);
+
+  checkCorrelation(result.covariance.correlation_matrix);
+  printMatrix(result.covariance.correlation_matrix, "Correlation");
+  std::cout << result.covariance.toString() << std::endl;
 }
 
 class PnP3DTest : public ::testing::Test
@@ -165,8 +171,12 @@ TEST_F(PnP3DTest, PerfectInitialConditions)
   EXPECT_TRUE(result.camera_to_target.isApprox(target_to_camera.inverse()));
   EXPECT_LT(result.initial_cost_per_obs, 1.0e-15);
   EXPECT_LT(result.final_cost_per_obs, 1.0e-15);
-  checkCorrelation(result.camera_to_target_covariance);
-  printCovariance(result.camera_to_target_covariance);
+
+  checkCorrelation(result.covariance.correlation_matrix);
+
+  // BUG: tests pass but nothing is printed
+//  printMatrix(result.covariance.correlation_matrix, "Correlation");
+//  std::cout << result.covariance.toString() << std::endl;
 }
 
 TEST_F(PnP3DTest, PerturbedInitialCondition)
@@ -187,7 +197,7 @@ TEST_F(PnP3DTest, PerturbedInitialCondition)
 
     PnPResult result = optimize(problem);
     EXPECT_TRUE(result.converged);
-    checkCorrelation(result.camera_to_target_covariance);
+    checkCorrelation(result.covariance.correlation_matrix);
 
     // Calculate the difference between the transforms (ideally, an identity matrix)
     Eigen::Isometry3d diff = result.camera_to_target * target_to_camera;

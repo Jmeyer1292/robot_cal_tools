@@ -165,5 +165,6 @@ rct_optimizations::optimize(const rct_optimizations::ExtrinsicMultiStaticCameraO
 
   result.initial_cost_per_obs = summary.initial_cost / summary.num_residuals;
   result.final_cost_per_obs = summary.final_cost / summary.num_residuals;
+
   return result;
 }

@@ -1,19 +1,25 @@
-#include <rct_optimizations/covariance_analysis.h>
+﻿#include <rct_optimizations/covariance_analysis.h>
+#include <sstream>
 
 namespace rct_optimizations
 {
 
-Eigen::MatrixXd covToEigenCorr(const double* cov, const std::size_t num_vars)
+Eigen::MatrixXd computeCorrelationsFromCovariance(const Eigen::MatrixXd& covariance_matrix)
 {
+  if(covariance_matrix.rows() != covariance_matrix.cols())
+    throw CovarianceException("Cannot compute correlations from a non-square matrix");
+
+  Eigen::Index num_vars = covariance_matrix.rows();
+
   Eigen::MatrixXd out(num_vars, num_vars);
 
-  for (std::size_t i = 0; i < num_vars; i++)
+  for (Eigen::Index i = 0; i < num_vars; i++)
   {
-    double sigma_i = sqrt(fabs(cov[i * num_vars + i]));  // standard deviation at the diagonal element in row i
+    double sigma_i = sqrt(fabs(covariance_matrix(i, i)));  // standard deviation at the diagonal element in row i
 
-    for (std::size_t j = 0; j < num_vars; j++)
+    for (Eigen::Index j = 0; j < num_vars; j++)
     {
-      double sigma_j = sqrt(fabs(cov[j * num_vars + j]));  // standard deviation at the diagonal element in column j
+      double sigma_j = sqrt(fabs(covariance_matrix(j, j)));  // standard deviation at the diagonal element in column j
 
       if (i == j)  // if out(i,j) is a diagonal element
         out(static_cast<Eigen::Index>(i), static_cast<Eigen::Index>(j)) = sigma_i;
@@ -22,132 +28,145 @@ Eigen::MatrixXd covToEigenCorr(const double* cov, const std::size_t num_vars)
         if (sigma_i < std::numeric_limits<double>::epsilon()) sigma_i = 1;
         if (sigma_j < std::numeric_limits<double>::epsilon()) sigma_j = 1;
 
-        out(static_cast<Eigen::Index>(i), static_cast<Eigen::Index>(j)) = cov[i * num_vars + j] / (sigma_i * sigma_j);
+        out(static_cast<Eigen::Index>(i), static_cast<Eigen::Index>(j)) = covariance_matrix(i, j) / (sigma_i * sigma_j);
       }
     }
   }
+
   return out;
 }
 
-Eigen::MatrixXd covToEigenCov(const double* cov, const std::size_t num_vars)
+CovarianceResult computeCovariance(ceres::Problem &problem,
+                                   const ceres::Covariance::Options& options)
 {
-  Eigen::MatrixXd out(num_vars, num_vars);
+  std::vector<double *> blocks;
+  problem.GetParameterBlocks(&blocks);
 
-  for (std::size_t i = 0; i < num_vars; i++)
+  const std::vector<const double *> blocks_const(blocks.begin(), blocks.end());
+
+  return computeCovariance(problem, blocks_const, options);
+}
+
+CovarianceResult computeCovariance(ceres::Problem &problem,
+                                   const std::vector<const double *>& parameter_blocks,
+                                   const ceres::Covariance::Options& options)
+{
+  std::vector<std::vector<std::string>> dummy_param_names;
+  for (std::size_t block_index = 0; block_index < parameter_blocks.size(); block_index++)
   {
-    for (std::size_t j = 0; j < num_vars; j++)
+    int size = problem.ParameterBlockSize(parameter_blocks[block_index]);
+    std::vector<std::string> block_names;
+    for (int i = 0; i < size; i++)
     {
-      out(static_cast<Eigen::Index>(i), static_cast<Eigen::Index>(j)) = cov[i * num_vars + j];
+      // names follow format "blockN_elementM"
+       block_names.emplace_back("block" + std::to_string(block_index) + "_element" + std::to_string(i));
     }
+    dummy_param_names.push_back(block_names);
   }
-  return out;
+
+  return computeCovariance(problem, parameter_blocks, dummy_param_names, options);
+
 }
 
-Eigen::MatrixXd covToEigenOffDiagCorr(const double* cov_d1d1, const std::size_t num_vars1, const double* cov_d2d2, const std::size_t num_vars2, const double* cov_d1d2)
+CovarianceResult computeCovariance(ceres::Problem &problem,
+                                   const std::vector<std::vector<std::string>>& parameter_names,
+                                   const ceres::Covariance::Options& options)
 {
-  Eigen::MatrixXd out(num_vars1, num_vars2);
+  // Get all parameter blocks for the problem
+  std::vector<double *> parameter_blocks(static_cast<std::size_t>(problem.NumParameterBlocks()));
+  problem.GetParameterBlocks(&parameter_blocks);
 
-  for (std::size_t i = 0; i < num_vars1; i++)
+  const std::vector<const double *> param_blocks_const(parameter_blocks.begin(), parameter_blocks.end());
+
+  return computeCovariance(problem, param_blocks_const, parameter_names, options);
+}
+
+CovarianceResult computeCovariance(ceres::Problem &problem,
+                                   const std::vector<const double *>& parameter_blocks,
+                                   const std::vector<std::vector<std::string>>& parameter_names,
+                                   const ceres::Covariance::Options& options)
   {
-    double sigma_i = sqrt(fabs(cov_d1d1[i * num_vars1 + i]));  // standard deviation at the diagonal element in row i of cov_d1d1
-    for (std::size_t j = 0; j < num_vars2; j++)
+  // 0. Check user-specified arguments
+  if (parameter_blocks.size() != parameter_names.size())
+    throw CovarianceException("Provided vector parameter_names is not same length as provided number of parameter blocks");
+
+  Eigen::Index n_params_in_selected = 0;
+  for (std::size_t index_block = 0; index_block < parameter_blocks.size(); index_block++)
+  {
+    int block_size = problem.ParameterBlockSize(parameter_blocks[index_block]);
+    if (static_cast<std::size_t>(block_size) != parameter_names[index_block].size())
     {
-      double sigma_j = sqrt(fabs(cov_d2d2[j * num_vars2 + j]));  // standard deviation at the diagonal element in column j of cov_d2d2
-
-      if (sigma_i < std::numeric_limits<double>::epsilon()) sigma_i = 1;
-      if (sigma_j < std::numeric_limits<double>::epsilon()) sigma_j = 1;
-
-      out(static_cast<Eigen::Index>(i), static_cast<Eigen::Index>(j)) = cov_d1d2[i * num_vars1 + j] / (sigma_i * sigma_j);
+      std::stringstream ss;
+      ss << "Number of parameter labels provided for block " << index_block << " does not match actual number of parameters in that block: " \
+         << "have " << parameter_names[index_block].size() << " labels and " << block_size << " parameters";
+      throw CovarianceException(ss.str());
     }
+    n_params_in_selected += block_size;
   }
-  return out;
-}
 
-Eigen::MatrixXd computePoseCovariance(ceres::Problem& problem, const Pose6d& pose, const ceres::Covariance::Options& options)
-{
-  return computeDVCovariance(problem, pose.values.data(), 6, options);
-}
-
-Eigen::MatrixXd computePose2DVCovariance(ceres::Problem &problem, const Pose6d &pose, const double* dptr, std::size_t num_vars, const ceres::Covariance::Options& options)
-{
-  return computeDV2DVCovariance(problem, pose.values.data(), 6, dptr, num_vars, options);
-}
-
-Eigen::MatrixXd computePose2PoseCovariance(ceres::Problem &problem, const Pose6d &p1, const Pose6d &p2, const ceres::Covariance::Options& options)
-{
-  return computeDV2DVCovariance(problem, p1.values.data(), 6, p2.values.data(), 6, options);
-}
-
-Eigen::MatrixXd computeDVCovariance(ceres::Problem &problem, const double * dptr, const std::size_t& num_vars, const ceres::Covariance::Options& options)
-{
+  // 1. Compute covariance matrix
   ceres::Covariance covariance(options);
 
-  std::vector<std::pair<const double*, const double*> > covariance_pairs;
-  covariance_pairs.push_back(std::make_pair(dptr, dptr));
+  if(!covariance.Compute(parameter_blocks, &problem))
+    throw CovarianceException("Could not compute covariance in computeCovariance()");
 
-  if(!covariance.Compute(covariance_pairs, &problem))
-    throw CovarianceException("Could not compute covariance in computeDVCovariance()");
+  Eigen::MatrixXd cov_matrix(n_params_in_selected, n_params_in_selected);
+  if (!covariance.GetCovarianceMatrix(parameter_blocks, cov_matrix.data()))
+  {
+    throw CovarianceException("GetCovarianceMatrix failed in computeCovariance()");
+  }
 
-  double cov[num_vars*num_vars];
-  if(!covariance.GetCovarianceBlock(dptr, dptr, cov))
-    throw CovarianceException("GetCovarianceBlock failed in computeDVCovariance()");
-
-  return covToEigenCorr(cov, num_vars);
-}
-
-Eigen::MatrixXd computeDV2DVCovariance(ceres::Problem &P, const double* dptr1, const std::size_t num_vars1, const double* dptr2, const std::size_t num_vars2, const ceres::Covariance::Options& options)
-{
-  ceres::Covariance covariance(options);
-
-  std::vector<std::pair<const double*, const double*> > covariance_pairs;
-  covariance_pairs.push_back(std::make_pair(dptr1, dptr1));
-  covariance_pairs.push_back(std::make_pair(dptr2, dptr2));
-  covariance_pairs.push_back(std::make_pair(dptr1, dptr2));
-
-  if(!covariance.Compute(covariance_pairs, &P))
-    throw CovarianceException("Could not compute covariance in computeDV2DVCovariance()");
-
-  double cov_d1d1[num_vars1*num_vars2], cov_d2d2[num_vars2*num_vars2], cov_d1d2[num_vars1*num_vars2];
-  if(!(covariance.GetCovarianceBlock(dptr1, dptr1, cov_d1d1) &&
-       covariance.GetCovarianceBlock(dptr2, dptr2, cov_d2d2) &&
-       covariance.GetCovarianceBlock(dptr1, dptr2, cov_d1d2)))
-    throw CovarianceException("GetCovarianceBlock failed in computeDV2DVCovariance()");
-
-  return covToEigenOffDiagCorr(cov_d1d1, num_vars1, cov_d2d2, num_vars2, cov_d1d2);
-}
-
-Eigen::MatrixXd computeFullDV2DVCovariance(ceres::Problem &problem,
-                                           const double *dptr1,
-                                           const std::size_t num_vars1,
-                                           const double *dptr2,
-                                           const std::size_t num_vars2,
-                                           const ceres::Covariance::Options &options)
-{
-  // Calculate the individual covariance matrices
-  // Covariance of parameter 1 with itself
-  Eigen::MatrixXd cov_p1 = computeDVCovariance(problem, dptr1, num_vars1, options);
-  // Covariance of parameter 2 with itself
-  Eigen::MatrixXd cov_p2 = computeDVCovariance(problem, dptr2, num_vars2, options);
-  // Covariance of parameter 1 with parameter 2
-  Eigen::MatrixXd cov_p1p2
-    = computeDV2DVCovariance(problem, dptr1, num_vars1, dptr2, num_vars2, options);
-
-  // Total covariance matrix
-  Eigen::MatrixXd cov;
-  const std::size_t n = num_vars1 + num_vars2;
-  cov.resize(n, n);
-
-  /*    |     P1    |     P2    |
+  // 2. Save original covariance matrix output
+  // For parameter blocks [p1, p2], the structure of this matrix will be:
+  /*    |     p1    |     p2    |
    * ---|-----------|-----------|
-   * P1 | C(p1, p1) | C(p1, p2) |
-   * P2 | C(p2, p1) | C(p2, p2) |
+   * p1 | C(p1, p1) | C(p1, p2) |
+   * p2 | C(p2, p1) | C(p2, p2) |
    */
-  cov.block(0, 0, num_vars1, num_vars1) = cov_p1;
-  cov.block(num_vars1, num_vars1, num_vars2, num_vars2) = cov_p2;
-  cov.block(0, num_vars1, num_vars1, num_vars2) = cov_p1p2;
-  cov.block(num_vars1, 0, num_vars2, num_vars1) = cov_p1p2.transpose();
+  CovarianceResult res;
+  res.covariance_matrix = cov_matrix;
 
-  return cov;
+  // 3. Compute matrix of standard deviations and correlation coefficients.
+  // The arrangement of elements in the correlation matrix matches the order in the covariance matrix.
+  Eigen::MatrixXd correlation_matrix = computeCorrelationsFromCovariance(cov_matrix);
+  res.correlation_matrix = correlation_matrix;
+
+  // 4. Compose parameter label strings
+  std::vector<std::string> parameter_names_concatenated;
+  for (auto names : parameter_names)
+  {
+    parameter_names_concatenated.insert(parameter_names_concatenated.end(), names.begin(), names.end());
+  }
+
+  // 5. Create NamedParams for covariance and correlation results, which include labels and values for the parameters. Uses top-right triangular part of matrix.
+  Eigen::Index col_start = 0;
+  for (Eigen::Index row = 0; row < correlation_matrix.rows(); row++)
+  {
+    for (Eigen::Index col = col_start; col < correlation_matrix.rows(); col++)
+    {
+      NamedParam p_corr;
+      p_corr.value = correlation_matrix(row, col);
+
+      if (row == col)  // diagonal element, standard deviation
+      {
+        p_corr.names = std::make_pair(parameter_names_concatenated[static_cast<std::size_t>(row)], "");
+        res.standard_deviations.push_back(p_corr);
+        continue;
+      }
+
+      // otherwise off-diagonal element, correlation coefficient
+      p_corr.names = std::make_pair(parameter_names_concatenated[static_cast<std::size_t>(row)], parameter_names_concatenated[static_cast<std::size_t>(col)]);
+      res.correlation_coeffs.push_back(p_corr);
+
+      // for off-diagonal elements also get covariance
+      NamedParam p_cov;
+      p_cov.value = cov_matrix(row, col);
+      p_cov.names = std::make_pair(parameter_names_concatenated[static_cast<std::size_t>(row)], parameter_names_concatenated[static_cast<std::size_t>(col)]);
+      res.covariances.push_back(p_cov);
+    }
+    col_start++;
+  }
+
+  return res;
 }
-
 }  // namespace rct_optimizations

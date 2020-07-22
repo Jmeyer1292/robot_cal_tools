@@ -54,12 +54,12 @@ DHChain createABBIRB2400()
   t5 << 0.0, 0.0, 0.0, -M_PI / 2.0;
   t6 << 0.085, M_PI, 0.0, 0.0;
 
-  joints.push_back(DHTransform(t1, DHJointType::REVOLUTE));
-  joints.push_back(DHTransform(t2, DHJointType::REVOLUTE));
-  joints.push_back(DHTransform(t3, DHJointType::REVOLUTE));
-  joints.push_back(DHTransform(t4, DHJointType::REVOLUTE));
-  joints.push_back(DHTransform(t5, DHJointType::REVOLUTE));
-  joints.push_back(DHTransform(t6, DHJointType::REVOLUTE));
+  joints.push_back(DHTransform(t1, DHJointType::REVOLUTE, "j1"));
+  joints.push_back(DHTransform(t2, DHJointType::REVOLUTE, "j2"));
+  joints.push_back(DHTransform(t3, DHJointType::REVOLUTE, "j3"));
+  joints.push_back(DHTransform(t4, DHJointType::REVOLUTE, "j4"));
+  joints.push_back(DHTransform(t5, DHJointType::REVOLUTE, "j5"));
+  joints.push_back(DHTransform(t6, DHJointType::REVOLUTE, "j6"));
 
   return DHChain(joints);
 }

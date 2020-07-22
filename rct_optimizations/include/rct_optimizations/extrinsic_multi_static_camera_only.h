@@ -15,7 +15,8 @@
 #ifndef RCT_EXTRINSIC_MULTI_STATIC_CAMERA_ONLY_H
 #define RCT_EXTRINSIC_MULTI_STATIC_CAMERA_ONLY_H
 
-#include "rct_optimizations/types.h"
+#include <rct_optimizations/covariance_types.h>
+#include <rct_optimizations/types.h>
 #include <Eigen/Dense>
 #include <vector>
 
@@ -48,6 +49,14 @@ struct ExtrinsicMultiStaticCameraOnlyProblem
 
   /** @brief Your best guess at the "base frame" to "camera frame" transform; one for each camera */
   std::vector<Eigen::Isometry3d> base_to_camera_guess;
+
+  std::array<std::string, 6> labels_isometry3d = {{"x", "y", "z", "rx", "ry", "rz"}};
+
+  std::string label_base_to_target = "base_to_target";
+
+  std::string label_base_to_camera = "base_to_camera";
+
+  std::vector<std::string> labels_image_observations;
 };
 
 struct ExtrinsicMultiStaticCameraOnlyResult
@@ -78,6 +87,8 @@ struct ExtrinsicMultiStaticCameraOnlyResult
 
   /** @brief The final calibrated result of "base frame" to "camera optical frame". */
   std::vector<Eigen::Isometry3d> base_to_camera;
+
+  CovarianceResult covariance;
 };
 
 ExtrinsicMultiStaticCameraOnlyResult optimize(const ExtrinsicMultiStaticCameraOnlyProblem& params);

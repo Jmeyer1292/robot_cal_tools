@@ -1,6 +1,7 @@
 #ifndef RCT_PNP_H
 #define RCT_PNP_H
 
+#include <rct_optimizations/covariance_types.h>
 #include <rct_optimizations/types.h>
 
 namespace rct_optimizations
@@ -12,6 +13,11 @@ struct PnPProblem
   Correspondence2D3D::Set correspondences;
 
   Eigen::Isometry3d camera_to_target_guess;
+
+  std::string label_camera_to_target_guess = "camera_to_target";
+  const std::array<std::string, 3> labels_translation = {{"x", "y", "z"}};
+  const std::array<std::string, 3> labels_rotation = {{"rx", "ry", "rz"}};
+
 };
 
 struct PnPProblem3D
@@ -19,6 +25,10 @@ struct PnPProblem3D
   Correspondence3D3D::Set correspondences;
 
   Eigen::Isometry3d camera_to_target_guess;
+
+  std::string label_camera_to_target_guess = "camera_to_target";
+  const std::array<std::string, 3> labels_translation = {{"x", "y", "z"}};
+  const std::array<std::string, 3> labels_rotation = {{"rx", "ry", "rz"}};
 };
 
 struct PnPResult
@@ -28,7 +38,8 @@ struct PnPResult
   double final_cost_per_obs;
 
   Eigen::Isometry3d camera_to_target;
-  Eigen::MatrixXd camera_to_target_covariance;
+
+  CovarianceResult covariance;
 };
 
 PnPResult optimize(const PnPProblem& params);

@@ -144,7 +144,6 @@ using KinObservation2D3D = KinematicObservation<2, 3>;
 /** @brief Typedef for kinematic observations of 3D sensor to 3D target correspondences */
 using KinObservation3D3D = KinematicObservation<3, 3>;
 
-
 struct OptimizationException : public std::runtime_error
 {
 public:

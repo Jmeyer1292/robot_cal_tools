@@ -1,9 +1,9 @@
 #include "rct_optimizations/experimental/camera_intrinsic.h"
-#include <rct_optimizations/pnp.h>
 
 #include <rct_optimizations/ceres_math_utilities.h>
-#include <rct_optimizations/eigen_conversions.h>
 #include <rct_optimizations/covariance_analysis.h>
+#include <rct_optimizations/eigen_conversions.h>
+#include <rct_optimizations/pnp.h>
 
 #include <ceres/ceres.h>
 
@@ -221,6 +221,24 @@ rct_optimizations::optimize(const rct_optimizations::IntrinsicEstimationProblem&
     }
   }
 
+  std::vector<const double*> param_blocks;
+  std::vector<std::vector<std::string>> param_labels;
+
+  param_blocks.emplace_back(internal_intrinsics_data.data());
+  param_labels.emplace_back(params.labels_intrinsic_params.begin(), params.labels_intrinsic_params.end());
+
+  for (std::size_t i = 0; i < internal_poses.size(); i++)
+  {
+    param_blocks.emplace_back(internal_poses[i].values.data());
+    std::vector<std::string> labels;
+    // compose labels poseN_x, etc.
+    for (auto label_extr : params.labels_isometry3d)
+    {
+      labels.push_back(params.label_extr + std::to_string(i) + "_" + label_extr);
+    }
+    param_labels.push_back(labels);
+  }
+
   // Solve
   ceres::Solver::Options options;
   options.max_num_iterations = 1000;
@@ -245,9 +263,7 @@ rct_optimizations::optimize(const rct_optimizations::IntrinsicEstimationProblem&
   result.initial_cost_per_obs = summary.initial_cost / summary.num_residuals;
   result.final_cost_per_obs = summary.final_cost / summary.num_residuals;
 
-  // TODO: How to handle errors while calculating covariance? Possible for optimization to converge even though the covariance matrix is near rank deficient,
-  // which means the result contains (potentially) valid optimization results but partial or invalid covariance results.
-  result.covariance_intr = rct_optimizations::computeDVCovariance(problem, internal_intrinsics_data.data(), 9);
+  result.covariance = rct_optimizations::computeCovariance(problem, param_blocks, param_labels);
 
   return result;
 }

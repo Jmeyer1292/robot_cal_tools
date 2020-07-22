@@ -32,6 +32,8 @@ void printResults(const ExtrinsicMultiStaticCameraMovingTargetResult &opt_result
     std::cout << "xyz=\"" << t.translation()(0) << " " << t.translation()(1) << " " << t.translation()(2) << "\"\n";
     std::cout << "rpy=\"" << rpy(2) << "(" << rpy(2) * 180/M_PI << " deg) " << rpy(1) << "(" << rpy(1) * 180/M_PI << " deg) " << rpy(0) << "(" << rpy(0) * 180/M_PI << " deg)\"\n";
   }
+
+  std::cout << opt_result.covariance.toString() << std::endl;
 }
 
 struct Observations
@@ -153,6 +155,14 @@ TEST(ExtrinsicMultiStaticCamera, single_camera)
     EXPECT_TRUE(opt_result.base_to_camera[c].isApprox(base_to_camera[c], 1e-8));
   }
 
+  EXPECT_EQ(opt_result.covariance.covariance_matrix.rows(), 12);
+  EXPECT_EQ(opt_result.covariance.covariance_matrix.cols(), 12);
+  EXPECT_EQ(opt_result.covariance.correlation_matrix.rows(), 12);
+  EXPECT_EQ(opt_result.covariance.correlation_matrix.cols(), 12);
+  EXPECT_EQ(opt_result.covariance.standard_deviations.size(), 12);
+  EXPECT_EQ(opt_result.covariance.covariances.size(), 66);
+  EXPECT_EQ(opt_result.covariance.correlation_coeffs.size(), 66);
+
   printResults(opt_result);
 }
 
@@ -228,12 +238,20 @@ TEST(ExtrinsicMultiStaticCamera, two_cameras)
   ExtrinsicMultiStaticCameraMovingTargetResult opt_result = optimize(problem_def);
 
   EXPECT_TRUE(opt_result.converged);
-  EXPECT_TRUE(opt_result.final_cost_per_obs < 1e-15);
+  EXPECT_LT(opt_result.final_cost_per_obs, 1e-15);
   EXPECT_TRUE(opt_result.wrist_to_target.isApprox(wrist_to_target, 1e-8));
   for (std::size_t c = 0; c < opt_result.base_to_camera.size(); ++c)
   {
     EXPECT_TRUE(opt_result.base_to_camera[c].isApprox(base_to_camera[c], 1e-8));
   }
+
+  EXPECT_EQ(opt_result.covariance.covariance_matrix.rows(), 18);
+  EXPECT_EQ(opt_result.covariance.covariance_matrix.cols(), 18);
+  EXPECT_EQ(opt_result.covariance.correlation_matrix.rows(), 18);
+  EXPECT_EQ(opt_result.covariance.correlation_matrix.cols(), 18);
+  EXPECT_EQ(opt_result.covariance.standard_deviations.size(), 18);
+  EXPECT_EQ(opt_result.covariance.covariances.size(), 153);
+  EXPECT_EQ(opt_result.covariance.correlation_coeffs.size(), 153);
 
   printResults(opt_result);
 }

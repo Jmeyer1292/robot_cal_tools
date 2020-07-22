@@ -6,8 +6,14 @@ namespace rct_optimizations
 // DH Transform
 
 DHTransform::DHTransform(const Eigen::Vector4d &params_, DHJointType type_)
+  : DHTransform(params_, type_, "joint")
+{
+}
+
+DHTransform::DHTransform(const Eigen::Vector4d &params_, DHJointType type_, const std::string& name_)
   : params(params_)
   , type(type_)
+  , name(name_)
 {
 }
 
@@ -21,6 +27,16 @@ double DHTransform::createRandomJointValue() const
 
   return dist(mt_rand);
 }
+
+std::array<std::string, 4> DHTransform::getParamLabels() const
+{
+  return  std::array<std::string, 4>({name + "_d",
+                                      name + "_theta",
+                                      name + "_r",
+                                      name + "_alpha",
+                                      });
+}
+
 
 // DH Chain
 
@@ -64,5 +80,16 @@ std::vector<DHJointType> DHChain::getJointTypes() const
   }
   return out;
 }
+
+std::vector<std::array<std::string, 4>> DHChain::getParamLabels() const
+{
+  std::vector<std::array<std::string, 4>> out;
+  for (const auto &t : transforms_)
+  {
+    out.push_back(t.getParamLabels());
+  }
+  return out;
+}
+
 
 } // namespace rct_optimizations

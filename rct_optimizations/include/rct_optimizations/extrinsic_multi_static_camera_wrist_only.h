@@ -15,7 +15,8 @@
 #ifndef RCT_EXTRINSIC_MULTI_STATIC_CAMERA_WRIST_ONLY_H
 #define RCT_EXTRINSIC_MULTI_STATIC_CAMERA_WRIST_ONLY_H
 
-#include "rct_optimizations/types.h"
+#include <rct_optimizations/types.h>
+#include <rct_optimizations/covariance_types.h>
 #include <Eigen/Dense>
 #include <vector>
 
@@ -49,6 +50,14 @@ struct ExtrinsicMultiStaticCameraMovingTargetWristOnlyProblem
    * calibrating the set of cameras using a single transformation.
     */
   std::vector<Eigen::Isometry3d> base_to_camera_guess;
+
+  const std::array<std::string, 6> labels_isometry3d = {{"x", "y", "z", "rx", "ry", "rz"}};
+
+  std::string label_wrist_to_target = "wrist_to_target";
+
+  std::string label_base_to_camera = "base_to_camera";
+
+  std::vector<std::string> labels_image_observations;
 };
 
 struct ExtrinsicMultiStaticCameraMovingTargetWristOnlyResult
@@ -83,6 +92,8 @@ struct ExtrinsicMultiStaticCameraMovingTargetWristOnlyResult
    * @brief The final calibrated result of "base frame" to "camera optical frame".
    */
   std::vector<Eigen::Isometry3d> base_to_camera;
+
+  CovarianceResult covariance;
 };
 
 ExtrinsicMultiStaticCameraMovingTargetWristOnlyResult optimize(const ExtrinsicMultiStaticCameraMovingTargetWristOnlyProblem& params);
