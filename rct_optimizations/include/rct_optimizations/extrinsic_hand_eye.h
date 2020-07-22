@@ -30,11 +30,11 @@ struct ExtrinsicHandEyeProblem2D3D
   Eigen::Isometry3d target_mount_to_target_guess;
   Eigen::Isometry3d camera_mount_to_camera_guess;
 
-  const std::array<std::string, 6> labels_isometry3d = {"x", "y", "z", "rx", "ry", "rz"};
+  const std::array<std::string, 6> labels_isometry3d = {{"x", "y", "z", "rx", "ry", "rz"}};
 
-  std::string label_target_mount_to_target = "wrist_to_target";
+  std::string label_target_mount_to_target = "target_mount_to_target";
 
-  std::string label_camera_mount_to_camera = "base_to_camera";
+  std::string label_camera_mount_to_camera = "camera_mount_to_camera";
 };
 
 struct ExtrinsicHandEyeProblem3D3D
@@ -43,11 +43,11 @@ struct ExtrinsicHandEyeProblem3D3D
   Eigen::Isometry3d target_mount_to_target_guess;
   Eigen::Isometry3d camera_mount_to_camera_guess;
 
-  const std::array<std::string, 6> labels_isometry3d = {"x", "y", "z", "rx", "ry", "rz"};
+  const std::array<std::string, 6> labels_isometry3d = {{"x", "y", "z", "rx", "ry", "rz"}};
 
-  std::string label_target_mount_to_target = "wrist_to_target";
+  std::string label_target_mount_to_target = "target_mount_to_target";
 
-  std::string label_camera_mount_to_camera = "base_to_camera";
+  std::string label_camera_mount_to_camera = "camera_mount_to_camera";
 };
 
 struct ExtrinsicHandEyeResult

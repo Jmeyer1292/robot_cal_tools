@@ -15,8 +15,8 @@ struct PnPProblem
   Eigen::Isometry3d camera_to_target_guess;
 
   std::string label_camera_to_target_guess = "camera_to_target";
-  const std::array<std::string, 3> labels_translation = {"x", "y", "z"};
-  const std::array<std::string, 3> labels_rotation = {"rx", "ry", "rz"};
+  const std::array<std::string, 3> labels_translation = {{"x", "y", "z"}};
+  const std::array<std::string, 3> labels_rotation = {{"rx", "ry", "rz"}};
 
 };
 
@@ -27,8 +27,8 @@ struct PnPProblem3D
   Eigen::Isometry3d camera_to_target_guess;
 
   std::string label_camera_to_target_guess = "camera_to_target";
-  const std::array<std::string, 3> labels_translation = {"x", "y", "z"};
-  const std::array<std::string, 3> labels_rotation = {"rx", "ry", "rz"};
+  const std::array<std::string, 3> labels_translation = {{"x", "y", "z"}};
+  const std::array<std::string, 3> labels_rotation = {{"rx", "ry", "rz"}};
 };
 
 struct PnPResult

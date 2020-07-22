@@ -93,7 +93,7 @@ struct CovarianceResult
   }
 
   /**
-   * @brief Compose a string with a list of NamedParams for correlation coefficeints above @ref threshold.
+   * @brief Compose a string with a list of NamedParams for correlation coefficients above @ref threshold.
    * @param threshold
    * @return
    */
