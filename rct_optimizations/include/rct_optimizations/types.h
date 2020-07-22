@@ -144,12 +144,23 @@ using KinObservation2D3D = KinematicObservation<2, 3>;
 /** @brief Typedef for kinematic observations of 3D sensor to 3D target correspondences */
 using KinObservation3D3D = KinematicObservation<3, 3>;
 
+/**
+ * @brief A set of data representing a single measurement of the state of a system where
+ * a kinematic device holding a "camera" directly observes the position and orientation of a target
+ * mounted on a separate kinematic device
+ *
+ * This is intended to be used for kinematic calibration in which a laser tracker or camera fiducial
+ * tracking system provides pose measurements directly, rather than observing corresponding
+ * features with a 2D/3D camera
+ *
+ * Note: if the camera or target is fixed, the size of the joint state vector can be zero
+ */
 struct KinematicMeasurement
 {
   using Set = std::vector<KinematicMeasurement>;
 
-  /** @brief A measurement of the full 6-DoF target pose */
-  Eigen::Isometry3d pose;
+  /** @brief A measurement of the full 6-DoF target pose as observed by the camera */
+  Eigen::Isometry3d camera_to_target;
   /** @brief The joint values of the kinematic chain to which the camera is mounted */
   Eigen::VectorXd camera_chain_joints;
   /** @brief The joint values of the kinematic chain to which the target is mounted */

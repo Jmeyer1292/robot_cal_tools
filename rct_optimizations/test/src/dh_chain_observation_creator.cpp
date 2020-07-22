@@ -191,7 +191,7 @@ KinematicMeasurement::Set createKinematicMeasurements(
     const Eigen::Isometry3d camera_base_to_target = camera_base_to_target_base
                                                     * to_target_chain.getFK(m.target_chain_joints)
                                                     * true_mount_to_target;
-    m.pose = camera_base_to_camera.inverse() * camera_base_to_target;
+    m.camera_to_target = camera_base_to_camera.inverse() * camera_base_to_target;
 
     measurements.push_back(m);
   }
