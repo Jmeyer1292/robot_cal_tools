@@ -14,7 +14,6 @@ enum class DHJointType : unsigned
 {
   LINEAR,
   REVOLUTE,
-  FIXED
 };
 
 template<typename T>
@@ -66,7 +65,7 @@ struct DHTransform
       updated_params(1) += joint_value;
       break;
     default:
-      break;
+      throw std::runtime_error("Unknown DH joint type");
     }
 
     // Perform the DH transformations
@@ -100,11 +99,15 @@ struct DHTransform
    *  r: The linear offset in X
    *  alpha: The rotational offset about X
    */
-  Eigen::Vector4d params;
-  DHJointType type; /** @brief The type of actuation of the joint */
-  double max = M_PI; /** @brief Joint max */
-  double min = -M_PI; /** @brief Joint min */
-  std::string name; /** @brief Label for this transform */
+  const Eigen::Vector4d params;
+  /** @brief The type of actuation of the joint */
+  const DHJointType type;
+  /** @brief Joint maximum value */
+  double max = M_PI;
+  /** @brief Joint minimum value */
+  double min = -M_PI;
+  /** @brief Label for this transform */
+  std::string name;
 };
 
 /**
@@ -113,37 +116,36 @@ struct DHTransform
 class DHChain
 {
 public:
-    DHChain(std::vector<DHTransform> transforms);
+  DHChain(std::vector<DHTransform> transforms,
+          const Eigen::Isometry3d& base_offset = Eigen::Isometry3d::Identity());
 
   /**
-   * @brief Calculates forward kinematics for the robot with the joints provided.
+   * @brief Calculates forward kinematics for the chain with the joints provided.
    * Note: the transform to the n-th link is calculated, where n is the size of @ref joint_values
-   * @param joint_values - The joint values with which to calculate forward kinematics.
+   * @param joint_values - The joint values with which to calculate forward kinematics (size: [<= @ref dof()])
    * @return
-   * @throws Exception if the size of joint values is larger than the number of DH transforms in the robot
+   * @throws Exception if the size of joint values is larger than the number of DH transforms in the chain
    */
   template<typename T>
   Isometry3<T> getFK(const Eigen::Matrix<T, Eigen::Dynamic, 1> &joint_values) const
   {
-    Isometry3<T> transform(Isometry3<T>::Identity());
-    for (Eigen::Index i = 0; i < joint_values.size(); ++i)
-    {
-      transform = transform * transforms_.at(i).createRelativeTransform(joint_values[i]);
-    }
-    return transform;
+    Eigen::Matrix<T, Eigen::Dynamic, 4> offsets = Eigen::Matrix<T, Eigen::Dynamic, 4>::Zero(dof(), 4);
+    return getFK(joint_values, offsets);
   }
 
   /**
-   * @brief Override function of @ref getFK but using a data pointer for easier integration with Ceres
-   * @param joint_values
-   * @param offsets
+   * @brief Calculates the forward kinematics for the chain given a set of joint values and DH parameter offsets
+   * Note: the transform to the n-th link is calculated, where n is the size of @ref joint_values
+   * @param joint_values - The joint values with which to calculate the forward kinematics (size: [<= @ref dof()])
+   * @param offsets - The DH parameter offsets to apply when calculating the forward kinematics (size: [@ref dof() x 4])
    * @return
+   * @throws Exception if the size of the joint values is larger than the number of DH transforms in the chain
    */
   template<typename T>
   Isometry3<T> getFK(const Eigen::Matrix<T, Eigen::Dynamic, 1>& joint_values,
                      const Eigen::Matrix<T, Eigen::Dynamic, 4>& offsets) const
   {
-    Isometry3<T> transform(Isometry3<T>::Identity());
+    Isometry3<T> transform(base_offset_.cast<T>());
     for (Eigen::Index i = 0; i < joint_values.size(); ++i)
     {
       const Eigen::Matrix<T, 1, 4> &offset = offsets.row(i);
@@ -165,7 +167,7 @@ public:
   std::size_t dof() const;
 
   /**
-   * @brief Gets a dof x 4 matrix of the DH parameters
+   * @brief Gets a @ref dof() x 4 matrix of the DH parameters
    * @return
    */
   Eigen::MatrixX4d getDHTable() const;
@@ -176,11 +178,17 @@ public:
    */
   std::vector<DHJointType> getJointTypes() const;
 
+  /**
+   * @brief Returns the labels of the DH parameters for each DH transform in the chain
+   * @return
+   */
   std::vector<std::array<std::string, 4>> getParamLabels() const;
 
 protected:
   /** @brief The DH transforms that make up the chain */
-  std::vector<DHTransform> transforms_;
+  const std::vector<DHTransform> transforms_;
+  /** @brief Fixed transform offset to the beginning of the chain */
+  const Eigen::Isometry3d base_offset_;
 };
 
 } // namespace rct_optimizations
