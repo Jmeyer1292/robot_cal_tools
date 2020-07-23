@@ -57,26 +57,58 @@ DHChain createChain(const Eigen::MatrixXd &dh, const std::vector<DHJointType> &j
 
 DHChain createABBIRB2400()
 {
-  std::vector<DHTransform> joints;
-  joints.reserve(6);
+  std::vector<DHTransform> transforms;
+  transforms.reserve(6);
 
-  Eigen::Vector4d t1, t2, t3, t4, t5, t6;
+  Eigen::Vector4d p1, p2, p3, p4, p5, p6;
 
-  t1 << 0.615, 0.0, 0.100, -M_PI / 2.0;
-  t2 << 0.0, -M_PI / 2.0, 0.705, 0.0;
-  t3 << 0.0, 0.0, 0.135, -M_PI / 2.0;
-  t4 << 0.755, 0.0, 0.0, M_PI / 2.0;
-  t5 << 0.0, 0.0, 0.0, -M_PI / 2.0;
-  t6 << 0.085, M_PI, 0.0, 0.0;
+  p1 << 0.615, 0.0, 0.100, -M_PI / 2.0;
+  p2 << 0.0, -M_PI / 2.0, 0.705, 0.0;
+  p3 << 0.0, 0.0, 0.135, -M_PI / 2.0;
+  p4 << 0.755, 0.0, 0.0, M_PI / 2.0;
+  p5 << 0.0, 0.0, 0.0, -M_PI / 2.0;
+  p6 << 0.085, M_PI, 0.0, 0.0;
 
-  joints.push_back(DHTransform(t1, DHJointType::REVOLUTE, "j1"));
-  joints.push_back(DHTransform(t2, DHJointType::REVOLUTE, "j2"));
-  joints.push_back(DHTransform(t3, DHJointType::REVOLUTE, "j3"));
-  joints.push_back(DHTransform(t4, DHJointType::REVOLUTE, "j4"));
-  joints.push_back(DHTransform(t5, DHJointType::REVOLUTE, "j5"));
-  joints.push_back(DHTransform(t6, DHJointType::REVOLUTE, "j6"));
+  transforms.emplace_back(p1, DHJointType::REVOLUTE, "j1");
+  transforms.emplace_back(p2, DHJointType::REVOLUTE, "j2");
+  transforms.emplace_back(p3, DHJointType::REVOLUTE, "j3");
+  transforms.emplace_back(p4, DHJointType::REVOLUTE, "j4");
+  transforms.emplace_back(p5, DHJointType::REVOLUTE, "j5");
+  transforms.emplace_back(p6, DHJointType::REVOLUTE, "j6");
 
-  return DHChain(joints);
+  return DHChain(transforms);
+}
+
+DHChain createTwoAxisPositioner()
+{
+  std::vector<DHTransform> transforms;
+  transforms.reserve(2);
+
+  Eigen::Vector4d p1, p2;
+  p1 << 0.0, 0.0, 0.0, -M_PI / 2.0;
+  p2 << -0.475, -M_PI / 2.0, 0.0, 0.0;
+
+  // Add the first DH transform
+  {
+    DHTransform t(p1, DHJointType::REVOLUTE, "j1");
+    t.max = M_PI;
+    t.min = -M_PI;
+    transforms.push_back(t);
+  }
+  // Add the second DH transform
+  {
+    DHTransform dh_transform(p2, DHJointType::REVOLUTE, "j2");
+    dh_transform.max = 2.0 * M_PI;
+    dh_transform.min = -2.0 * M_PI;
+    transforms.push_back(dh_transform);
+  }
+
+  // Set an arbitrary base offset
+  Eigen::Isometry3d base_offset(Eigen::Isometry3d::Identity());
+  base_offset.translate(Eigen::Vector3d(2.2, 0.0, 1.6));
+  base_offset.rotate(Eigen::AngleAxisd(M_PI / 2.0, Eigen::Vector3d::UnitX()));
+
+  return DHChain(transforms, base_offset);
 }
 
 DHChain perturbDHChain(const DHChain &in, const double stddev)

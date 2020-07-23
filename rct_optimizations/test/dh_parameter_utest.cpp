@@ -4,10 +4,10 @@
 
 using namespace rct_optimizations;
 
-TEST(DHChain, FKTest)
+TEST(DHChain, FKTestABBIRB2400)
 {
   DHChain robot = test::createABBIRB2400();
-  Eigen::Isometry3d transform = robot.getFK<double>(Eigen::VectorXd::Zero(6));
+  Eigen::Isometry3d transform = robot.getFK<double>(Eigen::VectorXd::Zero(robot.dof()));
   std::cout << transform.matrix() << std::endl;
 
   Eigen::Isometry3d desired(Eigen::Isometry3d::Identity());
@@ -15,7 +15,19 @@ TEST(DHChain, FKTest)
   desired.rotate(Eigen::AngleAxisd(M_PI / 2.0, Eigen::Vector3d::UnitY()));
   std::cout << desired.matrix() << std::endl;
 
-  EXPECT_TRUE(transform.isApprox(desired, std::numeric_limits<double>::epsilon()));
+  EXPECT_TRUE(transform.isApprox(desired));
+}
+
+TEST(DHChain, FKTestPositioner)
+{
+  DHChain robot = test::createTwoAxisPositioner();
+  Eigen::Isometry3d transform = robot.getFK<double>(Eigen::VectorXd::Zero(robot.dof()));
+
+  Eigen::Isometry3d desired = Eigen::Isometry3d::Identity();
+  desired.translate(Eigen::Vector3d(2.2, 0.0, 1.125));
+  desired.rotate(Eigen::AngleAxisd(-M_PI / 2.0, Eigen::Vector3d::UnitZ()));
+
+  EXPECT_TRUE(transform.isApprox(desired));
 }
 
 TEST(DHChain, NoisyFKTest)
@@ -28,7 +40,7 @@ TEST(DHChain, NoisyFKTest)
 
   Eigen::MatrixX4d dh_offsets = Eigen::MatrixX4d(robot.dof(), 4).unaryExpr([&](float) { return dist(mt_rand); });
 
-  Eigen::Isometry3d transform = robot.getFK<double>(Eigen::VectorXd::Zero(6), dh_offsets);
+  Eigen::Isometry3d transform = robot.getFK<double>(Eigen::VectorXd::Zero(robot.dof()), dh_offsets);
   std::cout << "FK transform with noise\n" << transform.matrix() << std::endl;
 
   Eigen::Isometry3d desired(Eigen::Isometry3d::Identity());
@@ -36,17 +48,17 @@ TEST(DHChain, NoisyFKTest)
   desired.rotate(Eigen::AngleAxisd(M_PI / 2.0, Eigen::Vector3d::UnitY()));
   std::cout << "Desired FK transform \n" << desired.matrix() << std::endl;
 
-  EXPECT_FALSE(transform.isApprox(desired, std::numeric_limits<double>::epsilon()));
+  EXPECT_FALSE(transform.isApprox(desired));
 }
 
 TEST(DHChain, FKWithJointSubsetTest)
 {
   DHChain robot = test::createABBIRB2400();
-  for (std::size_t i = 0; i < 6; ++i)
+  for (std::size_t i = 0; i < robot.dof(); ++i)
   {
     EXPECT_NO_THROW(robot.getFK<double>(Eigen::VectorXd::Zero(i)));
   }
-  EXPECT_THROW(robot.getFK<double>(Eigen::VectorXd::Zero(7)), std::out_of_range);
+  EXPECT_THROW(robot.getFK<double>(Eigen::VectorXd::Zero(robot.dof() + 1)), std::out_of_range);
 }
 
 TEST(DHChain, generateObservations3D)
@@ -71,7 +83,7 @@ class DHChainObservationGeneration : public ::testing::Test
     , target(7, 5, 0.025)
   {
     // Create a transform to the tool0 of the robot at it's all-zero position
-    camera_base_to_target_base = camera_chain.getFK<double>(Eigen::VectorXd::Zero(6));
+    camera_base_to_target_base = camera_chain.getFK<double>(Eigen::VectorXd::Zero(camera_chain.dof()));
 
     // Place the target 0.5m in front of the robot's all-zero position, facing back at the robot
     camera_base_to_target_base.translate(Eigen::Vector3d(0.0, 0.0, 0.5));
