@@ -58,7 +58,7 @@ TEST(DHChain, FKWithJointSubsetTest)
   {
     EXPECT_NO_THROW(robot.getFK<double>(Eigen::VectorXd::Zero(i)));
   }
-  EXPECT_THROW(robot.getFK<double>(Eigen::VectorXd::Zero(robot.dof() + 1)), std::out_of_range);
+  EXPECT_THROW(robot.getFK<double>(Eigen::VectorXd::Zero(robot.dof() + 1)), std::runtime_error);
 }
 
 TEST(DHChain, generateObservations3D)

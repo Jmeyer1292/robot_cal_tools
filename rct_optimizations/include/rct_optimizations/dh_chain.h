@@ -139,12 +139,27 @@ public:
    * @param joint_values - The joint values with which to calculate the forward kinematics (size: [<= @ref dof()])
    * @param offsets - The DH parameter offsets to apply when calculating the forward kinematics (size: [@ref dof() x 4])
    * @return
-   * @throws Exception if the size of the joint values is larger than the number of DH transforms in the chain
+   * @throws Exception if the size of @ref joint_values is larger than the number of DH transforms in the chain
+   * or if the size of @ref joint_values is larger than the rows of DH offsets
    */
   template<typename T>
   Isometry3<T> getFK(const Eigen::Matrix<T, Eigen::Dynamic, 1>& joint_values,
                      const Eigen::Matrix<T, Eigen::Dynamic, 4>& offsets) const
   {
+    if (joint_values.size() > dof())
+    {
+      std::stringstream ss;
+      ss << "Joint values size (" << joint_values.size() << ") is larger than the chain DoF (" << dof() << ")";
+      throw std::runtime_error(ss.str());
+    }
+    else if (joint_values.size() > offsets.rows())
+    {
+      std::stringstream ss;
+      ss << "Joint values size (" << joint_values.size() << ") is larger than the rows of DH offsets ("
+         << offsets.rows() << ")";
+      throw std::runtime_error(ss.str());
+    }
+
     Isometry3<T> transform(base_offset_.cast<T>());
     for (Eigen::Index i = 0; i < joint_values.size(); ++i)
     {
