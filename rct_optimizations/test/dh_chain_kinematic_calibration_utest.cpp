@@ -4,6 +4,11 @@
 #include <rct_optimizations_tests/utilities.h>
 #include <rct_optimizations_tests/observation_creator.h>
 
+#include <boost/accumulators/accumulators.hpp>
+#include <boost/accumulators/statistics.hpp>
+
+#include <rct_optimizations/solver.h>
+
 using namespace rct_optimizations;
 
 class DHChainKinematicCalibration : public ::testing::Test
@@ -110,6 +115,7 @@ TEST_F(DHChainKinematicCalibration, TestCalibrationPerfectGuessPerfectDH)
   // Target chain: empty
   KinematicCalibrationProblem2D3D problem(test::createABBIRB2400(), DHChain({}));
   problem.intr = camera.intr;
+
   problem.observations = test::createKinematicObservations(problem.camera_chain,
                                                            problem.target_chain,
                                                            camera_mount_to_camera,
@@ -151,6 +157,132 @@ TEST_F(DHChainKinematicCalibration, TestCalibrationPerfectGuessPerfectDH)
 
   std::cout << result.covariance.toString() << std::endl;
   std::cout << result.covariance.printCorrelationCoeffAboveThreshold(0.3) << std::endl;
+}
+
+TEST_F(DHChainKinematicCalibration, TestCalibrationPerfectGuessPerturbedDH)
+{
+  // Create the problem with the camera chain and target chain
+  // Camera chain: 6-DOF robot
+  // Target chain: empty
+  DHChain nominal_chain = test::createABBIRB2400();
+
+  KinematicCalibrationProblem2D3D problem(test::perturbDHCHain(nominal_chain, 1.0e-3), DHChain({}));
+  problem.intr = camera.intr;
+  problem.observations = test::createKinematicObservations(nominal_chain,
+                                                           problem.target_chain,
+                                                           camera_mount_to_camera,
+                                                           target_mount_to_target,
+                                                           camera_base_to_target_base,
+                                                           target,
+                                                           camera,
+                                                           n_observations);
+
+  // Give the problem perfect guesses regarding the transforms
+  problem.camera_mount_to_camera_guess = camera_mount_to_camera;
+  problem.target_mount_to_target_guess = target_mount_to_target;
+  problem.camera_base_to_target_base_guess = camera_base_to_target_base;
+
+  // Solve the problem
+  KinematicCalibrationResult result = optimize(problem);
+
+  EXPECT_TRUE(result.converged);
+
+  // Expect the final residual to be less than 0.5 pixels
+  EXPECT_LT(result.final_cost_per_obs, 0.5*0.5);
+
+  // Test the result by moving the robot around to a lot of positions and seeing of the results match
+  DHChain optimized_chain = test::createChain(problem.camera_chain.getDHTable() + result.camera_chain_dh_offsets,
+                                              problem.camera_chain.getJointTypes());
+
+  namespace ba = boost::accumulators;
+  ba::accumulator_set<double, ba::stats<ba::tag::mean, ba::tag::variance>> pos_acc;
+  ba::accumulator_set<double, ba::stats<ba::tag::mean, ba::tag::variance>> ori_acc;
+
+  for (std::size_t i = 0; i < 30; ++i)
+  {
+    Eigen::VectorXd random_pose = nominal_chain.createUniformlyRandomPose();
+
+    // Nominal chain
+    Eigen::Isometry3d nominal_fk = nominal_chain.getFK(random_pose) * camera_mount_to_camera;
+
+    // Optimized chain
+    Eigen::Isometry3d optimized_fk = optimized_chain.getFK(random_pose)
+                                     * result.camera_mount_to_camera;
+
+    // Compare
+    Eigen::Isometry3d diff = nominal_fk.inverse() * optimized_fk;
+    pos_acc(diff.translation().norm());
+    ori_acc(Eigen::Quaterniond(nominal_fk.linear()).angularDistance(Eigen::Quaterniond(optimized_fk.linear())));
+  }
+
+  std::cout << "Pos. Mean: " << ba::mean(pos_acc) << std::endl;
+  std::cout << "Pos. Stdev: " << std::sqrt(ba::variance(pos_acc)) << std::endl;
+
+  std::cout << "Ori. Mean: " << ba::mean(ori_acc) << std::endl;
+  std::cout << "Ori. Stdev: " << std::sqrt(ba::variance(ori_acc)) << std::endl;
+}
+
+TEST_F(DHChainKinematicCalibration, TestCalibrationPerturbedGuessPerturbedDH)
+{
+  // Create the problem with the camera chain and target chain
+  // Camera chain: 6-DOF robot
+  // Target chain: empty
+  DHChain nominal_chain = test::createABBIRB2400();
+
+  KinematicCalibrationProblem2D3D problem(test::perturbDHCHain(nominal_chain, 1.0e-3), DHChain({}));
+  problem.intr = camera.intr;
+  problem.observations = test::createKinematicObservations(nominal_chain,
+                                                           problem.target_chain,
+                                                           camera_mount_to_camera,
+                                                           target_mount_to_target,
+                                                           camera_base_to_target_base,
+                                                           target,
+                                                           camera,
+                                                           n_observations);
+
+  // Give the problem perfect guesses regarding the transforms
+  problem.camera_mount_to_camera_guess = test::perturbPose(camera_mount_to_camera, 0.05, 0.05);
+  problem.target_mount_to_target_guess = test::perturbPose(target_mount_to_target, 0.05, 0.05);
+  problem.camera_base_to_target_base_guess = test::perturbPose(camera_base_to_target_base, 0.05, 0.05);
+
+  // Solve the problem
+  KinematicCalibrationResult result = optimize(problem);
+
+  EXPECT_TRUE(result.converged);
+
+  // Expect the final residual to be less than 0.5 pixels
+  EXPECT_LT(result.final_cost_per_obs, 0.5*0.5);
+
+  // Test the result by moving the robot around to a lot of positions and seeing of the results match
+  DHChain optimized_chain = test::createChain(problem.camera_chain.getDHTable() + result.camera_chain_dh_offsets,
+                                              problem.camera_chain.getJointTypes());
+
+  namespace ba = boost::accumulators;
+  ba::accumulator_set<double, ba::stats<ba::tag::mean, ba::tag::variance>> pos_acc;
+  ba::accumulator_set<double, ba::stats<ba::tag::mean, ba::tag::variance>> ori_acc;
+
+  for (std::size_t i = 0; i < 30; ++i)
+  {
+    Eigen::VectorXd random_pose = nominal_chain.createUniformlyRandomPose();
+
+    // Nominal chain
+    Eigen::Isometry3d nominal_fk = nominal_chain.getFK(random_pose) * camera_mount_to_camera;
+
+    // Optimized chain
+    Eigen::Isometry3d optimized_fk = optimized_chain.getFK(random_pose)
+                                     * result.camera_mount_to_camera;
+
+    // Compare
+    Eigen::Isometry3d diff = nominal_fk.inverse() * optimized_fk;
+    pos_acc(diff.translation().norm());
+    ori_acc(Eigen::Quaterniond(nominal_fk.linear()).angularDistance(Eigen::Quaterniond(optimized_fk.linear())));
+  }
+
+  std::cout << "Pos. Mean: " << ba::mean(pos_acc) << std::endl;
+  std::cout << "Pos. Stdev: " << std::sqrt(ba::variance(pos_acc)) << std::endl;
+
+  std::cout << "Ori. Mean: " << ba::mean(ori_acc) << std::endl;
+  std::cout << "Ori. Stdev: " << std::sqrt(ba::variance(ori_acc)) << std::endl;
 }
 
 int main(int argc, char **argv)
