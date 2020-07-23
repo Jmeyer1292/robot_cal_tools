@@ -2,6 +2,7 @@
 #include <rct_optimizations/ceres_math_utilities.h>
 #include <rct_optimizations/eigen_conversions.h>
 #include <rct_optimizations/covariance_analysis.h>
+#include <rct_optimizations/maximum_likelihood.h>
 
 #include <ceres/ceres.h>
 
@@ -24,7 +25,7 @@ Eigen::Isometry3d createTransform(const Eigen::Vector3d& t, const Eigen::Vector3
 KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &params)
 {
   // Initialize the optimization variables
-  // Camera mount to camera (cm_to_c) quaternion and translation
+  // Camera mount to camera (cm_to_c) unnormalized angle axis and translation
   Eigen::Vector3d t_cm_to_c(params.camera_mount_to_camera_guess.translation());
   Eigen::AngleAxisd rot_cm_to_c(params.camera_mount_to_camera_guess.rotation());
   Eigen::Vector3d aa_cm_to_c(rot_cm_to_c.angle() * rot_cm_to_c.axis());
@@ -161,8 +162,43 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &param
     problem.SetParameterBlockConstant(target_chain_dh_offsets.data());
 
   // TODO: Set bounds on the DH parameter offsets
-//  problem.SetParameterUpperBound(camera_chain_dh_offsets.data(), 0, 0.01);
-//  problem.SetParameterLowerBound(camera_chain_dh_offsets.data(), 0, -0.01);
+  //  problem.SetParameterUpperBound(camera_chain_dh_offsets.data(), 0, 0.01);
+  //  problem.SetParameterLowerBound(camera_chain_dh_offsets.data(), 0, -0.01);
+
+
+  if (params.camera_chain.dof() != 0)
+  {
+    Eigen::ArrayXXd mean(
+      Eigen::ArrayXXd::Zero(camera_chain_dh_offsets.rows(), camera_chain_dh_offsets.cols()));
+
+    Eigen::ArrayXXd stdev(Eigen::ArrayXXd::Constant(camera_chain_dh_offsets.rows(),
+                                                    camera_chain_dh_offsets.cols(),
+                                                    1.0e-3));
+
+    auto *fn = new MaximumLikelihood(mean, stdev);
+    auto *cost_block = new ceres::DynamicAutoDiffCostFunction<MaximumLikelihood>(fn);
+    cost_block->AddParameterBlock(camera_chain_dh_offsets.size());
+    cost_block->SetNumResiduals(camera_chain_dh_offsets.size());
+
+    problem.AddResidualBlock(cost_block, nullptr, camera_chain_dh_offsets.data());
+  }
+
+  if (params.target_chain.dof() != 0)
+  {
+    Eigen::ArrayXXd mean(
+      Eigen::ArrayXXd::Zero(target_chain_dh_offsets.rows(), target_chain_dh_offsets.cols()));
+
+    Eigen::ArrayXXd stdev(Eigen::ArrayXXd::Constant(target_chain_dh_offsets.rows(),
+                                                   target_chain_dh_offsets.cols(),
+                                                   1.0e-3));
+
+    auto *fn = new MaximumLikelihood(mean, stdev);
+    auto *cost_block = new ceres::DynamicAutoDiffCostFunction<MaximumLikelihood>(fn);
+    cost_block->AddParameterBlock(target_chain_dh_offsets.size());
+    cost_block->SetNumResiduals(target_chain_dh_offsets.size());
+
+    problem.AddResidualBlock(cost_block, nullptr, target_chain_dh_offsets.data());
+  }
 
   // TODO: Set identity local parameterization on individual variables that we want to remain constant
   // This will likely require an additional argument
