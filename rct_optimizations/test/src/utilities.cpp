@@ -40,6 +40,21 @@ Eigen::Isometry3d perturbPose(const Eigen::Isometry3d& pose, double spatial_nois
   return new_pose;
 }
 
+DHChain createChain(const Eigen::MatrixXd &dh, const std::vector<DHJointType> &joint_types)
+{
+  if (dh.rows() != joint_types.size())
+    throw OptimizationException("DH table rows does not match joint types size");
+
+  std::vector<DHTransform> joints;
+  joints.reserve(joint_types.size());
+  for (std::size_t i = 0; i < joint_types.size(); ++i)
+  {
+    joints.push_back(DHTransform(dh.row(i), joint_types.at(i)));
+  }
+
+  return DHChain(joints);
+}
+
 DHChain createABBIRB2400()
 {
   std::vector<DHTransform> joints;
