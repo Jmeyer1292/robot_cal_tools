@@ -3,6 +3,7 @@
 #include <rct_optimizations/eigen_conversions.h>
 #include <rct_optimizations/covariance_analysis.h>
 #include <rct_optimizations/maximum_likelihood.h>
+#include <rct_optimizations/local_parameterization.h>
 
 #include <ceres/ceres.h>
 
@@ -161,11 +162,12 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &param
   if (params.target_chain.dof() == 0)
     problem.SetParameterBlockConstant(target_chain_dh_offsets.data());
 
-  // TODO: Set bounds on the DH parameter offsets
-  //  problem.SetParameterUpperBound(camera_chain_dh_offsets.data(), 0, 0.01);
-  //  problem.SetParameterLowerBound(camera_chain_dh_offsets.data(), 0, -0.01);
+  // Add subset parameterization to mask variables that shouldn't be optimized
+  std::array<double*, 8> tmp;
+  std::copy_n(parameters.begin(), tmp.size(), tmp.begin());
+  addSubsetParameterization(problem, params.mask, tmp);
 
-
+  // Add a cost to drive the camera chain DH parameters towards an expected mean
   if (params.camera_chain.dof() != 0)
   {
     Eigen::ArrayXXd mean(
@@ -183,6 +185,7 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &param
     problem.AddResidualBlock(cost_block, nullptr, camera_chain_dh_offsets.data());
   }
 
+  // Add a cost to drive the target chain DH parameters towards an expected mean
   if (params.target_chain.dof() != 0)
   {
     Eigen::ArrayXXd mean(
@@ -200,13 +203,11 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &param
     problem.AddResidualBlock(cost_block, nullptr, target_chain_dh_offsets.data());
   }
 
-  // TODO: Set identity local parameterization on individual variables that we want to remain constant
-  // This will likely require an additional argument
-
   // Setup the Ceres optimization parameters
   ceres::Solver::Options options;
   options.max_num_iterations = 150;
   options.num_threads = 4;
+  options.minimizer_progress_to_stdout = true;
   ceres::Solver::Summary summary;
 
   // Solve the optimization
