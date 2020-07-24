@@ -20,6 +20,12 @@ template<typename T>
 using Isometry3 = Eigen::Transform<T, 3, Eigen::Isometry>;
 
 template<typename T>
+using Quaternion = Eigen::Quaternion<T>;
+
+template<typename T>
+using AngleAxis = Eigen::AngleAxis<T>;
+
+template<typename T>
 using Vector4 = Eigen::Matrix<T, 4, 1>;
 
 template<typename T>
