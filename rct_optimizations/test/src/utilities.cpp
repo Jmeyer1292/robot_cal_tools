@@ -79,7 +79,7 @@ DHChain createABBIRB2400()
   return DHChain(joints);
 }
 
-DHChain perturbDHCHain(const DHChain &in, const double stddev)
+DHChain perturbDHChain(const DHChain &in, const double stddev)
 {
   std::mt19937 mt_rand(std::random_device{}());
   std::normal_distribution<double> norm(0.0, stddev);
@@ -95,7 +95,7 @@ DHChain perturbDHCHain(const DHChain &in, const double stddev)
   transforms.reserve(joint_types.size());
   for (std::size_t i = 0; i < joint_types.size(); ++i)
   {
-    transforms.push_back(DHTransform(dh.row(i), joint_types[i]));
+    transforms.emplace_back(dh.row(i), joint_types[i], "j" + std::to_string(i + 1));
   }
   return DHChain(transforms);
 }

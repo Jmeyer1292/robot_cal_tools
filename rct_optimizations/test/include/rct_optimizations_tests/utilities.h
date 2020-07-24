@@ -94,7 +94,7 @@ DHChain createABBIRB2400();
  * @param stddev - standard deviation to apply to all DH parameters individually
  * @return
  */
-DHChain perturbDHCHain(const DHChain &in, const double stddev);
+DHChain perturbDHChain(const DHChain &in, const double stddev);
 
 } // namespace test
 } // namespace rct_optimizations
