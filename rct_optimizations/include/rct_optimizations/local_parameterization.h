@@ -1,7 +1,9 @@
 #pragma once
 
-#include <ceres/rotation.h>
-#include <Eigen/Dense>
+#include <Eigen/Core>
+#include <ceres/problem.h>
+#include <ceres/local_parameterization.h>
+#include <rct_optimizations/types.h>
 
 // Ceres Solver - A fast non-linear least squares minimizer
 // Copyright 2015 Google Inc. All rights reserved.
@@ -72,5 +74,71 @@ struct EigenQuaternionPlus
     return true;
   }
 };
+
+/**
+ * @brief Adds subset parameterization for all parameter blocks for a given problem
+ * @param problem - Ceres optimization problem
+ * @param masks - an array of masks indicating the index of the parameters that should be held constant.
+ *   - The array must be the same size as the number of parameter blocks in the problem
+ *   - Individual mask vectors cannot mask all parameters in a block
+ * @param parameter_blocks - Ceres parameter blocks in the same order as the input masks
+ * @throws OptimizationException
+ */
+template <std::size_t N_BLOCKS>
+void addSubsetParameterization(ceres::Problem& problem, const std::array<std::vector<int>, N_BLOCKS>& masks,
+                               const std::array<double*, N_BLOCKS>& parameter_blocks)
+{
+  // Make sure the Ceres problem has the same number of blocks as the input
+  if (problem.NumParameterBlocks() != N_BLOCKS)
+  {
+    std::stringstream ss;
+    ss << "Input parameter block size does not match Ceres problem parameter block size (" << N_BLOCKS
+       << " != " << problem.NumParameterBlocks() << ")";
+    throw OptimizationException(ss.str());
+  }
+
+  if (parameter_blocks.size() != masks.size())
+  {
+    std::stringstream ss;
+    ss << "Parameter block count does not match number of masks (" << parameter_blocks.size() << " != " << masks.size();
+    throw OptimizationException(ss.str());
+  }
+
+  // Set identity local parameterization on individual variables that we want to remain constant
+  for (std::size_t i = 0; i < parameter_blocks.size(); ++i)
+  {
+    std::size_t block_size = problem.ParameterBlockSize(parameter_blocks.at(i));
+    std::vector<int> mask = masks.at(i);
+
+    if (mask.size() > 0)
+    {
+      // Sort the array and remove duplicate indices
+      std::sort(mask.begin(), mask.end());
+      auto last = std::unique(mask.begin(), mask.end());
+      mask.erase(last, mask.end());
+
+      // Check that the max index is not greater than the number of elements in the block
+      auto it = std::max_element(mask.begin(), mask.end());
+      if (static_cast<std::size_t>(*it) >= block_size)
+      {
+        std::stringstream ss;
+        ss << "The largest mask index cannot be larger than or equal to the parameter block size (" << *it
+           << " >= " << block_size << ")";
+        throw OptimizationException(ss.str());
+      }
+
+      // Set local parameterization on the indices or set the entire block constant
+      if (mask.size() >= block_size)
+      {
+        problem.SetParameterBlockConstant(parameter_blocks.at(i));
+      }
+      else
+      {
+        ceres::LocalParameterization* lp = new ceres::SubsetParameterization(block_size, mask);
+        problem.SetParameterization(parameter_blocks[i], lp);
+      }
+    }
+  }
+}
 
 } // namespace rct_optimizations
