@@ -323,19 +323,30 @@ class DualDHChainCostPose3D : public DualDHChainCost
     // Now that we have two transforms in the same frame, get the difference between the expected and observed pose of the target
     Isometry3<T> camera_to_target = camera_base_to_camera.inverse() * camera_base_to_target;
 
-    Isometry3<T> tform_error = measurement_camera_to_target_.camera_to_target.cast<T>() * camera_to_target.inverse();
+    Isometry3<T> camera_to_target_measured = measurement_camera_to_target_.camera_to_target.cast<T>();
+
+    Isometry3<T> tform_error = camera_to_target_measured * camera_to_target.inverse();
 
     // Calculate elements of residual from error transform
     residual[0] = tform_error.translation().x();
     residual[1] = tform_error.translation().y();
     residual[2] = tform_error.translation().z();
 
-    AngleAxis<T> aa_error(tform_error.rotation());  // BUG: Eigen 3.3.4 has a scalar type error in quaternion->AA conversion
+    // compute residual from orientation as nominal vs actual locations of points rotated by error transform
+    Vector4<T> p1, p2;
+    p1 << T(1.0), T(0.0), T(0.0), T(1.0);
+    p1 << T(0.0), T(1.0), T(0.0), T(1.0);
 
-    Vector3<T> r = aa_error.axis() * aa_error.angle();
-    residual[3] = r.x();
-    residual[4] = r.y();
-    residual[5] = r.z();
+    Vector4<T> p1_t = tform_error * p1;
+    Vector4<T> p2_t = tform_error * p2;
+
+    residual[3] = p1_t.x() - p1.x();
+    residual[4] = p1_t.y() - p1.y();
+    residual[5] = p1_t.z() - p1.z();
+
+    residual[6] = p1_t.x() - p1.x();
+    residual[7] = p1_t.y() - p1.y();
+    residual[8] = p1_t.z() - p1.z();
 
     return true;
   }

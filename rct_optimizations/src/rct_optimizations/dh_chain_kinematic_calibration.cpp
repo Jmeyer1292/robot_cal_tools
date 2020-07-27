@@ -366,7 +366,7 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblemPose3D &par
     cost_block->AddParameterBlock(3);
 
     // Residual error
-    cost_block->SetNumResiduals(6);
+    cost_block->SetNumResiduals(9);
 
     // Add the residual block to the problem
     problem.AddResidualBlock(cost_block, nullptr, parameters);
