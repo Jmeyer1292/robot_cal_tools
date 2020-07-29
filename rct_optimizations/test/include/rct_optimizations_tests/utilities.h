@@ -89,6 +89,12 @@ DHChain createChain(const Eigen::MatrixXd &dh, const std::vector<DHJointType> &j
 DHChain createABBIRB2400();
 
 /**
+ * @brief Creates a DH parameter-based robot representation of a generic two-axis part positioner with arbitrary base offset
+ * @return
+ */
+DHChain createTwoAxisPositioner();
+
+/**
  * @brief Creates a kinematic chain whose DH parameters are pertubed with Gaussian noise relative to the reference kinematic chain
  * @param in - reference kinematic chain
  * @param stddev - standard deviation to apply to all DH parameters individually

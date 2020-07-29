@@ -40,8 +40,10 @@ std::array<std::string, 4> DHTransform::getParamLabels() const
 
 // DH Chain
 
-DHChain::DHChain(std::vector<DHTransform> transforms)
+DHChain::DHChain(std::vector<DHTransform> transforms,
+                 const Eigen::Isometry3d& base_offset)
   : transforms_(std::move(transforms))
+  , base_offset_(base_offset)
 {
 }
 
