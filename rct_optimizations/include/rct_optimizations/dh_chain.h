@@ -201,9 +201,9 @@ public:
 
 protected:
   /** @brief The DH transforms that make up the chain */
-  const std::vector<DHTransform> transforms_;
+  std::vector<DHTransform> transforms_;
   /** @brief Fixed transform offset to the beginning of the chain */
-  const Eigen::Isometry3d base_offset_;
+  Eigen::Isometry3d base_offset_;
 };
 
 } // namespace rct_optimizations
