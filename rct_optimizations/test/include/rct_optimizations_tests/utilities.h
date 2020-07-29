@@ -73,6 +73,15 @@ Eigen::Isometry3d perturbPose(const Eigen::Isometry3d &pose,
                               double spatial_noise,
                               double angle_noise);
 
+
+/**
+ * @brief Creates a DH chain form
+ * @param dh
+ * @param joint_types
+ * @return
+ */
+DHChain createChain(const Eigen::MatrixXd &dh, const std::vector<DHJointType> &joint_types);
+
 /**
  * @brief Creates a DH parameter-based robot representation of an ABB IRB2400
  * @return
@@ -85,7 +94,7 @@ DHChain createABBIRB2400();
  * @param stddev - standard deviation to apply to all DH parameters individually
  * @return
  */
-DHChain perturbDHCHain(const DHChain &in, const double stddev);
+DHChain perturbDHChain(const DHChain &in, const double stddev);
 
 } // namespace test
 } // namespace rct_optimizations
