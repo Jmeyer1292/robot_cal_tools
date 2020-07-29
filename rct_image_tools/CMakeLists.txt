@@ -5,6 +5,7 @@ find_package(OpenCV REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(rct_common REQUIRED)
 find_package(rct_optimizations REQUIRED)
+find_package(GTest REQUIRED)
 
 find_package(Eigen3 REQUIRED)
 if(NOT EIGEN3_INCLUDE_DIRS)
@@ -39,6 +40,8 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   Eigen3::Eigen
   rct::rct_optimizations
 )
+
+add_subdirectory(test)
 
 if(RCT_BUILD_TESTS)
   add_executable(${PROJECT_NAME}_test
