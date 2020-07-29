@@ -9,6 +9,7 @@
 #include <iostream>
 #include <gtest/gtest.h>
 #include <opencv2/opencv.hpp>
+#include <ros/package.h>
 
 using namespace cv;
 
@@ -27,7 +28,7 @@ TEST(CharucoChain, TestUnobscured)
     cv::Ptr<cv::aruco::CharucoBoard> charucoboard = cv::aruco::CharucoBoard::create(squaresX, squaresY, squareLength, markerLength, dictionary);
     cv::Ptr<cv::aruco::Board> board = charucoboard.staticCast<cv::aruco::Board>();
 
-    std::string path = "/home/jberkebile/robot_tools/src/robot_cal_tools/rct_image_tools/test/images/charuco_unobstructed.jpg";
+    const std::string path = ros::package::getPath("rct_image_tools") + "/test/images/charuco_unobstructed.jpg";
     //Load Image
     cv::Mat m = imread(path);
     EXPECT_FALSE(m.empty());
@@ -64,7 +65,7 @@ TEST(CharucoChain, TestObscured)
     cv::Ptr<cv::aruco::CharucoBoard> charucoboard = cv::aruco::CharucoBoard::create(squaresX, squaresY, squareLength, markerLength, dictionary);
     cv::Ptr<cv::aruco::Board> board = charucoboard.staticCast<cv::aruco::Board>();
 
-    std::string path = "/home/jberkebile/robot_tools/src/robot_cal_tools/rct_image_tools/test/images/charuco_obstructed.jpg";
+    const std::string path = ros::package::getPath("rct_image_tools") + "/test/images/charuco_obstructed.jpg";
     //Load Image
     cv::Mat m = imread(path);
     EXPECT_FALSE(m.empty());
@@ -108,7 +109,7 @@ TEST(CharucoChain, TestOneCorner)
     cv::Ptr<cv::aruco::CharucoBoard> charucoboard = cv::aruco::CharucoBoard::create(squaresX, squaresY, squareLength, markerLength, dictionary);
     cv::Ptr<cv::aruco::Board> board = charucoboard.staticCast<cv::aruco::Board>();
 
-    std::string path = "/home/jberkebile/robot_tools/src/robot_cal_tools/rct_image_tools/test/images/one_corner.jpg";
+    const std::string path = ros::package::getPath("rct_image_tools") + "/test/images/one_corner.jpg";
     //Load Image
     cv::Mat m = imread(path);
     EXPECT_FALSE(m.empty());
