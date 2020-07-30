@@ -150,7 +150,7 @@ public:
 /**
  * @brief Tests the Dual DH Chain kinematic calibration algorithm with perfect initial conditions
  */
-class DHChainCalTest_PerfectInitial : public DHChainMeasurementTest
+class DHChainMeasurementTest_PerfectInitial : public DHChainMeasurementTest
 {
 public:
   using DHChainMeasurementTest::DHChainMeasurementTest;
@@ -186,7 +186,7 @@ public:
  * @brief Tests the Dual DH Chain kinematic calibration algorithm with
  * initial guesses for DH params that are slightly different from the true values
  */
-class DHChainCalTest_PerturbedDH : public DHChainMeasurementTest
+class DHChainMeasurementTest_PerturbedDH : public DHChainMeasurementTest
 {
 public:
   using DHChainMeasurementTest::DHChainMeasurementTest;
@@ -240,10 +240,10 @@ public:
  * @brief Tests the Dual DH Chain kinematic calibration algorithm with
  * initial guesses for DH params and transforms that are slightly different from the true values
  */
-class DHChainCalTest_PerturbedDH_PertubedGuess : public DHChainCalTest_PerturbedDH
+class DHChainMeasurementTest_PerturbedDH_PertubedGuess : public DHChainMeasurementTest_PerturbedDH
 {
 public:
-  using DHChainCalTest_PerturbedDH::DHChainCalTest_PerturbedDH;
+  using DHChainMeasurementTest_PerturbedDH::DHChainMeasurementTest_PerturbedDH;
 
   virtual void setInitialGuess() override
   {
@@ -324,21 +324,21 @@ TEST_F(DHChainMeasurementTest, TestCostFunction)
   }
 }
 
-TEST_F(DHChainCalTest_PerfectInitial, PerfectInitialConditions)
+TEST_F(DHChainMeasurementTest_PerfectInitial, PerfectInitialConditions)
 {
   KinematicCalibrationResult result = optimize(problem);
   std::cout << result.covariance.printCorrelationCoeffAboveThreshold(0.5) << std::endl;
   analyzeResults(result);
 }
 
-TEST_F(DHChainCalTest_PerturbedDH, PerfectGuessPerturbedDH)
+TEST_F(DHChainMeasurementTest_PerturbedDH, PerfectGuessPerturbedDH)
 {
   KinematicCalibrationResult result = optimize(problem);
   std::cout << result.covariance.printCorrelationCoeffAboveThreshold(0.5) << std::endl;
   analyzeResults(result);
 }
 
-TEST_F(DHChainCalTest_PerturbedDH_PertubedGuess, PerturbedDHPerturbedGuess)
+TEST_F(DHChainMeasurementTest_PerturbedDH_PertubedGuess, PerturbedDHPerturbedGuess)
 {
   KinematicCalibrationResult result = optimize(problem);
   std::cout << result.covariance.printCorrelationCoeffAboveThreshold(0.5) << std::endl;
