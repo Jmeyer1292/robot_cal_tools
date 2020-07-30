@@ -89,6 +89,18 @@ struct KinematicCalibrationProblemPose3D
   Eigen::Isometry3d target_mount_to_target_guess;
   Eigen::Isometry3d camera_base_to_target_base_guess;
 
+  /* Create an array of masks
+   * 0. Camera DH parameters (size joints x 4)
+   * 1. Target DH parameters (size joints x 4)
+   * 2. Camera mount to camera position (size 3)
+   * 3. Camera mount to camera angle axis (size 3)
+   * 4. Target mount to target position (size 3)
+   * 5. Target mount to target angle axis (size 3)
+   * 6. Camera base to target base position (size 3)
+   * 7. Target mount to target base angle axis (size 3)
+   */
+  std::array<std::vector<int>, 8> mask;
+
   std::string label_camera_mount_to_camera = "camera_mount_to_camera";
   std::string label_target_mount_to_target = "target_mount_to_target";
   std::string label_camera_base_to_target = "camera_base_to_target";
@@ -334,8 +346,8 @@ class DualDHChainCostPose3D : public DualDHChainCost
 
     // compute residual from orientation as nominal vs actual locations of points rotated by error transform
     Vector4<T> p1, p2;
-    p1 << T(1.0), T(0.0), T(0.0), T(1.0);
-    p1 << T(0.0), T(1.0), T(0.0), T(1.0);
+    p1 << T(2.0), T(0.0), T(0.0), T(1.0);
+    p2 << T(0.0), T(2.0), T(0.0), T(1.0);
 
     Vector4<T> p1_t = tform_error * p1;
     Vector4<T> p2_t = tform_error * p2;
@@ -344,9 +356,9 @@ class DualDHChainCostPose3D : public DualDHChainCost
     residual[4] = p1_t.y() - p1.y();
     residual[5] = p1_t.z() - p1.z();
 
-    residual[6] = p1_t.x() - p1.x();
-    residual[7] = p1_t.y() - p1.y();
-    residual[8] = p1_t.z() - p1.z();
+    residual[6] = p2_t.x() - p2.x();
+    residual[7] = p2_t.y() - p2.y();
+    residual[8] = p2_t.z() - p2.z();
 
     return true;
   }
