@@ -91,6 +91,9 @@ public:
     DHChain optimized_chain = test::createChain(problem.camera_chain.getDHTable() + result.camera_chain_dh_offsets,
                                                 problem.camera_chain.getJointTypes());
 
+    std::cout << "original chain:\n" << problem.camera_chain.getDHTable().matrix() << std::endl << std::endl;
+    std::cout << "optimized chain:\n" << optimized_chain.getDHTable().matrix() << std::endl << std::endl;
+
     namespace ba = boost::accumulators;
     ba::accumulator_set<double, ba::stats<ba::tag::mean, ba::tag::variance>> pos_acc;
     ba::accumulator_set<double, ba::stats<ba::tag::mean, ba::tag::variance>> ori_acc;

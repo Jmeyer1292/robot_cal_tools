@@ -13,8 +13,13 @@ using namespace rct_optimizations;
 class DHChainMeasurementTest : public ::testing::Test
 {
 public:
+  /**
+   * @brief Constructor
+   * Note: the calibration problem is initialized with a DH chain with modified values to be
+   * more representative of a "real-life" use-case
+   */
   DHChainMeasurementTest()
-    : camera_chain(test::createABBIRB2400())
+    : camera_chain(test::perturbDHChain(test::createABBIRB2400(), 1.0e-3))
     , target_chain({})
     , problem(camera_chain, target_chain)
   {
@@ -25,7 +30,7 @@ public:
     setActualData();
     setInitialGuess();
     setObservations();
-//    applyMasks();
+    applyMasks();
   }
 
   virtual void setActualData()
@@ -33,9 +38,10 @@ public:
     n_observations = 150;
     residual_threshold_sqr = 1.0e-12;
 
-//    camera = test::makeKinectCamera();
-//    target = test::Target(3, 4, 0.025);
-//    problem.intr = camera.intr;
+    position_diff_mean_threshold = 0.005;
+    position_diff_std_dev_threshold = 0.003;
+    orientation_diff_mean_threshold = 0.008;
+    orientation_diff_std_dev_threshold = 0.004;
 
     // Create the transform from the camera mount (i.e. robot wrist) to the camera
     camera_mount_to_camera = Eigen::Isometry3d::Identity();
@@ -58,17 +64,17 @@ public:
 
   virtual void setObservations()
   {
-    EXPECT_NO_THROW(problem.observations = test::createKinematicMeasurements(problem.camera_chain,
-                                                                             problem.target_chain,
+    EXPECT_NO_THROW(problem.observations = test::createKinematicMeasurements(camera_chain,
+                                                                             target_chain,
                                                                              camera_mount_to_camera,
                                                                              target_mount_to_target,
                                                                              camera_base_to_target_base,
                                                                              n_observations));
   }
 
-//  virtual void applyMasks()
-//  {
-//  }
+  virtual void applyMasks()
+  {
+  }
 
   virtual void analyzeResults(const KinematicCalibrationResult& result)
   {
@@ -84,6 +90,9 @@ public:
     DHChain optimized_chain = test::createChain(problem.camera_chain.getDHTable() + result.camera_chain_dh_offsets,
                                                 problem.camera_chain.getJointTypes());
 
+    std::cout << "true chain:\n" << problem.camera_chain.getDHTable().matrix() << std::endl << std::endl;
+    std::cout << "optimized chain:\n" << optimized_chain.getDHTable().matrix() << std::endl << std::endl;
+
     namespace ba = boost::accumulators;
     ba::accumulator_set<double, ba::stats<ba::tag::mean, ba::tag::variance>> pos_acc;
     ba::accumulator_set<double, ba::stats<ba::tag::mean, ba::tag::variance>> ori_acc;
@@ -91,10 +100,10 @@ public:
     const std::size_t n = 1000;
     for (std::size_t i = 0; i < n; ++i)
     {
-      Eigen::VectorXd random_pose = problem.camera_chain.createUniformlyRandomPose();
+      Eigen::VectorXd random_pose = camera_chain.createUniformlyRandomPose();
 
       // Nominal chain
-      Eigen::Isometry3d nominal_fk = problem.camera_chain.getFK(random_pose) * camera_mount_to_camera;
+      Eigen::Isometry3d nominal_fk = camera_chain.getFK(random_pose) * camera_mount_to_camera;
 
       // Optimized chain
       Eigen::Isometry3d optimized_fk = optimized_chain.getFK(random_pose)
@@ -111,13 +120,21 @@ public:
 
     std::cout << "Orientation Difference Mean: " << ba::mean(ori_acc) << std::endl;
     std::cout << "Orientation difference Std. Dev.: " << std::sqrt(ba::variance(ori_acc)) << std::endl;
+
+    EXPECT_LT(ba::mean(pos_acc), position_diff_mean_threshold);
+    EXPECT_LT(std::sqrt(ba::variance(pos_acc)), position_diff_std_dev_threshold);
+    EXPECT_LT(ba::mean(ori_acc), orientation_diff_mean_threshold);
+    EXPECT_LT(std::sqrt(ba::variance(ori_acc)), orientation_diff_std_dev_threshold);
   }
 
   double residual_threshold_sqr;
-  std::size_t n_observations;
 
-//  test::Camera camera;
-//  test::Target target;
+  double position_diff_mean_threshold;
+  double position_diff_std_dev_threshold;
+  double orientation_diff_mean_threshold;
+  double orientation_diff_std_dev_threshold;
+
+  std::size_t n_observations;
 
   KinematicMeasurement::Set observations;
 
@@ -166,7 +183,8 @@ public:
 };
 
 /**
- * @brief Tests the Dual DH Chain kinematic calibration algorithm with slightly modified DH parameters
+ * @brief Tests the Dual DH Chain kinematic calibration algorithm with
+ * initial guesses for DH params that are slightly different from the true values
  */
 class DHChainCalTest_PerturbedDH : public DHChainMeasurementTest
 {
@@ -177,57 +195,50 @@ public:
   {
     DHChainMeasurementTest::setActualData();
 
+    problem.camera_chain = test::createABBIRB2400();
+
     // Set the residual squared error threshold to 0.5 pixels
     residual_threshold_sqr = 0.5 * 0.5;
   }
 
-  virtual void setObservations() override
+  virtual void applyMasks() override
   {
-    EXPECT_NO_THROW(problem.observations = test::createKinematicMeasurements(
-                        test::perturbDHChain(problem.camera_chain, 1.0e-3), problem.target_chain,
-                        camera_mount_to_camera, target_mount_to_target, camera_base_to_target_base,
-                        n_observations));
+    // Mask a few DH parameters
+    {
+      Eigen::Matrix<bool, Eigen::Dynamic, 4> mask =
+          Eigen::Matrix<bool, Eigen::Dynamic, 4>::Constant(problem.camera_chain.dof(), 4, false);
+
+      // Mask the last row because they duplicate the camera mount to camera transform
+      mask.bottomRows(1) << true, true, true, true;
+
+      // Mask the joint 2 "r" parameter
+      // It seems to have a high correlation with target_mount_to_target_y
+      mask(1, 2) = true;
+
+      // Add the mask to the problem
+      problem.mask.at(0) = createDHMask(mask);
+    }
+
+    /* Mask the camera base to target base transform (duplicated by target mount to target transform when
+     * the target chain has no joints */
+    problem.mask.at(6) = { 0, 1, 2 };
+    problem.mask.at(7) = { 0, 1, 2 };
   }
-
-//  virtual void applyMasks() override
-//  {
-//    // Mask a few DH parameters
-//    {
-//      Eigen::Matrix<bool, Eigen::Dynamic, 4> mask =
-//          Eigen::Matrix<bool, Eigen::Dynamic, 4>::Constant(problem.camera_chain.dof(), 4, false);
-
-//      // Mask the last row because they duplicate the camera mount to camera transform
-//      mask.bottomRows(1) << true, true, true, true;
-
-//      // Mask the joint 2 "r" parameter
-//      // It seems to have a high correlation with target_mount_to_target_y
-//      mask(1, 2) = true;
-
-//      // Add the mask to the problem
-//      problem.mask.at(0) = createDHMask(mask);
-//    }
-
-//    /* Mask the camera base to target base transform (duplicated by target mount to target transform when
-//     * the target chain has no joints */
-//    problem.mask.at(6) = { 0, 1, 2 };
-//    problem.mask.at(7) = { 0, 1, 2 };
-//  }
 
   virtual void analyzeResults(const KinematicCalibrationResult& result) override
   {
     DHChainMeasurementTest::analyzeResults(result);
 
     // Expect the masked variables not to have changed
-    // TODO: turn on when masking PR is merged in
-//    EXPECT_TRUE(result.camera_chain_dh_offsets.bottomRows(1).isApproxToConstant(0.0));
-//    EXPECT_DOUBLE_EQ(result.camera_chain_dh_offsets(1, 2), 0.0);
-//    EXPECT_TRUE(result.camera_base_to_target_base.isApprox(problem.camera_base_to_target_base_guess));
+    EXPECT_TRUE(result.camera_chain_dh_offsets.bottomRows(1).isApproxToConstant(0.0));
+    EXPECT_DOUBLE_EQ(result.camera_chain_dh_offsets(1, 2), 0.0);
+    EXPECT_TRUE(result.camera_base_to_target_base.isApprox(problem.camera_base_to_target_base_guess));
   }
 };
 
 /**
  * @brief Tests the Dual DH Chain kinematic calibration algorithm with
- * slightly modified DH parameters and initial transform guesses
+ * initial guesses for DH params and transforms that are slightly different from the true values
  */
 class DHChainCalTest_PerturbedDH_PertubedGuess : public DHChainCalTest_PerturbedDH
 {
@@ -236,6 +247,8 @@ public:
 
   virtual void setInitialGuess() override
   {
+    problem.camera_chain = test::createABBIRB2400();
+
     problem.camera_mount_to_camera_guess = test::perturbPose(camera_mount_to_camera, 0.05, 0.05);
     problem.target_mount_to_target_guess = test::perturbPose(target_mount_to_target, 0.05, 0.05);
     problem.camera_base_to_target_base_guess = test::perturbPose(camera_base_to_target_base, 0.05, 0.05);
