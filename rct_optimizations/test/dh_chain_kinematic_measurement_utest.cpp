@@ -197,8 +197,7 @@ public:
 
     problem.camera_chain = test::createABBIRB2400();
 
-    // Set the residual squared error threshold to 0.5 pixels
-    residual_threshold_sqr = 0.5 * 0.5;
+    residual_threshold_sqr = 0.001;
   }
 
   virtual void applyMasks() override
