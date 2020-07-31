@@ -83,14 +83,6 @@ Eigen::Isometry3d perturbPose(const Eigen::Isometry3d &pose,
 DHChain createChain(const Eigen::MatrixXd &dh, const std::vector<DHJointType> &joint_types);
 
 /**
- * @brief Creates a DH chain form
- * @param dh
- * @param joint_types
- * @return
- */
-DHChain createChain(const Eigen::MatrixXd &dh, const std::vector<DHJointType> &joint_types);
-
-/**
  * @brief Creates a DH parameter-based robot representation of an ABB IRB2400
  * @return
  */
