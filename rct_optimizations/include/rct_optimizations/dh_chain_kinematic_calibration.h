@@ -339,26 +339,27 @@ class DualDHChainCostPose3D : public DualDHChainCost
 
     Isometry3<T> tform_error = camera_to_target_measured * camera_to_target.inverse();
 
-    // Calculate elements of residual from error transform
-    residual[0] = tform_error.translation().x();
-    residual[1] = tform_error.translation().y();
-    residual[2] = tform_error.translation().z();
-
     // compute residual from orientation as nominal vs actual locations of points rotated by error transform
-    Vector4<T> p1, p2;
-    p1 << T(2.0), T(0.0), T(0.0), T(1.0);
-    p2 << T(0.0), T(2.0), T(0.0), T(1.0);
+    Vector4<T> p1, p2, p3;
+    p1 << T(20.0), T(0.0), T(0.0), T(1.0);
+    p2 << T(0.0), T(20.0), T(0.0), T(1.0);
+    p3 << T(0.0), T(0.0), T(20.0), T(1.0);
 
     Vector4<T> p1_t = tform_error * p1;
     Vector4<T> p2_t = tform_error * p2;
+    Vector4<T> p3_t = tform_error * p3;
 
-    residual[3] = p1_t.x() - p1.x();
-    residual[4] = p1_t.y() - p1.y();
-    residual[5] = p1_t.z() - p1.z();
+    residual[0] = p1_t.x() - p1.x();
+    residual[1] = p1_t.y() - p1.y();
+    residual[2] = p1_t.z() = p1.z();
 
-    residual[6] = p2_t.x() - p2.x();
-    residual[7] = p2_t.y() - p2.y();
-    residual[8] = p2_t.z() - p2.z();
+    residual[3] = p2_t.x() - p2.x();
+    residual[4] = p2_t.y() - p2.y();
+    residual[5] = p2_t.z() - p2.z();
+
+    residual[6] = p3_t.x() - p3.x();
+    residual[7] = p3_t.y() - p3.y();
+    residual[8] = p3_t.z() - p3.z();
 
     return true;
   }
