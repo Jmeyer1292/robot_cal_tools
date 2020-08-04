@@ -46,6 +46,15 @@ add_dependencies(${PROJECT_NAME}_wrist_example ${${PROJECT_NAME}_EXPORTED_TARGET
 
 target_link_libraries(${PROJECT_NAME}_wrist_example ${catkin_LIBRARIES} rct::rct_optimizations rct::rct_image_tools)
 
+# Executable for demonstrating extrinsic calibration with ChAruco target
+add_executable(${PROJECT_NAME}_charuco_example src/tools/charuco_calib_test.cpp)
+
+set_target_properties(${PROJECT_NAME}_charuco_example PROPERTIES OUTPUT_NAME example_charuco PREFIX "")
+
+add_dependencies(${PROJECT_NAME}_charuco_example ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(${PROJECT_NAME}_charuco_example ${catkin_LIBRARIES} rct::rct_optimizations rct::rct_image_tools)
+
 ###############################
 ## Offline Calibration Tools ##
 ###############################
