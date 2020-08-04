@@ -41,6 +41,11 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   rct::rct_optimizations
 )
 
+add_library(INTERFACE)
+set_target_properties(INTERFACE PROPERTIES LINKER_LANGUAGE CXX)
+target_link_libraries(${PROJECT_NAME} INTERFACE)
+target_compile_definitions(${PROJECT_NAME} INTERFACE TEST_SUPPORT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/test/images/")
+
 add_subdirectory(test)
 
 if(RCT_BUILD_TESTS)

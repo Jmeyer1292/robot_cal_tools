@@ -13,7 +13,6 @@
   <depend>yaml-cpp</depend>
   <depend>libopencv-dev</depend>
   <depend>eigen</depend>
-  <depend>roslib</depend>
   <export>
     <build_type>cmake</build_type>
   </export>
