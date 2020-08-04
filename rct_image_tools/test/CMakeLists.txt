@@ -4,6 +4,7 @@ add_executable(${PROJECT_NAME}_charuco_test charuco_test.cpp)
 target_link_libraries(${PROJECT_NAME}_charuco_test
     PRIVATE
     ${PROJECT_NAME}
+    ${PROJECT_NAME}_images
     GTest::GTest
     GTest::Main
 )

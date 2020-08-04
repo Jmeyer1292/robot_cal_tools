@@ -41,14 +41,14 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   rct::rct_optimizations
 )
 
-add_library(INTERFACE)
-set_target_properties(INTERFACE PROPERTIES LINKER_LANGUAGE CXX)
-target_link_libraries(${PROJECT_NAME} INTERFACE)
-target_compile_definitions(${PROJECT_NAME} INTERFACE TEST_SUPPORT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/test/images/")
+add_library(${PROJECT_NAME}_images INTERFACE)
+target_link_libraries(${PROJECT_NAME}_images INTERFACE)
+target_compile_definitions(${PROJECT_NAME}_images INTERFACE TEST_SUPPORT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/test/images/")
 
-add_subdirectory(test)
 
 if(RCT_BUILD_TESTS)
+  add_subdirectory(test)
+
   add_executable(${PROJECT_NAME}_test
     src/observation_finder_tests.cpp
   )
