@@ -1,134 +1,103 @@
-#include <opencv2/core.hpp>
-#include <opencv2/aruco.hpp>
-#include <opencv2/aruco/charuco.hpp>
-#include <opencv2/opencv.hpp>
 #include <rct_image_tools/charuco_finder.h>
-#include <rct_optimizations/types.h>
-#include <map>
-#include <Eigen/Core>
-#include <iostream>
-#include <gtest/gtest.h>
-#include <rct_image_tools/charuco_grid_target.h>
 
-using namespace cv;
+#include <gtest/gtest.h>
+#include <opencv2/aruco.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/opencv.hpp>
+
 using namespace rct_image_tools;
 
-// Runs charuco_finder for a completely unobscured ChAruco target. Should detect 24 chessboard corners
-TEST(CharucoChain, TestUnobscured)
+class ChArUcoTest : public ::testing::Test
 {
-    int squaresX = 5;
-    int squaresY = 7;
-    double squareLength = 0.0200;
-    double markerLength = 0.0120;
+public:
+  ChArUcoTest() : ::testing::Test(), target(5, 7, 0.02, 0.01, 10), finder(target)
+  {
+  }
 
-    // Creating the CharucoGridTarget with the above parameters
-    CharucoGridTarget target(squaresX, squaresY, squareLength, markerLength);
-    const std::string path = std::string(TEST_SUPPORT_DIR) + "charuco_unobscured.jpg";
-    //Load Image
-    cv::Mat m = imread(path);
-    EXPECT_FALSE(m.empty());
+  void runTest()
+  {
+    // Load the test image
+    cv::Mat m = cv::imread(filename);
+    ASSERT_FALSE(m.empty());
 
-    rct_image_tools::CharucoGridBoardObservationFinder charuco_finder(target);
-    // Find the chessboard corners (if any)
-    std::map<int, Eigen::Vector2d> maybe_charuco = charuco_finder.findObservations(m);
+    // Find the chessboard corners
+    std::map<int, Eigen::Vector2d> features = this->finder.findObservations(m);
 
-    EXPECT_FALSE(maybe_charuco.empty());
     // Should have detected 24 corners
-    EXPECT_EQ(maybe_charuco.size(), 24);
+    ASSERT_EQ(features.size(), expected_ids.size());
+
     // Iterate through the corners to see if they match the ID (should see IDs 0-23)
-    auto id_iterator = maybe_charuco.begin();
-    for(int i = 0; i < maybe_charuco.size(); i++)
+    for (const unsigned id : expected_ids)
     {
-      EXPECT_EQ(i, id_iterator->first);
-      std::advance(id_iterator, 1);
+      EXPECT_TRUE(features.find(id) != features.end());
     }
-    return;
-}
+  }
 
-// Runs charuco_finder for a partially obscured (blocked IDs 0-6) ChAruco target. Should detect 17 chessboard corners
-TEST(CharucoChain, TestObscured)
+  const CharucoGridTarget target;
+  const CharucoGridBoardObservationFinder finder;
+  std::string filename;
+  std::vector<unsigned> expected_ids;
+};
+
+class UnobscuredChArUcoTest : public ChArUcoTest
 {
-    int squaresX = 5;
-    int squaresY = 7;
-    double squareLength = 0.0200;
-    double markerLength = 0.0120;
+public:
+  using ChArUcoTest::ChArUcoTest;
 
-    // Creating the CharucoGridTarget with the above parameters
-    CharucoGridTarget target(squaresX, squaresY, squareLength, markerLength);
+  virtual void SetUp() override final
+  {
+    filename = std::string(TEST_SUPPORT_DIR) + "charuco_unobscured.jpg";
 
-    const std::string path = std::string(TEST_SUPPORT_DIR) + "charuco_obscured.jpg";
-    //Load Image
-    cv::Mat m = imread(path);
-    EXPECT_FALSE(m.empty());
+    // Expect all corners to be detected
+    expected_ids.resize(target.board->chessboardCorners.size());
+    std::iota(expected_ids.begin(), expected_ids.end(), 0);
+  }
+};
 
-    rct_image_tools::CharucoGridBoardObservationFinder charuco_finder(target);
-    // Find the chessboard corners (if any)
-    std::map<int,Eigen::Vector2d> maybe_charuco = charuco_finder.findObservations(m);
-
-    EXPECT_FALSE(maybe_charuco.empty());
-    // Should have detected 17 corners
-    EXPECT_EQ(maybe_charuco.size(), 17);
-    // Iterate through the corners to see if they match the ID (should see IDs 7-23)
-    auto id_iterator = maybe_charuco.begin();
-    for(int i = 0; i < maybe_charuco.size(); i++)
-    {
-      // These IDs were obscured so they shouldn't have been detected
-      if(i < 7)
-      {
-        EXPECT_NE(i, id_iterator->first);
-      }
-      // The rest of the IDs should've been detected
-      else
-      {
-        EXPECT_EQ(i, id_iterator->first);
-        std::advance(id_iterator, 1);
-      }
-    }
-    return;
-}
-
-// Runs charuco_finder for an almost entirely obscured (blocked IDs 1-23) ChAruco target. Should detect only 1 chessboard corner
-TEST(CharucoChain, TestOneCorner)
+class ObscuredChArUcoTest : public ChArUcoTest
 {
-    int squaresX = 5;
-    int squaresY = 7;
-    double squareLength = 0.0200;
-    double markerLength = 0.0120;
+public:
+  using ChArUcoTest::ChArUcoTest;
 
-    // Creating the CharucoGridTarget with the above parameters
-    CharucoGridTarget target(squaresX, squaresY, squareLength, markerLength);
+  virtual void SetUp() override final
+  {
+    filename = std::string(TEST_SUPPORT_DIR) + "charuco_obscured.jpg";
 
-    const std::string path = std::string(TEST_SUPPORT_DIR) + "one_corner.jpg";
-    //Load Image
-    cv::Mat m = imread(path);
-    EXPECT_FALSE(m.empty());
+    // Expect the first seven corners not to be detected
+    expected_ids.resize(target.board->chessboardCorners.size() - 7);
+    std::iota(expected_ids.begin(), expected_ids.end(), 7);
+  }
+};
 
-    rct_image_tools::CharucoGridBoardObservationFinder charuco_finder(target);
-    // Find the chessboard corners (if any)
-    std::map<int, Eigen::Vector2d> maybe_charuco = charuco_finder.findObservations(m);
+class OneFeatureChArUcoTest : public ChArUcoTest
+{
+public:
+  using ChArUcoTest::ChArUcoTest;
 
-    EXPECT_FALSE(maybe_charuco.empty());
-    // Should have detected only one corner
-    EXPECT_EQ(maybe_charuco.size(), 1);
-    // Iterate through the corners to see if they match the ID (should see only ID 0)
-    auto id_iterator = maybe_charuco.begin();
-    for(int i = 0; i < maybe_charuco.size(); i++)
-    {
-      // The only corner that wasn't obscured should be detected
-      if(i < 1)
-      {
-        EXPECT_EQ(i, id_iterator->first);
-      }
-      // The rest were obscured and thus shouldn't be detected
-      else
-      {
-        EXPECT_NE(i, id_iterator->first);
-      }
-      std::advance(id_iterator, 1);
-    }
-    return;
+  virtual void SetUp() override final
+  {
+    filename = std::string(TEST_SUPPORT_DIR) + "one_corner.jpg";
+
+    // Expect to only see the first corner (ID = 0)
+    expected_ids.resize(1);
+    expected_ids.front() = 0;
+  }
+};
+
+TEST_F(UnobscuredChArUcoTest, TestDetection)
+{
+  this->runTest();
 }
 
+TEST_F(ObscuredChArUcoTest, TestDetection)
+{
+  this->runTest();
+}
+
+TEST_F(OneFeatureChArUcoTest, TestDetection)
+{
+  this->runTest();
+}
 
 int main(int argc, char **argv)
 {
