@@ -5,7 +5,6 @@ find_package(OpenCV REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(rct_common REQUIRED)
 find_package(rct_optimizations REQUIRED)
-find_package(GTest REQUIRED)
 
 find_package(Eigen3 REQUIRED)
 if(NOT EIGEN3_INCLUDE_DIRS)
@@ -41,27 +40,30 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   rct::rct_optimizations
 )
 
+# Modified circle grid finder executable
+# TODO: turn this into a unit test
+add_executable(${PROJECT_NAME}_test
+  src/observation_finder_tests.cpp
+)
+target_compile_options(${PROJECT_NAME}_test PUBLIC -std=c++11)
+target_compile_options(${PROJECT_NAME}_test PRIVATE -Wall -Wextra)
+target_include_directories(${PROJECT_NAME}_test PUBLIC
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+  "$<INSTALL_INTERFACE:include>")
+target_link_libraries(${PROJECT_NAME}_test
+  ${PROJECT_NAME}
+  rct::rct_optimizations
+)
+
+# Interface library to expose test image directory
 add_library(${PROJECT_NAME}_images INTERFACE)
 target_link_libraries(${PROJECT_NAME}_images INTERFACE)
 target_compile_definitions(${PROJECT_NAME}_images INTERFACE TEST_SUPPORT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/test/images/")
 
-
 if(RCT_BUILD_TESTS)
+  enable_testing()
+  rct_add_run_tests_target()
   add_subdirectory(test)
-
-  add_executable(${PROJECT_NAME}_test
-    src/observation_finder_tests.cpp
-  )
-
-  target_compile_options(${PROJECT_NAME}_test PUBLIC -std=c++11)
-  target_compile_options(${PROJECT_NAME}_test PRIVATE -Wall -Wextra)
-  target_include_directories(${PROJECT_NAME}_test PUBLIC
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-    "$<INSTALL_INTERFACE:include>")
-  target_link_libraries(${PROJECT_NAME}_test
-    ${PROJECT_NAME}
-    rct::rct_optimizations
-  )
 endif()
 
 rct_configure_package(${PROJECT_NAME})
