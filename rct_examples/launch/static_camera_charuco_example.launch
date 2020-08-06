@@ -1,10 +1,10 @@
 <launch>
-  <arg name="camera_file" default="$(find rct_examples)/config/avt_gige_intr_updated.yaml"/>
+  <arg name="camera_file" default="$(find rct_examples)/config/avt_gige_camera_intr_calibrated.yaml"/>
   <arg name="target_file" default="$(find rct_examples)/config/charuco_target_7x5.yaml"/>
   <arg name="guess_file" default="$(find rct_examples)/config/charuco_camera_guesses.yaml"/>
   <arg name="data_path" default="$(find rct_examples)/data/test_set_charuco/cal_data.yaml"/>
 
-  <node pkg="rct_examples" type="example_charuco" name="charuco_cal" output="screen">
+  <node pkg="rct_examples" type="static_cam_extr_cal_ex_charuco" name="charuco_cal" output="screen">
     <rosparam command="load" file="$(arg camera_file)"/>
     <rosparam command="load" file="$(arg target_file)"/>
     <rosparam command="load" file="$(arg guess_file)"/>
