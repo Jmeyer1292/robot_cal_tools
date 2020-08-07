@@ -1,5 +1,6 @@
 #include <rct_optimizations/validation/camera_intrinsic_calibration_validation.h>
 #include <rct_ros_tools/parameter_loaders.h>
+#include <rct_ros_tools/target_loaders.h>
 #include <rct_ros_tools/print_utils.h>
 #include <rct_ros_tools/data_set.h>
 
@@ -12,7 +13,11 @@
 #include <opencv2/imgproc.hpp>
 #include <ros/ros.h>
 
-void analyzeResults(const rct_optimizations::IntrinsicCalibrationAccuracyResult &result,
+using namespace rct_optimizations;
+using namespace rct_image_tools;
+using namespace rct_ros_tools;
+
+void analyzeResults(const IntrinsicCalibrationAccuracyResult &result,
                     const double pos_tol, const double ang_tol)
 {
   ROS_INFO_STREAM("Positional Error:\nMean (m): " << result.pos_error.first << "\nStd. Dev. (m): " << result.pos_error.second);
@@ -48,11 +53,11 @@ int main(int argc, char **argv)
 
   try
   {
-    rct_image_tools::ModifiedCircleGridTarget target = rct_ros_tools::loadTarget(pnh, "target_definition");
-    rct_optimizations::CameraIntrinsics intr = rct_ros_tools::loadIntrinsics(pnh, "intrinsics");
+    auto target = TargetLoader<ModifiedCircleGridTarget>::load(pnh, "target_definition");
+    CameraIntrinsics intr = loadIntrinsics(pnh, "intrinsics");
 
     // Attempt to load the data set via the data record yaml file:
-    boost::optional<rct_ros_tools::ExtrinsicDataSet> maybe_data_set = rct_ros_tools::parseFromFile(
+    boost::optional<ExtrinsicDataSet> maybe_data_set = parseFromFile(
       data_path);
     if (!maybe_data_set)
     {
@@ -61,19 +66,19 @@ int main(int argc, char **argv)
     }
 
     // We know it exists, so define a helpful alias
-    const rct_ros_tools::ExtrinsicDataSet& data_set = *maybe_data_set;
+    const ExtrinsicDataSet& data_set = *maybe_data_set;
 
     // Our 'base to camera guess': A camera off to the side, looking at a point centered in front of the robot
-    Eigen::Isometry3d target_mount_to_target = rct_ros_tools::loadPose(pnh, "base_to_target_guess");
-    Eigen::Isometry3d camera_mount_to_camera = rct_ros_tools::loadPose(pnh, "wrist_to_camera_guess");
+    Eigen::Isometry3d target_mount_to_target = loadPose(pnh, "base_to_target_guess");
+    Eigen::Isometry3d camera_mount_to_camera = loadPose(pnh, "wrist_to_camera_guess");
 
     // Lets create a class that will search for the target in our raw images.
-    rct_image_tools::ModifiedCircleGridObservationFinder obs_finder(target);
+    ModifiedCircleGridObservationFinder obs_finder(target);
 
     // Finally, we need to process our images into correspondence sets: for each dot in the
     // target this will be where that dot is in the target and where it was seen in the image.
     // Repeat for each image. We also tell where the wrist was when the image was taken.
-    rct_optimizations::Observation2D3D::Set observations;
+    Observation2D3D::Set observations;
     observations.reserve(data_set.images.size());
     for (std::size_t i = 0; i < data_set.images.size(); ++i)
     {
@@ -93,7 +98,7 @@ int main(int argc, char **argv)
         cv::waitKey();
       }
 
-      rct_optimizations::Observation2D3D obs;
+      Observation2D3D obs;
       obs.correspondence_set.reserve(maybe_obs->size());
 
       // So for each image we need to:
@@ -102,20 +107,15 @@ int main(int argc, char **argv)
       obs.to_target_mount = Eigen::Isometry3d::Identity();
 
       //// And finally add that to the problem
-      obs.correspondence_set = rct_image_tools::getCorrespondenceSet(*maybe_obs, target.points);
+      obs.correspondence_set = getCorrespondenceSet(*maybe_obs, target.points);
 
       observations.push_back(obs);
     }
 
     // Measure the intrinsic calibration accuracy
     // The assumption here is that all PnP optimizations should have a residual error less than 1.0 pixels
-    rct_optimizations::IntrinsicCalibrationAccuracyResult result
-      = rct_optimizations::measureIntrinsicCalibrationAccuracy(observations,
-                                                               intr,
-                                                               camera_mount_to_camera,
-                                                               target_mount_to_target,
-                                                               Eigen::Isometry3d::Identity(),
-                                                               1.0);
+    IntrinsicCalibrationAccuracyResult result = measureIntrinsicCalibrationAccuracy(
+        observations, intr, camera_mount_to_camera, target_mount_to_target, Eigen::Isometry3d::Identity(), 1.0);
 
     // Analyze the results
     // These error tolerances allow the virtual correspondence sets for each observation to deviate from the expectation by up to 1 mm and 0.05 degrees
