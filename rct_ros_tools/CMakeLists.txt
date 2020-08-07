@@ -53,7 +53,8 @@ include_directories(
 # development purposes.
 add_library(${PROJECT_NAME}_data_loader
   src/data_loader/data_set.cpp
-  src/data_loader/parameter_loaders.cpp)
+  src/data_loader/parameter_loaders.cpp
+  src/data_loader/modified_circle_grid_target_loader.cpp)
 
 add_dependencies(${PROJECT_NAME}_data_loader ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 

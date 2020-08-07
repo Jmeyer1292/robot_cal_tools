@@ -9,38 +9,6 @@
 
 namespace rct_ros_tools
 {
-
-/**
- * \brief Thrown during errors in loading or parsing data files
- */
-class BadFileException : public std::runtime_error
-{
-public:
-  BadFileException(const std::string& what) : std::runtime_error(what) {}
-};
-
-/**
- * \brief Load a target from a ROS parameter
- * \throws ros::InvalidParameterException
- */
-rct_image_tools::ModifiedCircleGridTarget loadTarget(const ros::NodeHandle& nh, const std::string& key);
-
-/**
- * \brief Load a target from a ROS parameter. Returns false if an error occurs.
- */
-bool loadTarget(const ros::NodeHandle& nh, const std::string& key, rct_image_tools::ModifiedCircleGridTarget& target);
-
-/**
- * \brief Load a target from a YAML file
- * \throws rct_ros_tools::BadFileException
- */
-rct_image_tools::ModifiedCircleGridTarget loadTarget(const std::string& path);
-
-/**
- * \brief Load a target from a YAML file. Returns false if an error occurs.
- */
-bool loadTarget(const std::string& path, rct_image_tools::ModifiedCircleGridTarget& target);
-
 /**
  * \brief Load camera intrinsics from a ROS parameter
  * \throws ros::InvalidParameterException
