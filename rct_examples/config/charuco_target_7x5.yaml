@@ -1,4 +1,5 @@
 target_definition:
   rows: 7
   cols: 5
-  spacing: 0.036195 # meters between chessboard corners
+  chessboard_dim: 0.036195
+  aruco_marker_dim: 0.018256
