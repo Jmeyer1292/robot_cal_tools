@@ -113,6 +113,7 @@ int extrinsicWristCameraCalibration()
     obs.correspondence_set.reserve(maybe_obs->size());
 
     // And loop over each detected dot:
+    const std::vector<Eigen::Vector3d> target_points = target.createPoints();
     for (std::size_t j = 0; j < maybe_obs->size(); ++j)
     {
       // The 'target.points' data structure and the observation vector returned by
@@ -120,7 +121,7 @@ int extrinsicWristCameraCalibration()
       // respresents the same dot!
       rct_optimizations::Correspondence2D3D pair;
       pair.in_image = maybe_obs->at(j); // The obs finder and target define their points in the same order!
-      pair.in_target = target.points[j];
+      pair.in_target = target_points[j];
       obs.correspondence_set.push_back(pair);
     }
 

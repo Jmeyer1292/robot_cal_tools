@@ -95,7 +95,7 @@ rct_optimizations::Correspondence2D3D::Set getCorrespondenceSet(const rct_image_
   rct_optimizations::Correspondence2D3D::Set obs_set;
   if (maybe_obs)
   {
-    obs_set = getCorrespondenceSet(*maybe_obs, target.points);
+    obs_set = getCorrespondenceSet(*maybe_obs, target.createPoints());
   }
 
   return obs_set;

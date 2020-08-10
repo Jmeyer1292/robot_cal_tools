@@ -107,7 +107,7 @@ int main(int argc, char **argv)
       obs.to_target_mount = Eigen::Isometry3d::Identity();
 
       //// And finally add that to the problem
-      obs.correspondence_set = getCorrespondenceSet(*maybe_obs, target.points);
+      obs.correspondence_set = getCorrespondenceSet(*maybe_obs, target.createPoints());
 
       observations.push_back(obs);
     }

@@ -25,7 +25,7 @@ static void reproject(const Eigen::Isometry3d& wrist_to_target, const Eigen::Iso
                       const ModifiedCircleGridTarget& target, const cv::Mat& image)
 {
   Eigen::Isometry3d camera_to_target = base_to_camera.inverse() * (obs.to_target_mount * wrist_to_target);
-  std::vector<cv::Point2d> reprojections = getReprojections(camera_to_target, intr, target.points);
+  std::vector<cv::Point2d> reprojections = getReprojections(camera_to_target, intr, target.createPoints());
 
   cv::Mat frame = image.clone();
   drawReprojections(reprojections, 3, cv::Scalar(0, 0, 255), frame);
@@ -141,7 +141,7 @@ int main(int argc, char** argv)
     obs.to_camera_mount = Eigen::Isometry3d::Identity();
 
     //// And finally add that to the problem
-    obs.correspondence_set = getCorrespondenceSet(*maybe_obs, target.points);
+    obs.correspondence_set = getCorrespondenceSet(*maybe_obs, target.createPoints());
 
     problem_def.observations.push_back(obs);
   }

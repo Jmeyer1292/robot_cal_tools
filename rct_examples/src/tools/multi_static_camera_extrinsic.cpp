@@ -30,7 +30,7 @@ static void reproject(const Eigen::Isometry3d& base_to_target,
 {
 
   Eigen::Isometry3d camera_to_target = base_to_camera[0].inverse() * base_to_target;
-  std::vector<cv::Point2d> reprojections = getReprojections(camera_to_target, intr[0], target.points);
+  std::vector<cv::Point2d> reprojections = getReprojections(camera_to_target, intr[0], target.createPoints());
 
   cv::Mat before_frame = image.clone();
   drawReprojections(reprojections, 3, cv::Scalar(0, 0, 255), before_frame);
@@ -56,7 +56,7 @@ static void reproject(const Eigen::Isometry3d& base_to_target,
   printTransformDiff(camera_to_target, result_camera_to_target, "Camera 0", "Target", "PNP DIFF");
   printNewLine();
 
-  reprojections = getReprojections(result_camera_to_target, intr[0], target.points);
+  reprojections = getReprojections(result_camera_to_target, intr[0], target.createPoints());
   cv::Mat after_frame = image.clone();
   drawReprojections(reprojections, 3, cv::Scalar(0, 255, 0), after_frame);
 

@@ -39,7 +39,7 @@ static Eigen::Isometry3d solveCVPnP(const CameraIntrinsics& intr,
     image_points.push_back(cv::Point2d(o(0), o(1)));
 
   std::vector<cv::Point3d> target_points;
-  for (const auto p : target.points)
+  for (const auto p : target.createPoints())
     target_points.push_back( cv::Point3d(p(0), p(1), p(2)) );
 
   cv::Mat rvec (3, 1, cv::DataType<double>::type);
@@ -109,7 +109,7 @@ int main(int argc, char** argv)
   PnPProblem params;
   params.intr = intr;
   params.camera_to_target_guess = guess;
-  params.correspondences = getCorrespondenceSet(*maybe_obs, target.points);
+  params.correspondences = getCorrespondenceSet(*maybe_obs, target.createPoints());
 
   PnPResult pnp_result = optimize(params);
 

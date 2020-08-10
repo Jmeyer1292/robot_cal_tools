@@ -124,7 +124,7 @@ int main(int argc, char** argv)
     cv::imshow("points", obs_finder.drawObservations(data_set.images[i], *maybe_obs));
     cv::waitKey();
 
-    problem_def.image_observations.push_back(getCorrespondenceSet(*maybe_obs, target.points));
+    problem_def.image_observations.push_back(getCorrespondenceSet(*maybe_obs, target.createPoints()));
   }
 
   // Run optimization

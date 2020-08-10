@@ -85,9 +85,10 @@ int main(int argc, char** argv)
 
       // Add the detected correspondences
       problem.correspondences.reserve(maybe_obs->size());
+      const std::vector<Eigen::Vector3d> target_points = target.createPoints();
       for (std::size_t j = 0; j < maybe_obs->size(); ++j)
       {
-        problem.correspondences.emplace_back(maybe_obs->at(j), target.points.at(j));
+        problem.correspondences.emplace_back(maybe_obs->at(j), target_points.at(j));
       };
 
       problem_set.push_back(problem);
