@@ -19,6 +19,8 @@ if(NOT TARGET Eigen3::Eigen)
     set_property(TARGET Eigen3::Eigen PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${EIGEN3_INCLUDE_DIRS})
 endif()
 
+find_package(yaml-cpp REQUIRED)
+
 find_package(catkin REQUIRED COMPONENTS
   roscpp
 
@@ -35,9 +37,12 @@ catkin_package(
     include
   LIBRARIES
     ${PROJECT_NAME}_data_loader
-    yaml-cpp
   CATKIN_DEPENDS
     roscpp
+    tf2_ros
+    cv_bridge
+    image_transport
+    eigen_conversions
 )
 
 ###########

@@ -66,7 +66,7 @@ TYPED_TEST(TargetLoaderTest, test)
 
 int main(int argc, char** argv)
 {
-  testing::InitGoogleTest(&argc, argv);
+  ::testing::InitGoogleTest(&argc, argv);
   ros::init(argc, argv, "target_loader_utest");
   return RUN_ALL_TESTS();
 }
