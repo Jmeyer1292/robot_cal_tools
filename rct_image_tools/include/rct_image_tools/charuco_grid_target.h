@@ -15,27 +15,18 @@ struct CharucoGridTarget
 {
   /**
    * @brief Constructor
-   * @param cols - number of columns in the target
    * @param rows - number of rows in the target
+   * @param cols - number of columns in the target
    * @param chessboard_dim - The length of the side of one chessboard square (m)
    * @param aruco_marker_dim - The length of the side of one ArUco marker (m)
    * @param dictionary_id - The dictionary of ArUco markers to use
    */
-  CharucoGridTarget(const int cols, const int rows, const double chessboard_dim, const double aruco_marker_dim, const int dictionary_id = cv::aruco::DICT_6X6_250)
-  {
-    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(dictionary_id);
+  CharucoGridTarget(const int rows, const int cols, const double chessboard_dim, const double aruco_marker_dim,
+                    const int dictionary_id = cv::aruco::DICT_6X6_250);
 
-    // Create charuco board object
-    board = cv::aruco::CharucoBoard::create(cols, rows, chessboard_dim, aruco_marker_dim, dictionary);
+  CharucoGridTarget() = default;
 
-    // Create a map of chessboard intersection IDs and their location on the board
-    for (std::size_t i = 0; i < board->chessboardCorners.size(); i++)
-    {
-      const auto &corner = board->chessboardCorners.at(i);
-      Eigen::Vector3f pt(corner.x, corner.y, corner.z);
-      points.emplace(i, pt.cast<double>());
-    }
-  }
+  bool operator==(const CharucoGridTarget& other) const;
 
   /**
    * @brief Creates a set of correspondences between chessboard intersections observed in an image and their counterparts
@@ -44,20 +35,7 @@ struct CharucoGridTarget
    * @return Set of corresponding features in the image to features in the ChArUco target
    */
   std::vector<rct_optimizations::Correspondence2D3D>
-  createCorrespondences(const std::map<int, Eigen::Vector2d>& features) const
-  {
-    std::vector<rct_optimizations::Correspondence2D3D> correspondences;
-    correspondences.reserve(features.size());
-
-    for(auto it = features.begin(); it != features.end(); it++)
-    {
-      rct_optimizations::Correspondence2D3D corr;
-      corr.in_target = points.at(it->first);
-      corr.in_image = features.at(it->first);
-      correspondences.push_back(corr);
-    }
-    return correspondences;
-  }
+  createCorrespondences(const std::map<int, Eigen::Vector2d>& features) const;
 
   /** @brief Representation of the ChArUco board target */
   cv::Ptr<cv::aruco::CharucoBoard> board;

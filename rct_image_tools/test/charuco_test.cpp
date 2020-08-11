@@ -10,7 +10,7 @@ using namespace rct_image_tools;
 class ChArUcoTest : public ::testing::Test
 {
 public:
-  ChArUcoTest() : ::testing::Test(), target(5, 7, 0.02, 0.01, 10), finder(target)
+  ChArUcoTest() : ::testing::Test(), target(7, 5, 0.02, 0.01, 10), finder(target)
   {
   }
 

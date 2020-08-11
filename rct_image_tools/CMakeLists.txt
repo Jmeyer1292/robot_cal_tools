@@ -18,10 +18,11 @@ if(NOT TARGET Eigen3::Eigen)
 endif()
 
 add_library(${PROJECT_NAME} SHARED
+  src/${PROJECT_NAME}/modified_circle_grid_target.cpp
+  src/${PROJECT_NAME}/charuco_grid_target.cpp
   src/${PROJECT_NAME}/image_observation_finder.cpp
   src/${PROJECT_NAME}/aruco_finder.cpp
   src/${PROJECT_NAME}/circle_detector.cpp
-  src/${PROJECT_NAME}/modified_circle_grid_target.cpp
   src/${PROJECT_NAME}/charuco_finder.cpp
 )
 target_compile_options(${PROJECT_NAME} PUBLIC -std=c++11)
