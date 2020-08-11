@@ -119,6 +119,8 @@ public:
   DHChain(std::vector<DHTransform> transforms,
           const Eigen::Isometry3d& base_offset = Eigen::Isometry3d::Identity());
 
+  DHChain(const DHChain& rhs, const Eigen::MatrixX4d& dh_offsets);
+
   /**
    * @brief Calculates forward kinematics for the chain with the joints provided.
    * Note: the transform to the n-th link is calculated, where n is the size of @ref joint_values
@@ -198,6 +200,12 @@ public:
    * @return
    */
   std::vector<std::array<std::string, 4>> getParamLabels() const;
+
+  /**
+   * @brief Gets the base offset of the transform
+   * @return
+   */
+  Eigen::Isometry3d getBaseOffset() const;
 
 protected:
   /** @brief The DH transforms that make up the chain */
