@@ -1,82 +1,10 @@
 #include "rct_ros_tools/parameter_loaders.h"
-#include <xmlrpcpp/XmlRpcException.h>
-#include <yaml-cpp/yaml.h>
+#include <rct_ros_tools/loader_utils.h>
+#include <rct_ros_tools/exceptions.h>
 
-template<typename T>
-static bool read(XmlRpc::XmlRpcValue& xml, const std::string& key, T& value)
+namespace rct_ros_tools
 {
-  if (!xml.hasMember(key)) return false;
-  try {
-    value = static_cast<T>(xml[key]);
-  } catch (const XmlRpc::XmlRpcException& ex) {
-    ROS_ERROR_STREAM(ex.getMessage());
-    return false;
-  }
-  return true;
-}
-
-rct_image_tools::ModifiedCircleGridTarget rct_ros_tools::loadTarget(const ros::NodeHandle& nh, const std::string& key)
-{
-  XmlRpc::XmlRpcValue xml;
-  if (!nh.getParam(key, xml)) throw ros::InvalidParameterException(key);
-
-  int rows = 0;
-  int cols = 0;
-  double spacing = 0.0;
-
-  if (!read(xml, "rows", rows)) throw ros::InvalidParameterException(key + "/rows");
-  if (!read(xml, "cols", cols)) throw ros::InvalidParameterException(key + "/cols");
-  if (!read(xml, "spacing", spacing)) throw ros::InvalidParameterException(key + "/spacing");
-
-  return rct_image_tools::ModifiedCircleGridTarget(rows, cols, spacing);
-}
-
-bool rct_ros_tools::loadTarget(const ros::NodeHandle& nh, const std::string& key,
-                               rct_image_tools::ModifiedCircleGridTarget& target)
-{
-  try
-  {
-    target = loadTarget(nh, key);
-  }
-  catch (ros::InvalidParameterException &ex)
-  {
-    ROS_ERROR_STREAM("Failed to load target parameter: " << ex.what());
-    return false;
-  }
-  return true;
-}
-
-rct_image_tools::ModifiedCircleGridTarget rct_ros_tools::loadTarget(const std::string &path)
-{
-  try
-  {
-    YAML::Node n = YAML::LoadFile(path);
-    int rows = n["target_definition"]["rows"].as<int>();
-    int cols = n["target_definition"]["cols"].as<int>();
-    double spacing = n["target_definition"]["spacing"].as<double>(); // (meters between dot centers)
-    return rct_image_tools::ModifiedCircleGridTarget(rows, cols, spacing);
-  }
-  catch (YAML::Exception &ex)
-  {
-    throw BadFileException(std::string("YAML failure: ") + ex.what());
-  }
-}
-
-bool rct_ros_tools::loadTarget(const std::string& path, rct_image_tools::ModifiedCircleGridTarget& target)
-{
-  try
-  {
-    target = loadTarget(path);
-  }
-  catch (ros::InvalidParameterException &ex)
-  {
-    ROS_ERROR_STREAM("Failed to load target from file: " << ex.what());
-    return false;
-  }
-  return true;
-}
-
-rct_optimizations::CameraIntrinsics rct_ros_tools::loadIntrinsics(const ros::NodeHandle &nh, const std::string &key)
+rct_optimizations::CameraIntrinsics loadIntrinsics(const ros::NodeHandle &nh, const std::string &key)
 {
   XmlRpc::XmlRpcValue xml;
   if (!nh.getParam(key, xml)) throw ros::InvalidParameterException(key);
@@ -90,8 +18,8 @@ rct_optimizations::CameraIntrinsics rct_ros_tools::loadIntrinsics(const ros::Nod
   return intr;
 }
 
-bool rct_ros_tools::loadIntrinsics(const ros::NodeHandle& nh, const std::string& key,
-                                  rct_optimizations::CameraIntrinsics& intr)
+bool loadIntrinsics(const ros::NodeHandle& nh, const std::string& key,
+                                   rct_optimizations::CameraIntrinsics& intr)
 {
   try
   {
@@ -105,7 +33,7 @@ bool rct_ros_tools::loadIntrinsics(const ros::NodeHandle& nh, const std::string&
   return true;
 }
 
-rct_optimizations::CameraIntrinsics rct_ros_tools::loadIntrinsics(const std::string& path)
+rct_optimizations::CameraIntrinsics loadIntrinsics(const std::string& path)
 {
   try
   {
@@ -124,7 +52,7 @@ rct_optimizations::CameraIntrinsics rct_ros_tools::loadIntrinsics(const std::str
   }
 }
 
-bool rct_ros_tools::loadIntrinsics(const std::string& path, rct_optimizations::CameraIntrinsics& intrinsics)
+bool loadIntrinsics(const std::string& path, rct_optimizations::CameraIntrinsics& intrinsics)
 {
   try
   {
@@ -138,7 +66,7 @@ bool rct_ros_tools::loadIntrinsics(const std::string& path, rct_optimizations::C
   return true;
 }
 
-Eigen::Isometry3d rct_ros_tools::loadPose(const ros::NodeHandle &nh, const std::string &key)
+Eigen::Isometry3d loadPose(const ros::NodeHandle &nh, const std::string &key)
 {
   XmlRpc::XmlRpcValue xml;
   if (!nh.getParam(key, xml)) throw ros::InvalidParameterException(key);
@@ -158,7 +86,7 @@ Eigen::Isometry3d rct_ros_tools::loadPose(const ros::NodeHandle &nh, const std::
   return pose;
 }
 
-bool rct_ros_tools::loadPose(const ros::NodeHandle& nh, const std::string& key, Eigen::Isometry3d& pose)
+bool loadPose(const ros::NodeHandle& nh, const std::string& key, Eigen::Isometry3d& pose)
 {
   try
   {
@@ -172,7 +100,7 @@ bool rct_ros_tools::loadPose(const ros::NodeHandle& nh, const std::string& key, 
   return true;
 }
 
-Eigen::Isometry3d rct_ros_tools::loadPose(const std::string& path)
+Eigen::Isometry3d loadPose(const std::string& path)
 {
   try
   {
@@ -198,7 +126,7 @@ Eigen::Isometry3d rct_ros_tools::loadPose(const std::string& path)
   }
 }
 
-bool rct_ros_tools::loadPose(const std::string& path, Eigen::Isometry3d& pose)
+bool loadPose(const std::string& path, Eigen::Isometry3d& pose)
 {
   try
   {
@@ -211,3 +139,6 @@ bool rct_ros_tools::loadPose(const std::string& path, Eigen::Isometry3d& pose)
   }
   return true;
 }
+
+} // namespace rct_ros_tools
+

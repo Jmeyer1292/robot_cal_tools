@@ -1,14 +1,15 @@
 #include "rct_image_tools/modified_circle_grid_target.h"
 
-rct_image_tools::ModifiedCircleGridTarget::ModifiedCircleGridTarget(int rows, int cols, double spacing)
-    : rows(rows), cols(cols), x_spacing(spacing), y_spacing(spacing)
+namespace rct_image_tools
 {
-  makePoints(rows, cols, spacing, points);
+ModifiedCircleGridTarget::ModifiedCircleGridTarget(const unsigned rows_, const unsigned cols_, const double spacing_)
+  : rows(rows_), cols(cols_), spacing(spacing_)
+{
 }
 
-bool rct_image_tools::ModifiedCircleGridTarget::makePoints(std::size_t rows, std::size_t cols, double spacing,
-                                                           std::vector<Eigen::Vector3d>& points)
+std::vector<Eigen::Vector3d> ModifiedCircleGridTarget::createPoints() const
 {
+  std::vector<Eigen::Vector3d> points;
   points.reserve(rows * cols);
 
   for (std::size_t i = 1; i < (rows + 1); i++)
@@ -22,13 +23,19 @@ bool rct_image_tools::ModifiedCircleGridTarget::makePoints(std::size_t rows, std
     }
   }
 
-  // TODO(gChiou): May need a better check...
-  if (points.size() == (rows * cols))
-  {
-    return true;
-  }
-  else
-  {
-    return false;
-  }
+  assert(points.size() == (rows * cols));
+
+  return points;
 }
+
+bool ModifiedCircleGridTarget::operator==(const ModifiedCircleGridTarget &other) const
+{
+  bool equal = true;
+  equal &= (rows == other.rows);
+  equal &= (cols == other.cols);
+  equal &= (spacing == other.spacing);
+
+  return equal;
+}
+
+} // namespace rct_image_tools
