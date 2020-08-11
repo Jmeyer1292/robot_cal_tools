@@ -1,5 +1,6 @@
 #include <rct_image_tools/charuco_finder.h>
 
+#include <numeric>
 #include <gtest/gtest.h>
 #include <opencv2/aruco.hpp>
 #include <opencv2/core.hpp>
