@@ -21,7 +21,7 @@ rct_image_tools::CharucoGridTarget TargetLoader<rct_image_tools::CharucoGridTarg
   if (!read(xml, "chessboard_dim", chessboard_dim)) throw ros::InvalidParameterException(key + "/chessboard_dim");
   if (!read(xml, "aruco_marker_dim", aruco_marker_dim)) throw ros::InvalidParameterException(key + "/aruco_marker_dim");
 
-  return rct_image_tools::CharucoGridTarget(cols, rows, chessboard_dim, aruco_marker_dim);
+  return rct_image_tools::CharucoGridTarget(rows, cols, chessboard_dim, aruco_marker_dim);
 }
 
 template<>
@@ -49,7 +49,7 @@ rct_image_tools::CharucoGridTarget TargetLoader<rct_image_tools::CharucoGridTarg
     int rows = n["target_definition"]["rows"].as<int>();
     double chessboard_dim = n["target_definition"]["chessboard_dim"].as<double>();
     double aruco_marker_dim = n["target_definition"]["aruco_marker_dim"].as<double>();
-    return rct_image_tools::CharucoGridTarget(cols, rows, chessboard_dim, aruco_marker_dim);
+    return rct_image_tools::CharucoGridTarget(rows, cols, chessboard_dim, aruco_marker_dim);
   }
   catch (YAML::Exception &ex)
   {
