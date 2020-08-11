@@ -86,7 +86,12 @@ target_link_libraries(${PROJECT_NAME}_cmd
 if(CATKIN_ENABLE_TESTING)
   find_package(rostest REQUIRED)
   add_rostest_gtest(${PROJECT_NAME}_target_loader_utest test/target_loader.test test/target_loader_utest.cpp)
-  target_link_libraries(${PROJECT_NAME}_target_loader_utest ${PROJECT_NAME}_data_loader ${catkin_LIBRARIES})
+  target_link_libraries(${PROJECT_NAME}_target_loader_utest
+    ${PROJECT_NAME}_data_loader
+    GTest::GTest
+    GTest::Main
+    ${catkin_LIBRARIES}
+  )
 endif()
 
 #############
