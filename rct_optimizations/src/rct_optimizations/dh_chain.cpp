@@ -47,6 +47,18 @@ DHChain::DHChain(std::vector<DHTransform> transforms,
 {
 }
 
+DHChain::DHChain(const DHChain& other, const Eigen::MatrixX4d& dh_offsets)
+{
+  transforms_.reserve(other.transforms_.size());
+  for (std::size_t i = 0; i < other.transforms_.size(); ++i)
+  {
+    const DHTransform& transform = other.transforms_.at(i);
+    transforms_.emplace_back(transform.params + dh_offsets.row(i).transpose(), transform.type);
+  }
+
+  base_offset_ = other.base_offset_;
+}
+
 Eigen::VectorXd DHChain::createUniformlyRandomPose() const
 {
   Eigen::VectorXd joints(transforms_.size());
@@ -93,5 +105,9 @@ std::vector<std::array<std::string, 4>> DHChain::getParamLabels() const
   return out;
 }
 
+Eigen::Isometry3d DHChain::getBaseOffset() const
+{
+  return base_offset_;
+}
 
 } // namespace rct_optimizations
