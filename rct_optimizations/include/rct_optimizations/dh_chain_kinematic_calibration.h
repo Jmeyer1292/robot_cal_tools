@@ -66,6 +66,11 @@ struct KinematicCalibrationProblem2D3D
    */
   std::array<std::vector<int>, 8> mask;
 
+  /** @brief Expected standard deviation of the DH chain offsets for the camera DH chain */
+  double camera_chain_offset_stdev = 1.0e-3;
+  /** @brief Expected standard deviation of the DH chain offsets for the target DH chain */
+  double target_chain_offset_stdev = 1.0e-3;
+
   std::string label_camera_mount_to_camera = "camera_mount_to_camera";
   std::string label_target_mount_to_target = "target_mount_to_target";
   std::string label_camera_base_to_target = "camera_base_to_target";
@@ -100,6 +105,11 @@ struct KinematicCalibrationProblemPose3D
    * 7. Target mount to target base angle axis (size 3)
    */
   std::array<std::vector<int>, 8> mask;
+
+  /** @brief Expected standard deviation of the DH chain offsets for the camera DH chain */
+  double camera_chain_offset_stdev = 1.0e-3;
+  /** @brief Expected standard deviation of the DH chain offsets for the target DH chain */
+  double target_chain_offset_stdev = 1.0e-3;
 
   std::string label_camera_mount_to_camera = "camera_mount_to_camera";
   std::string label_target_mount_to_target = "target_mount_to_target";
