@@ -301,27 +301,22 @@ TEST_F(DHChainMeasurementTest, TestCostFunction)
   // Test the cost function
   for (const auto &obs : observations)
   {
+    DualDHChainCostPose3D cost(obs, camera_chain_truth, target_chain_truth);
 
-      DualDHChainCostPose3D cost(obs,
-                                 camera_chain_truth,
-                                 target_chain_truth,
-                                 obs.camera_chain_joints,
-                                 obs.target_chain_joints);
+    double residual[9];
+    EXPECT_TRUE(cost(parameters.data(), residual));
 
-      double residual[9];
-      EXPECT_TRUE(cost(parameters.data(), residual));
+    EXPECT_NEAR(residual[0], 0, 1.0e-12);  // p1_x
+    EXPECT_NEAR(residual[1], 0, 1.0e-12);  // p1_y
+    EXPECT_NEAR(residual[2], 0, 1.0e-12);  // p1_z
 
-      EXPECT_NEAR(residual[0], 0, 1.0e-12);  // p1_x
-      EXPECT_NEAR(residual[1], 0, 1.0e-12);  // p1_y
-      EXPECT_NEAR(residual[2], 0, 1.0e-12);  // p1_z
+    EXPECT_NEAR(residual[3], 0, 1.0e-12);  // p2_x
+    EXPECT_NEAR(residual[4], 0, 1.0e-12);  // p2_y
+    EXPECT_NEAR(residual[5], 0, 1.0e-12);  // p2_z
 
-      EXPECT_NEAR(residual[3], 0, 1.0e-12);  // p2_x
-      EXPECT_NEAR(residual[4], 0, 1.0e-12);  // p2_y
-      EXPECT_NEAR(residual[5], 0, 1.0e-12);  // p2_z
-
-      EXPECT_NEAR(residual[6], 0, 1.0e-12);  // p3_x
-      EXPECT_NEAR(residual[7], 0, 1.0e-12);  // p3_y
-      EXPECT_NEAR(residual[8], 0, 1.0e-12);  // p3_z
+    EXPECT_NEAR(residual[6], 0, 1.0e-12);  // p3_x
+    EXPECT_NEAR(residual[7], 0, 1.0e-12);  // p3_y
+    EXPECT_NEAR(residual[8], 0, 1.0e-12);  // p3_z
   }
 }
 

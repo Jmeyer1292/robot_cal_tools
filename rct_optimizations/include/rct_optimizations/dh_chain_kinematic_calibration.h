@@ -288,13 +288,10 @@ class DualDHChainCost2D3D : public DualDHChainCost
 class DualDHChainCostPose3D : public DualDHChainCost
 {
   public:
-  DualDHChainCostPose3D(const KinematicMeasurement &measurement,
-       const DHChain &camera_chain,
-       const DHChain &target_chain,
-       const Eigen::VectorXd &camera_chain_joints,
-       const Eigen::VectorXd &target_chain_joints)
-    : DualDHChainCost (camera_chain, target_chain, camera_chain_joints, target_chain_joints)
-    , measurement_camera_to_target_(measurement)
+    DualDHChainCostPose3D(const KinematicMeasurement& measurement, const DHChain& camera_chain,
+                          const DHChain& target_chain)
+    : DualDHChainCost (camera_chain, target_chain, measurement.camera_chain_joints, measurement.target_chain_joints)
+    , camera_to_target_measured_(measurement.camera_to_target)
   {
   }
 
@@ -335,9 +332,7 @@ class DualDHChainCostPose3D : public DualDHChainCost
     // Now that we have two transforms in the same frame, get the difference between the expected and observed pose of the target
     Isometry3<T> camera_to_target = camera_base_to_camera.inverse() * camera_base_to_target;
 
-    Isometry3<T> camera_to_target_measured = measurement_camera_to_target_.camera_to_target.cast<T>();
-
-    Isometry3<T> tform_error = camera_to_target_measured * camera_to_target.inverse();
+    Isometry3<T> tform_error = camera_to_target_measured_.cast<T>() * camera_to_target.inverse();
 
     // compute residual from orientation as nominal vs actual locations of points rotated by error transform
     Vector4<T> p1, p2, p3;
@@ -365,7 +360,7 @@ class DualDHChainCostPose3D : public DualDHChainCost
   }
 
   protected:
-  KinematicMeasurement measurement_camera_to_target_;
+    Eigen::Isometry3d camera_to_target_measured_;
 };
 
 KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &problem);

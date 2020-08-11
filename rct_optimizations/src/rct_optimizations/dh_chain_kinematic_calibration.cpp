@@ -259,7 +259,7 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblemPose3D &par
                                                 params.label_camera_mount_to_camera + "_ry",
                                                 params.label_camera_mount_to_camera + "_rz"});
 
-  // Target mount to target (cm_to_c) quaternion and translation
+  // Target mount to target (tm_to_t) quaternion and translation
   Eigen::Vector3d t_tm_to_t(params.target_mount_to_target_guess.translation());
   Eigen::AngleAxisd rot_tm_to_t(params.target_mount_to_target_guess.rotation());
   Eigen::Vector3d aa_tm_to_t(rot_tm_to_t.angle() * rot_tm_to_t.axis());
@@ -340,11 +340,7 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblemPose3D &par
   {
     // Allocate Ceres data structures - ownership is taken by the ceres
     // Problem data structure
-    auto *cost_fn = new DualDHChainCostPose3D(observation,
-                                              params.camera_chain,
-                                              params.target_chain,
-                                              observation.camera_chain_joints,
-                                              observation.target_chain_joints);
+    auto* cost_fn = new DualDHChainCostPose3D(observation, params.camera_chain, params.target_chain);
 
     auto *cost_block = new ceres::DynamicAutoDiffCostFunction<DualDHChainCostPose3D>(cost_fn);
 
