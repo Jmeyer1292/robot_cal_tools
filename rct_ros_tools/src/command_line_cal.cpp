@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include <rct_ros_tools/data_set.h>
 #include <rct_ros_tools/parameter_loaders.h>
+#include <rct_ros_tools/target_loaders.h>
 
 #include <tf2_ros/transform_listener.h>
 #include <opencv2/highgui.hpp>
@@ -223,8 +224,13 @@ int main(int argc, char** argv)
   if (!get(pnh, "base_frame", config.base_frame)) return 1;
   if (!get(pnh, "tool_frame", config.tool_frame)) return 1;
   if (!get(pnh, "image_topic", config.image_topic)) return 1;
-  if (!get(pnh, "save_dir", config.save_dir)) return 1;
-  if (!rct_ros_tools::loadTarget(pnh, "target_definition", config.target))
+  if (!get(pnh, "save_dir", config.save_dir))
+    return 1;
+
+  using namespace rct_ros_tools;
+  using namespace rct_image_tools;
+
+  if (!TargetLoader<ModifiedCircleGridTarget>::load(pnh, "target_definition", config.target))
   {
     ROS_ERROR_STREAM("Must provide parameters to load target!");
     return 1;

@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="target_file" default="$(find rct_ros_tools)/test/modified_circle_grid_target.yaml"/>
+  <test test-name="target_loader_utest" pkg="rct_ros_tools" type="rct_ros_tools_target_loader_utest">
+    <rosparam command="load" file="$(arg target_file)"/>
+    <param name="target_file" value="$(arg target_file)" />
+  </test>
+</launch>

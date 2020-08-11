@@ -19,6 +19,8 @@ if(NOT TARGET Eigen3::Eigen)
     set_property(TARGET Eigen3::Eigen PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${EIGEN3_INCLUDE_DIRS})
 endif()
 
+find_package(yaml-cpp REQUIRED)
+
 find_package(catkin REQUIRED COMPONENTS
   roscpp
 
@@ -35,9 +37,12 @@ catkin_package(
     include
   LIBRARIES
     ${PROJECT_NAME}_data_loader
-    yaml-cpp
   CATKIN_DEPENDS
     roscpp
+    tf2_ros
+    cv_bridge
+    image_transport
+    eigen_conversions
 )
 
 ###########
@@ -53,10 +58,9 @@ include_directories(
 # development purposes.
 add_library(${PROJECT_NAME}_data_loader
   src/data_loader/data_set.cpp
-  src/data_loader/parameter_loaders.cpp)
-
+  src/data_loader/parameter_loaders.cpp
+  src/data_loader/modified_circle_grid_target_loader.cpp)
 add_dependencies(${PROJECT_NAME}_data_loader ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
 target_link_libraries(${PROJECT_NAME}_data_loader
  yaml-cpp
  ${OpenCV_LIBRARIES}
@@ -67,11 +71,8 @@ target_link_libraries(${PROJECT_NAME}_data_loader
 # Executable for collecting data sets via subscribers and triggered with services
 # See readme (TODO: Write a readme)
 add_executable(${PROJECT_NAME}_cmd src/command_line_cal.cpp)
-
 set_target_properties(${PROJECT_NAME}_cmd PROPERTIES OUTPUT_NAME command_line_data_collection PREFIX "")
-
 add_dependencies(${PROJECT_NAME}_cmd ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
 target_link_libraries(${PROJECT_NAME}_cmd
  ${catkin_LIBRARIES}
  ${PROJECT_NAME}_data_loader
@@ -81,6 +82,18 @@ target_link_libraries(${PROJECT_NAME}_cmd
 #############
 ## Testing ##
 #############
+
+if(CATKIN_ENABLE_TESTING)
+  find_package(rostest REQUIRED)
+  find_package(GTest REQUIRED)
+  add_rostest_gtest(${PROJECT_NAME}_target_loader_utest test/target_loader.test test/target_loader_utest.cpp)
+  target_link_libraries(${PROJECT_NAME}_target_loader_utest
+    ${PROJECT_NAME}_data_loader
+    GTest::GTest
+    GTest::Main
+    ${catkin_LIBRARIES}
+  )
+endif()
 
 #############
 ## Install ##

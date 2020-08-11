@@ -12,10 +12,15 @@
 #include <rct_image_tools/image_utils.h>
 #include <rct_optimizations/pnp.h>
 #include <rct_ros_tools/parameter_loaders.h>
+#include <rct_ros_tools/target_loaders.h>
 #include <rct_ros_tools/print_utils.h>
 
-static Eigen::Isometry3d solveCVPnP(const rct_optimizations::CameraIntrinsics& intr,
-                                  const rct_image_tools::ModifiedCircleGridTarget& target,
+using namespace rct_optimizations;
+using namespace rct_image_tools;
+using namespace rct_ros_tools;
+
+static Eigen::Isometry3d solveCVPnP(const CameraIntrinsics& intr,
+                                  const ModifiedCircleGridTarget& target,
                                   const std::vector<Eigen::Vector2d>& obs)
 {
   cv::Mat cam_matrix (3, 3, cv::DataType<double>::type);
@@ -26,15 +31,15 @@ static Eigen::Isometry3d solveCVPnP(const rct_optimizations::CameraIntrinsics& i
   cam_matrix.at<double>(0, 2) = intr.cx();
   cam_matrix.at<double>(1, 2) = intr.cy();
 
-  rct_ros_tools::printCameraIntrinsics(intr.values, "Camera Intrinsics");
-  rct_ros_tools::printNewLine();
+  printCameraIntrinsics(intr.values, "Camera Intrinsics");
+  printNewLine();
 
   std::vector<cv::Point2d> image_points;
   for (const auto o : obs)
     image_points.push_back(cv::Point2d(o(0), o(1)));
 
   std::vector<cv::Point3d> target_points;
-  for (const auto p : target.points)
+  for (const auto p : target.createPoints())
     target_points.push_back( cv::Point3d(p(0), p(1), p(2)) );
 
   cv::Mat rvec (3, 1, cv::DataType<double>::type);
@@ -45,8 +50,8 @@ static Eigen::Isometry3d solveCVPnP(const rct_optimizations::CameraIntrinsics& i
   Eigen::Isometry3d result(Eigen::AngleAxisd(rr.norm(), rr.normalized()));
   result.translation() = Eigen::Vector3d(tvec.at<double>(0, 0), tvec.at<double>(1, 0), tvec.at<double>(2, 0));
 
-  rct_ros_tools::printTransform(result, "Camera", "Target", "OpenCV solvePNP");
-  rct_ros_tools::printNewLine();
+  printTransform(result, "Camera", "Target", "OpenCV solvePNP");
+  printNewLine();
 
   return result;
 }
@@ -68,22 +73,22 @@ int main(int argc, char** argv)
   cv::Mat mat = cv::imread(image_path);
 
   // Load target definition from parameter server
-  rct_image_tools::ModifiedCircleGridTarget target;
-  if (!rct_ros_tools::loadTarget(pnh, "target_definition", target))
+  ModifiedCircleGridTarget target;
+  if (!TargetLoader<ModifiedCircleGridTarget>::load(pnh, "target_definition", target))
   {
     ROS_WARN_STREAM("Unable to load target from the 'target_definition' parameter struct");
     return 1;
   }
 
   // Load the camera intrinsics from the parameter server
-  rct_optimizations::CameraIntrinsics intr;
-  if (!rct_ros_tools::loadIntrinsics(pnh, "intrinsics", intr))
+  CameraIntrinsics intr;
+  if (!loadIntrinsics(pnh, "intrinsics", intr))
   {
     ROS_WARN_STREAM("Unable to load camera intrinsics from the 'intrinsics' parameter struct");
     return 1;
   }
 
-  rct_image_tools::ModifiedCircleGridObservationFinder finder (target);
+  ModifiedCircleGridObservationFinder finder (target);
   auto maybe_obs = finder.findObservations(mat);
   if (!maybe_obs)
   {
@@ -101,18 +106,18 @@ int main(int argc, char** argv)
   Eigen::Isometry3d guess = Eigen::Isometry3d::Identity();
   guess = guess * Eigen::Translation3d(0,0,0.1) * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX());
 
-  rct_optimizations::PnPProblem params;
+  PnPProblem params;
   params.intr = intr;
   params.camera_to_target_guess = guess;
-  params.correspondences = rct_image_tools::getCorrespondenceSet(*maybe_obs, target.points);
+  params.correspondences = getCorrespondenceSet(*maybe_obs, target.createPoints());
 
-  rct_optimizations::PnPResult pnp_result = rct_optimizations::optimize(params);
+  PnPResult pnp_result = optimize(params);
 
-  rct_ros_tools::printOptResults(pnp_result.converged, pnp_result.initial_cost_per_obs, pnp_result.final_cost_per_obs);
-  rct_ros_tools::printNewLine();
+  printOptResults(pnp_result.converged, pnp_result.initial_cost_per_obs, pnp_result.final_cost_per_obs);
+  printNewLine();
 
-  rct_ros_tools::printTransform(pnp_result.camera_to_target, "Camera", "Target", "RCT CAMERA TO TARGET");
-  rct_ros_tools::printNewLine();
+  printTransform(pnp_result.camera_to_target, "Camera", "Target", "RCT CAMERA TO TARGET");
+  printNewLine();
 
   return 0;
 }
