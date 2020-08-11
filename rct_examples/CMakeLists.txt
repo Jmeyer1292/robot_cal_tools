@@ -111,6 +111,20 @@ set_target_properties(${PROJECT_NAME}_noise_qualification_2d PROPERTIES OUTPUT_N
 add_dependencies(${PROJECT_NAME}_noise_qualification_2d ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(${PROJECT_NAME}_noise_qualification_2d ${catkin_LIBRARIES} rct::rct_optimizations rct::rct_image_tools)
 
+
+
+
+#Executable for kinematic calibration
+add_executable(${PROJECT_NAME}_kinematic_calibration src/tools/kinematic_calibration.cpp)
+
+set_target_properties(${PROJECT_NAME}_kinematic_calibration PROPERTIES OUTPUT_NAME kinematic_calibration PREFIX "")
+
+add_dependencies(${PROJECT_NAME}_kinematic_calibration ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(${PROJECT_NAME}_kinematic_calibration ${catkin_LIBRARIES} rct::rct_optimizations rct::rct_image_tools)
+
+
+
 #############
 ## Testing ##
 #############
