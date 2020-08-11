@@ -1,8 +1,14 @@
 <?xml version="1.0"?>
 <launch>
-  <arg name="target_file" default="$(find rct_ros_tools)/test/modified_circle_grid_target.yaml"/>
-  <test test-name="target_loader_utest" pkg="rct_ros_tools" type="rct_ros_tools_target_loader_utest">
-    <rosparam command="load" file="$(arg target_file)"/>
-    <param name="target_file" value="$(arg target_file)" />
-  </test>
+  <arg name="modified_circle_grid_target_file" default="$(find rct_ros_tools)/test/modified_circle_grid_target.yaml"/>
+  <arg name="charuco_grid_target_file" default="$(find rct_ros_tools)/test/charuco_grid_target.yaml"/>
+  <node name="target_loader_utest" pkg="rct_ros_tools" type="rct_ros_tools_target_loader_utest" output="screen">
+    <!-- Modified Circle Grid -->
+    <rosparam command="load" file="$(arg modified_circle_grid_target_file)" ns="modified_circle_grid_target"/>
+    <param name="modified_circle_grid_target/target_file" value="$(arg modified_circle_grid_target_file)"/>
+
+    <!-- ChArUco Grid Target -->
+    <rosparam command="load" file="$(arg charuco_grid_target_file)" ns="charuco_grid_target"/>
+    <param name="charuco_grid_target/target_file" value="$(arg charuco_grid_target_file)"/>
+  </node>
 </launch>
