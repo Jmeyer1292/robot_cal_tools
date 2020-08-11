@@ -129,7 +129,7 @@ DHChain perturbDHChain(const DHChain &in, const double stddev)
   {
     transforms.emplace_back(dh.row(i), joint_types[i], "j" + std::to_string(i + 1));
   }
-  return DHChain(transforms);
+  return DHChain(transforms, in.getBaseOffset());
 }
 
 } // namespace test
