@@ -51,6 +51,7 @@ the use of this software, even if advised of the possibility of such damage.
 #include <algorithm>
 #include <iterator>
 #include <yaml-cpp/yaml.h>
+#include <opencv2/highgui.hpp>
 
 namespace rct_image_tools
 {
@@ -89,7 +90,7 @@ CircleDetector::Params::Params()
 class CircleDetectorImpl : public CircleDetector
 {
 public:
-  explicit CircleDetectorImpl(const CircleDetector::Params& parameters = CircleDetector::Params());
+  explicit CircleDetectorImpl(const CircleDetector::Params& parameters = CircleDetector::Params(), const bool debug = false);
 
 protected:
   struct CV_EXPORTS Center
@@ -117,9 +118,11 @@ protected:
   virtual std::vector<Center> findCircles(const cv::Mat& image, const double threshold) const;
 
   Params params;
+  const bool debug_;
 };
 
-CircleDetectorImpl::CircleDetectorImpl(const CircleDetector::Params& parameters) : params(parameters){}
+CircleDetectorImpl::CircleDetectorImpl(const CircleDetector::Params& parameters, const bool debug)
+  : params(parameters), debug_(debug){}
 
 std::vector<CircleDetectorImpl::Center> CircleDetectorImpl::findCircles(const cv::Mat& image, const double threshold) const
 {
@@ -130,6 +133,11 @@ std::vector<CircleDetectorImpl::Center> CircleDetectorImpl::findCircles(const cv
   // Get the contours of the image
   std::vector<std::vector<cv::Point>> contours;
   cv::findContours(binarized_image, contours, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
+
+  // Debug
+  cv::Mat debug_img;
+  cv::cvtColor(binarized_image, debug_img, CV_GRAY2RGB);
+  const CvScalar color(255, 0, 0);
 
   // Loop on all contours
   std::vector<Center> centers;
@@ -247,7 +255,18 @@ std::vector<CircleDetectorImpl::Center> CircleDetectorImpl::findCircles(const cv
       center.confidence = 1.0 / err;
       center.radius = (box.size.height + box.size.width) / 4.0;
       centers.push_back(center);
+
+      if (debug_)
+      {
+        cv::drawContours(debug_img, contours, i, color, 2);
+      }
     }
+  }
+
+  if (debug_)
+  {
+    cv::imshow("circle_detection_debug", debug_img);
+    cv::waitKey();
   }
 
   return centers;
@@ -339,11 +358,19 @@ void CircleDetectorImpl::detect(cv::InputArray input, std::vector<cv::KeyPoint>&
       keypoints.emplace_back(sum_point, sum_radius * 2.0);
     }
   }
+
+  if (debug_)
+  {
+    cv::Mat debug_image;
+    cv::drawKeypoints(image, keypoints, debug_image);
+    cv::imshow("circle_detection_debug", debug_image);
+    cv::waitKey();
+  }
 }
 
-cv::Ptr<CircleDetector> CircleDetector::create(const CircleDetector::Params& params)
+cv::Ptr<CircleDetector> CircleDetector::create(const CircleDetector::Params& params, bool debug)
 {
-  return cv::makePtr<CircleDetectorImpl>(params);
+  return cv::makePtr<CircleDetectorImpl>(params, debug);
 }
 
 template <typename T>

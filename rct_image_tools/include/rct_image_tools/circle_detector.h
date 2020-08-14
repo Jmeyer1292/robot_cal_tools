@@ -74,7 +74,7 @@ public:
    * @param params
    * @return
    */
-  static cv::Ptr<CircleDetector> create(const CircleDetector::Params& params = CircleDetector::Params());
+  static cv::Ptr<CircleDetector> create(const CircleDetector::Params& params = CircleDetector::Params(), const bool debug = false);
 
   /**
    * @brief loadParams Load CircleDetector parameters from a yaml file.  Only specified values will be modified.
