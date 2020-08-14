@@ -15,29 +15,59 @@ public:
   {
     Params();
 
-    float thresholdStep;
+    /** @brief The minimum grayscale pixel intensity value at which to start the image thresholding */
     float minThreshold;
+    /** @brief The maximum grayscale pixel intensity value at which to stop the image thresholding */
     float maxThreshold;
+    /** @brief The thresholding step */
+    float thresholdStep;
+
+    /** @brief The number of times a particular circle must be identified to be considered valid (must be <= the number of threshold steps) */
     size_t minRepeatability;
+    /** @brief The minimum distance between identified circles */
     float minDistBetweenCircles;
+    /** @brief The minimum radius difference */
     float minRadiusDiff;
 
+    /** @brief Flag for color filtering */
     bool filterByColor;
+    /** @brief Color intensity of circle center in the binary image (value must be 0 or 255) */
     uchar circleColor;
 
+    /** @brief Flag for filtering by area */
     bool filterByArea;
-    float minArea, maxArea;
+    /** @brief Minimum blob area (px^2) */
+    float minArea;
+    /** @brief Maximum blob area (px^2) */
+    float maxArea;
 
+    /** @brief Flag for circularity filtering */
     bool filterByCircularity;
-    float minCircularity, maxCircularity;
+    /** @brief Minimum blob circularity ratio - for a perfect circle this value is 1.0 / PI (~0.333) */
+    float minCircularity;
+    /**@ brief Maximum blob circularity ratio */
+    float maxCircularity;
 
+    /** @brief Flag for inertia filtering */
     bool filterByInertia;
-    float minInertiaRatio, maxInertiaRatio;
+    /** @brief Minimum blob inertia ratio */
+    float minInertiaRatio;
+    /** @brief Maximum blob inertia ratio - for a perfect circle, this value is 1.0 */
+    float maxInertiaRatio;
 
+    /** @brief Flag for convexity filtering */
     bool filterByConvexity;
-    float minConvexity, maxConvexity;
+    /** @brief Minimum blob convexity */
+    float minConvexity;
+    /** @brief Maximum blob convexity */
+    float maxConvexity;
   };
 
+  /**
+   * @brief Creates a circle detector pointer from a parameter structure
+   * @param params
+   * @return
+   */
   static cv::Ptr<CircleDetector> create(const CircleDetector::Params& params = CircleDetector::Params());
 
   /**
