@@ -61,11 +61,11 @@ CircleDetector::Params::Params()
   maxThreshold = 220;
   thresholdStep = 10;
 
-  minRepeatability = 2;
-  circleInclusionRadius = 10;
-  maxRadiusDiff = 10;
+  minRepeatability = 3;
+  circleInclusionRadius = 5;
+  maxRadiusDiff = 5;
 
-  maxAverageEllipseError = 0.002;
+  maxAverageEllipseError = 0.02;
 
   filterByColor = true;
   circleColor = 0;
@@ -78,8 +78,8 @@ CircleDetector::Params::Params()
   minCircularity = 0.8f;
   maxCircularity = std::numeric_limits<float>::max();
 
-  filterByInertia = true;
-  minInertiaRatio = 0.1f;
+  filterByInertia = false;
+  minInertiaRatio = 0.3f;
   maxInertiaRatio = std::numeric_limits<float>::max();
 
   filterByConvexity = true;

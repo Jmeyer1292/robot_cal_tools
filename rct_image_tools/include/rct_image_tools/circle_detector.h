@@ -31,8 +31,7 @@ public:
      * the blob will not be considered to be the same feature as the previously identified circle */
     float maxRadiusDiff;
 
-    /** @brief The maximum average deviation of the contour of a blob from its calculated ellipse fit (percentage)
-     *  Testing has shown that ellipses can be reliably detected with ~0.2% error (i.e. 0.002) */
+    /** @brief The maximum average deviation of the contour of a blob from its calculated ellipse fit (percentage) */
     float maxAverageEllipseError;
 
     /** @brief Flag for color filtering */
