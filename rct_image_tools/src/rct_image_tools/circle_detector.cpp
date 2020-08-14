@@ -59,7 +59,7 @@ CircleDetector::Params::Params()
 {
   minThreshold = 50;
   maxThreshold = 220;
-  thresholdStep = 10;
+  nThresholds = 18;
 
   minRepeatability = 3;
   circleInclusionRadius = 5;
@@ -274,6 +274,15 @@ std::vector<CircleDetectorImpl::Center> CircleDetectorImpl::findCircles(const cv
 
 void CircleDetectorImpl::detect(cv::InputArray input, std::vector<cv::KeyPoint>& keypoints, cv::InputArray)
 {
+  // Check that the detection parameters make sense
+  if (params.minRepeatability > params.nThresholds)
+  {
+    std::stringstream ss;
+    ss << "Minimum repeatability (" << params.minRepeatability << ") cannot exceed the number of thresholds ("
+       << params.nThresholds << ")";
+    throw std::runtime_error(ss.str());
+  }
+
   cv::Mat image = input.getMat();
   keypoints.clear();
   cv::Mat grayscale_image;
@@ -287,8 +296,19 @@ void CircleDetectorImpl::detect(cv::InputArray input, std::vector<cv::KeyPoint>&
   std::vector<std::vector<Center>> centers;
 
   // Threshold the image per the input parameters and attempt to find all circles
-  for (double threshold = params.minThreshold; threshold < params.maxThreshold; threshold += params.thresholdStep)
+  const double threshold_range = params.maxThreshold - params.minThreshold;
+  for (std::size_t i = 0; i < params.nThresholds; ++i)
   {
+    double threshold = 0.0;
+    if (params.nThresholds < 2)
+    {
+      threshold = params.minThreshold + (threshold_range / 2.0);
+    }
+    else
+    {
+      threshold = params.minThreshold + (static_cast<double>(i) / (params.nThresholds - 1)) * threshold_range;
+    }
+
     // Find all the circles in the image
     std::vector<Center> new_centers = findCircles(grayscale_image, threshold);
 
@@ -407,7 +427,7 @@ bool CircleDetector::loadParams(const std::string& path, CircleDetector::Params&
 
   try
   {
-    optionalLoad(n, "thresholdStep", p.thresholdStep);
+    optionalLoad(n, "thresholdStep", p.nThresholds);
     optionalLoad(n, "minThreshold", p.minThreshold);
     optionalLoad(n, "maxThreshold", p.maxThreshold);
     optionalLoad(n, "minRepeatability", p.minRepeatability);

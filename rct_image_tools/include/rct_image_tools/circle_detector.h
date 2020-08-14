@@ -15,12 +15,12 @@ public:
   {
     Params();
 
-    /** @brief The minimum grayscale pixel intensity value at which to start the image thresholding */
+    /** @brief The minimum grayscale pixel intensity value at which to start the image thresholding (inclusive) */
     float minThreshold;
-    /** @brief The maximum grayscale pixel intensity value at which to stop the image thresholding */
+    /** @brief The maximum grayscale pixel intensity value at which to stop the image thresholding (inclusive) */
     float maxThreshold;
-    /** @brief The thresholding step */
-    float thresholdStep;
+    /** @brief The number of thresholding steps to apply */
+    std::size_t nThresholds;
 
     /** @brief The number of times a particular circle must be identified to be considered valid (must be <= the number of threshold steps) */
     size_t minRepeatability;
