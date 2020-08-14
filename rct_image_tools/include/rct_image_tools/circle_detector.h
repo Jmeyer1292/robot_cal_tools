@@ -24,10 +24,16 @@ public:
 
     /** @brief The number of times a particular circle must be identified to be considered valid (must be <= the number of threshold steps) */
     size_t minRepeatability;
-    /** @brief The minimum distance between identified circles */
-    float minDistBetweenCircles;
-    /** @brief The minimum radius difference */
-    float minRadiusDiff;
+    /** @brief The radius (pixels) around an identified circle within which new detected blobs will be considered to be
+     * the same feature as the circle */
+    float circleInclusionRadius;
+    /** @brief The maximum difference in radius (pixels) between an identified circle and a detected blob, above which
+     * the blob will not be considered to be the same feature as the previously identified circle */
+    float maxRadiusDiff;
+
+    /** @brief The maximum average deviation of the contour of a blob from its calculated ellipse fit (percentage)
+     *  Testing has shown that ellipses can be reliably detected with ~0.2% error (i.e. 0.002) */
+    float maxAverageEllipseError;
 
     /** @brief Flag for color filtering */
     bool filterByColor;

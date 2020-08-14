@@ -54,7 +54,6 @@ the use of this software, even if advised of the possibility of such damage.
 
 namespace rct_image_tools
 {
-
 CircleDetector::Params::Params()
 {
   minThreshold = 50;
@@ -64,6 +63,8 @@ CircleDetector::Params::Params()
   minRepeatability = 2;
   circleInclusionRadius = 10;
   maxRadiusDiff = 10;
+
+  maxAverageEllipseError = 0.002;
 
   filterByColor = true;
   circleColor = 0;
@@ -118,7 +119,7 @@ protected:
   Params params;
 };
 
-CircleDetectorImpl::CircleDetectorImpl(const CircleDetector::Params& parameters) : params(parameters) {}
+CircleDetectorImpl::CircleDetectorImpl(const CircleDetector::Params& parameters) : params(parameters){}
 
 std::vector<CircleDetectorImpl::Center> CircleDetectorImpl::findCircles(const cv::Mat& image, const double threshold) const
 {
@@ -132,7 +133,6 @@ std::vector<CircleDetectorImpl::Center> CircleDetectorImpl::findCircles(const cv
 
   // Loop on all contours
   std::vector<Center> centers;
-  double confidence = 1.0;
   for (std::size_t i = 0; i < contours.size(); ++i)
   {
     // Each if statement may eliminate a contour through the continue function
@@ -183,8 +183,6 @@ std::vector<CircleDetectorImpl::Center> CircleDetectorImpl::findCircles(const cv
 
       if (ratio < params.minInertiaRatio || ratio >= params.maxInertiaRatio)
         continue;
-
-      confidence = ratio * ratio;
     }
 
     // Convexity filter
@@ -200,11 +198,7 @@ std::vector<CircleDetectorImpl::Center> CircleDetectorImpl::findCircles(const cv
     }
 
     // Fit an ellipse to the contour
-    cv::Mat pointsf;
-    cv::Mat(contour).convertTo(pointsf, CV_32F);
-    if (pointsf.rows < 5)
-      continue;
-    cv::RotatedRect box = cv::fitEllipse(pointsf);
+    cv::RotatedRect box = cv::fitEllipse(contour);
 
     // Check that the color of the center pixel matches the expectation
     if (params.filterByColor)
@@ -213,12 +207,47 @@ std::vector<CircleDetectorImpl::Center> CircleDetectorImpl::findCircles(const cv
         continue;
     }
 
-    // Create the center
-    Center center;
-    center.location = box.center;
-    center.confidence = confidence;
-    center.radius = (box.size.height + box.size.width) / 4.0;
-    centers.push_back(center);
+    // Check that the contour matches a model of an ellipse within tolerance
+    double err = 0.0;
+    {
+      // Get the angle of the ellipse and its major (a) and minor (b) axes
+      double angle = box.angle * CV_PI / 180.0;
+      double a = box.size.width / 2.0;
+      double b = box.size.height / 2.0;
+
+      // Calculate the output of the ellipse equation ( x^2/a^2 + y^2/b^2 = 1) for each point in the contour
+      double output = 0.0;
+      for (const cv::Point& pt : contour)
+      {
+        // Get the vector from the center of the ellipse to the point on the contour
+        cv::Point2f v = cv::Point2f(pt) - box.center;
+
+        // Since the major and minor axes are not aligned with the coordinate system, we need to transform the x and y
+        // coordinates
+        double x = v.x * std::cos(angle) + v.y * std::sin(angle);
+        double y = v.x * std::sin(angle) - v.y * std::cos(angle);
+
+        // The output of the ellipse equation using this point should equal one
+        double one = std::sqrt((std::pow(x, 2.0) / std::pow(a, 2.0)) + (std::pow(y, 2.0) / std::pow(b, 2.0)));
+
+        // Accumulate the error
+        output += one;
+      }
+
+      // Average the error
+      err = std::abs((output / contour.size()) - 1.0);
+    }
+
+    // If the error is below the threshold then add it to the list of circles
+    if (err < params.maxAverageEllipseError)
+    {
+      // Create the center
+      Center center;
+      center.location = box.center;
+      center.confidence = 1.0 / err;
+      center.radius = (box.size.height + box.size.width) / 4.0;
+      centers.push_back(center);
+    }
   }
 
   return centers;
