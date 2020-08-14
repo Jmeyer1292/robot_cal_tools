@@ -62,8 +62,8 @@ CircleDetector::Params::Params()
   thresholdStep = 10;
 
   minRepeatability = 2;
-  minDistBetweenCircles = 10;
-  minRadiusDiff = 10;
+  circleInclusionRadius = 10;
+  maxRadiusDiff = 10;
 
   filterByColor = true;
   circleColor = 0;
@@ -258,11 +258,7 @@ void CircleDetectorImpl::detect(cv::InputArray input, std::vector<cv::KeyPoint>&
 
           // If the position and radius differences are within tolerance, add this point to this list of same centers
           // (to be weight-averaged later)
-          if (pos_diff >= params.minDistBetweenCircles || radius_diff >= params.minRadiusDiff)
-          {
-            continue;
-          }
-          else
+          if (pos_diff <= params.circleInclusionRadius && radius_diff <= params.maxRadiusDiff)
           {
             return i;
           }
@@ -359,8 +355,8 @@ bool CircleDetector::loadParams(const std::string& path, CircleDetector::Params&
     optionalLoad(n, "minThreshold", p.minThreshold);
     optionalLoad(n, "maxThreshold", p.maxThreshold);
     optionalLoad(n, "minRepeatability", p.minRepeatability);
-    optionalLoad(n, "minDistBetweenCircles", p.minDistBetweenCircles);
-    optionalLoad(n, "minRadiusDiff", p.minRadiusDiff);
+    optionalLoad(n, "minDistBetweenCircles", p.circleInclusionRadius);
+    optionalLoad(n, "minRadiusDiff", p.maxRadiusDiff);
 
     optionalLoad(n, "filterByColor", p.filterByColor);
     unsigned short circleColor;
