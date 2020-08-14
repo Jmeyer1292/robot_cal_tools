@@ -19,9 +19,11 @@ using CircleDetectorParams = CircleDetector::Params;
 class ModifiedCircleGridObservationFinder
 {
 public:
-  ModifiedCircleGridObservationFinder(const ModifiedCircleGridTarget& target);
+  ModifiedCircleGridObservationFinder(const ModifiedCircleGridTarget& target,
+                                      const bool debug = false);
 
   boost::optional<std::vector<Eigen::Vector2d>> findObservations(const cv::Mat& image) const;
+
   boost::optional<std::vector<Eigen::Vector2d>> findObservations(const cv::Mat& image,
                                                                  const CircleDetectorParams* params) const;
 
@@ -38,6 +40,7 @@ public:
 
 private:
   ModifiedCircleGridTarget target_;
+  const bool debug_;
 };
 }  // namespace rct_image_tools
 
