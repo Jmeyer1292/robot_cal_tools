@@ -321,15 +321,16 @@ static bool extractKeyPoints(const ObservationPoints& centers, ObservationPoints
 
 template <typename PARAMS, typename DETECTOR_PTR, typename DETECTOR>
 static bool extractModifiedCircleGrid(const cv::Mat& image, const rct_image_tools::ModifiedCircleGridTarget& target,
-                                      ObservationPoints& observation_points, const bool debug, const PARAMS* set_params = nullptr)
+                                      ObservationPoints& observation_points, const PARAMS* set_params = nullptr)
 {
   PARAMS detector_params;
   cv::Ptr<DETECTOR_PTR> detector_ptr;
   if (set_params)
-    detector_ptr = DETECTOR::create(*set_params, debug);
+    detector_ptr = DETECTOR::create(*set_params);
   else
 
-    detector_ptr = DETECTOR::create(detector_params, debug);
+    detector_ptr = DETECTOR::create(detector_params);
+
 
   bool flipped = false;
 
@@ -369,8 +370,8 @@ static bool extractModifiedCircleGrid(const cv::Mat& image, const rct_image_tool
 }
 
 rct_image_tools::ModifiedCircleGridObservationFinder::ModifiedCircleGridObservationFinder(
-    const ModifiedCircleGridTarget& target, const bool debug)
-  : target_(target), debug_(debug)
+    const ModifiedCircleGridTarget& target)
+  : target_(target)
 {
   assert(target.cols != 0);
   assert(target.rows != 0);
@@ -388,8 +389,7 @@ boost::optional<std::vector<Eigen::Vector2d>> rct_image_tools::ModifiedCircleGri
   // Call modified circle finder
   ObservationPoints points;
 
-  if (!extractModifiedCircleGrid<CircleDetector::Params, CircleDetector, CircleDetector>(image, target_, points, debug_,
-                                                                                         params))
+  if (!extractModifiedCircleGrid<CircleDetectorParams, CircleDetector, CircleDetector>(image, target_, points, params))
   {
     // If we fail to detect the grid, then return an empty optional
     return {};

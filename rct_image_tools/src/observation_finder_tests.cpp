@@ -23,7 +23,7 @@ int main(int argc, char** argv)
   rct_image_tools::ModifiedCircleGridTarget target (rows, cols, 0.01);
 
   // Create a finder that works with this target
-  rct_image_tools::ModifiedCircleGridObservationFinder obs_finder(target, true);
+  rct_image_tools::ModifiedCircleGridObservationFinder obs_finder(target);
 
   // Attempt to find the grid: The optional will be set if it succeeded.
   boost::optional<std::vector<Eigen::Vector2d>> maybe_obs = obs_finder.findObservations(m);
