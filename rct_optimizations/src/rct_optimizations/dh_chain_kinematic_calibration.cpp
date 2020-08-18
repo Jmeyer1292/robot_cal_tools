@@ -175,7 +175,7 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &param
 
     Eigen::ArrayXXd stdev(Eigen::ArrayXXd::Constant(camera_chain_dh_offsets.rows(),
                                                     camera_chain_dh_offsets.cols(),
-                                                    1.0e-3));
+                                                    params.target_chain_dh_stdev_expectation));
 
     auto *fn = new MaximumLikelihood(mean, stdev);
     auto *cost_block = new ceres::DynamicAutoDiffCostFunction<MaximumLikelihood>(fn);
@@ -192,8 +192,8 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &param
       Eigen::ArrayXXd::Zero(target_chain_dh_offsets.rows(), target_chain_dh_offsets.cols()));
 
     Eigen::ArrayXXd stdev(Eigen::ArrayXXd::Constant(target_chain_dh_offsets.rows(),
-                                                   target_chain_dh_offsets.cols(),
-                                                   1.0e-3));
+                                                    target_chain_dh_offsets.cols(),
+                                                    params.target_chain_dh_stdev_expectation));
 
     auto *fn = new MaximumLikelihood(mean, stdev);
     auto *cost_block = new ceres::DynamicAutoDiffCostFunction<MaximumLikelihood>(fn);

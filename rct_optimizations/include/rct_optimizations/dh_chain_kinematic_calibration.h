@@ -66,6 +66,9 @@ struct KinematicCalibrationProblem2D3D
    */
   std::array<std::vector<int>, 8> mask;
 
+  double camera_chain_dh_stdev_expectation;
+  double target_chain_dh_stdev_expectation;
+
   std::string label_camera_mount_to_camera = "camera_mount_to_camera";
   std::string label_target_mount_to_target = "target_mount_to_target";
   std::string label_camera_base_to_target = "camera_base_to_target";
