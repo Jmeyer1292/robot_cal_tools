@@ -169,7 +169,7 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &param
   addSubsetParameterization(problem, params.mask, tmp);
 
   // Add a cost to drive the camera chain DH parameters towards an expected mean
-  if (params.camera_chain.dof() != 0)
+  if (params.camera_chain.dof() != 0 && !problem.IsParameterBlockConstant(parameters[0]))
   {
     Eigen::ArrayXXd mean(
       Eigen::ArrayXXd::Zero(camera_chain_dh_offsets.rows(), camera_chain_dh_offsets.cols()));
@@ -187,7 +187,7 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &param
   }
 
   // Add a cost to drive the target chain DH parameters towards an expected mean
-  if (params.target_chain.dof() != 0)
+  if (params.target_chain.dof() != 0 && !problem.IsParameterBlockConstant(parameters[1]))
   {
     Eigen::ArrayXXd mean(
       Eigen::ArrayXXd::Zero(target_chain_dh_offsets.rows(), target_chain_dh_offsets.cols()));
@@ -362,11 +362,17 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblemPose3D &par
     cost_block->AddParameterBlock(3);
 
     // Residual error
-    cost_block->SetNumResiduals(9);
+    cost_block->SetNumResiduals(4);
 
     // Add the residual block to the problem
     problem.AddResidualBlock(cost_block, nullptr, parameters);
   }
+
+  // Tell the optimization to keep constant the dummy DH offsets that might have been added to the 0-DoF chains
+  if (params.camera_chain.dof() == 0)
+    problem.SetParameterBlockConstant(camera_chain_dh_offsets.data());
+  if (params.target_chain.dof() == 0)
+    problem.SetParameterBlockConstant(target_chain_dh_offsets.data());
 
   // Add subset parameterization to mask variables that shouldn't be optimized
   std::array<double*, 8> tmp;
@@ -374,7 +380,7 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblemPose3D &par
   addSubsetParameterization(problem, params.mask, tmp);
 
   // Add a cost to drive the camera chain DH parameters towards an expected mean
-  if (params.camera_chain.dof() != 0)
+  if (params.camera_chain.dof() != 0 && !problem.IsParameterBlockConstant(parameters[0]))
   {
     Eigen::ArrayXXd mean(
       Eigen::ArrayXXd::Zero(camera_chain_dh_offsets.rows(), camera_chain_dh_offsets.cols()));
@@ -392,7 +398,7 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblemPose3D &par
   }
 
   // Add a cost to drive the target chain DH parameters towards an expected mean
-  if (params.target_chain.dof() != 0)
+  if (params.target_chain.dof() != 0 && !problem.IsParameterBlockConstant(parameters[1]))
   {
     Eigen::ArrayXXd mean(
       Eigen::ArrayXXd::Zero(target_chain_dh_offsets.rows(), target_chain_dh_offsets.cols()));
@@ -409,18 +415,17 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblemPose3D &par
     problem.AddResidualBlock(cost_block, nullptr, target_chain_dh_offsets.data());
   }
 
-
-  // Tell the optimization to keep constant the dummy DH offsets that might have been added to the 0-DoF chains
-  if (params.camera_chain.dof() == 0)
-    problem.SetParameterBlockConstant(camera_chain_dh_offsets.data());
-  if (params.target_chain.dof() == 0)
-    problem.SetParameterBlockConstant(target_chain_dh_offsets.data());
-
   // Setup the Ceres optimization parameters
   ceres::Solver::Options options;
-  options.max_num_iterations = 150;
+  options.max_num_iterations = 500;
   options.num_threads = 4;
   options.minimizer_progress_to_stdout = true;
+
+  options.use_nonmonotonic_steps = true;
+  options.gradient_tolerance = 1.0e-20;
+  options.parameter_tolerance = 1.0e-16;
+  options.function_tolerance = 1.0e-12;
+
   ceres::Solver::Summary summary;
 
   // Solve the optimization

@@ -306,17 +306,11 @@ TEST_F(DHChainMeasurementTest, TestCostFunction)
     double residual[9];
     EXPECT_TRUE(cost(parameters.data(), residual));
 
-    EXPECT_NEAR(residual[0], 0, 1.0e-12);  // p1_x
-    EXPECT_NEAR(residual[1], 0, 1.0e-12);  // p1_y
-    EXPECT_NEAR(residual[2], 0, 1.0e-12);  // p1_z
+    EXPECT_NEAR(residual[0], 0, 1.0e-12);  // x
+    EXPECT_NEAR(residual[1], 0, 1.0e-12);  // y
+    EXPECT_NEAR(residual[2], 0, 1.0e-12);  // z
 
-    EXPECT_NEAR(residual[3], 0, 1.0e-12);  // p2_x
-    EXPECT_NEAR(residual[4], 0, 1.0e-12);  // p2_y
-    EXPECT_NEAR(residual[5], 0, 1.0e-12);  // p2_z
-
-    EXPECT_NEAR(residual[6], 0, 1.0e-12);  // p3_x
-    EXPECT_NEAR(residual[7], 0, 1.0e-12);  // p3_y
-    EXPECT_NEAR(residual[8], 0, 1.0e-12);  // p3_z
+    EXPECT_NEAR(residual[3], 0, 1.0e-12);  // rotation
   }
 }
 
