@@ -116,10 +116,10 @@ void printResults(const KinematicCalibrationResult& result)
   ss << "Final cost per observation: " << std::sqrt(result.final_cost_per_obs) << "\n";
 
   ss << "\nCamera mount to camera\n" << result.camera_mount_to_camera.matrix().format(fmt) << "\n";
-  ss << "Euler XYZ: " << result.camera_mount_to_camera.rotation().eulerAngles(0, 1, 2).transpose().format(fmt) << "\n";
+  ss << "Euler ZYX: " << result.camera_mount_to_camera.rotation().eulerAngles(2, 1, 0).transpose().format(fmt) << "\n";
 
   ss << "\nTarget mount to target\n" << result.target_mount_to_target.matrix().format(fmt) << "\n";
-  ss << "Euler XYZ: " << result.target_mount_to_target.rotation().eulerAngles(0, 1, 2).transpose().format(fmt) << "\n";
+  ss << "Euler ZYX: " << result.target_mount_to_target.rotation().eulerAngles(2, 1, 0).transpose().format(fmt) << "\n";
 
   ss << "\nDH parameter offsets\n" << result.target_chain_dh_offsets.matrix().format(fmt) << "\n";
   ss << result.covariance.printCorrelationCoeffAboveThreshold(0.5);
@@ -214,21 +214,18 @@ int main(int argc, char** argv)
   // Load the observations
   KinematicMeasurement::Set measurements = loadMeasurements(measurements_file);
 
+  // Create the problem
   KinematicCalibrationProblemPose6D problem(DHChain({}), createTwoAxisPositioner());
 
+  // Add the observations
   problem.observations = measurements;
 
-  problem.target_mount_to_target_guess = Eigen::Isometry3d::Identity();
-  problem.target_mount_to_target_guess.translate(Eigen::Vector3d(0.17, -0.65, 0.5));
-  problem.target_mount_to_target_guess.rotate(Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitX()));
-  problem.target_mount_to_target_guess.rotate(Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitY()));
-  problem.target_mount_to_target_guess.rotate(Eigen::AngleAxisd(0.2, Eigen::Vector3d::UnitZ()));
-
-  problem.camera_mount_to_camera_guess = Eigen::Isometry3d::Identity();
-  problem.camera_mount_to_camera_guess.translate(Eigen::Vector3d(2.2, 0.7, 1.075));
-
+  // Set the initial transform guesses
+  problem.camera_mount_to_camera_guess = loadPose(pnh, "camera_mount_to_camera_guess");
+  problem.target_mount_to_target_guess = loadPose(pnh, "target_mount_to_target_guess");
   problem.camera_base_to_target_base_guess = Eigen::Isometry3d::Identity();
 
+  // Set the DH chain offset standard deviation expectations
   problem.camera_chain_offset_stdev = 0.001;
   problem.target_chain_offset_stdev = 0.005;
 
@@ -249,16 +246,16 @@ int main(int argc, char** argv)
   problem.mask.at(6) = { 0, 1, 2 };
   problem.mask.at(7) = { 0, 1, 2 };
 
+  // Set up the Ceres optimization parameters
+  ceres::Solver::Options options;
+  options.max_num_iterations = 500;
+  options.num_threads = 4;
+  options.minimizer_progress_to_stdout = true;
+  options.use_nonmonotonic_steps = true;
+
   // Run the calibration
   Stats cal_stats_optimal_dh;
   {
-    // Setup the Ceres optimization parameters
-    ceres::Solver::Options options;
-    options.max_num_iterations = 500;
-    options.num_threads = 4;
-    options.minimizer_progress_to_stdout = true;
-    options.use_nonmonotonic_steps = true;
-
     KinematicCalibrationResult result = optimize(problem, 100.0, options);
     printResults(result);
 
@@ -279,12 +276,6 @@ int main(int argc, char** argv)
 
       problem.mask.at(1) = createDHMask(mask);
     }
-
-    ceres::Solver::Options options;
-    options.max_num_iterations = 500;
-    options.num_threads = 4;
-    options.minimizer_progress_to_stdout = true;
-    options.use_nonmonotonic_steps = true;
 
     KinematicCalibrationResult result = optimize(problem, 100.0, options);
     printResults(result);
