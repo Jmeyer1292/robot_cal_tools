@@ -76,9 +76,9 @@ struct KinematicCalibrationProblem2D3D
   std::string label_camera_base_to_target = "camera_base_to_target";
 };
 
-struct KinematicCalibrationProblemPose3D
+struct KinematicCalibrationProblemPose6D
 {
-  KinematicCalibrationProblemPose3D(DHChain camera_chain_, DHChain target_chain_)
+  KinematicCalibrationProblemPose6D(DHChain camera_chain_, DHChain target_chain_)
     : camera_chain(std::move(camera_chain_))
     , target_chain(std::move(target_chain_))
     , camera_mount_to_camera_guess(Eigen::Isometry3d::Identity())
@@ -220,8 +220,8 @@ protected:
   const DHChain &camera_chain_;
   const DHChain &target_chain_;
 
-  Eigen::VectorXd camera_chain_joints_;
-  Eigen::VectorXd target_chain_joints_;
+  const Eigen::VectorXd camera_chain_joints_;
+  const Eigen::VectorXd target_chain_joints_;
 };
 
 class DualDHChainCost2D3D : public DualDHChainCost
@@ -289,19 +289,20 @@ class DualDHChainCost2D3D : public DualDHChainCost
     return true;
   }
 
-  protected:
-  Eigen::Vector2d obs_;
-  Eigen::Vector3d target_pt_;
-  CameraIntrinsics intr_;
+protected:
+  const Eigen::Vector2d obs_;
+  const Eigen::Vector3d target_pt_;
+  const CameraIntrinsics intr_;
 };
 
-class DualDHChainCostPose3D : public DualDHChainCost
+class DualDHChainCostPose6D : public DualDHChainCost
 {
   public:
-    DualDHChainCostPose3D(const KinematicMeasurement& measurement, const DHChain& camera_chain,
-                          const DHChain& target_chain)
+    DualDHChainCostPose6D(const KinematicMeasurement& measurement, const DHChain& camera_chain,
+                          const DHChain& target_chain, const double orientation_weight)
     : DualDHChainCost (camera_chain, target_chain, measurement.camera_chain_joints, measurement.target_chain_joints)
     , camera_to_target_measured_(measurement.camera_to_target)
+    , orientation_weight_(orientation_weight)
   {
   }
 
@@ -351,18 +352,33 @@ class DualDHChainCostPose3D : public DualDHChainCost
     T rot_diff = Eigen::Quaternion<T>(camera_to_target_measured_.cast<T>().linear())
                      .angularDistance(Eigen::Quaternion<T>(camera_to_target.linear()));
 
-    residual[3] = ceres::IsNaN(rot_diff) ? T(0.0) : 100.0 * rot_diff;
+    residual[3] = ceres::IsNaN(rot_diff) ? T(0.0) : T(orientation_weight_) * rot_diff;
 
     return true;
   }
 
   protected:
-    Eigen::Isometry3d camera_to_target_measured_;
+    const Eigen::Isometry3d camera_to_target_measured_;
+    const double orientation_weight_;
 };
 
+/**
+ * @brief Performs the kinematic calibration optimization with 2D-3D correspondences
+ * @param problem
+ * @return
+ */
 KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &problem);
 
-KinematicCalibrationResult optimize(const KinematicCalibrationProblemPose3D &problem);
+/**
+ * @brief Performs the kinematic calibration optimization with 6D pose measurements
+ * @param problem
+ * @param orientation_weight - The value by which the orientation residual should be scaled relative to the position residual
+ * @param options - Ceres solver options
+ * @return
+ */
+KinematicCalibrationResult optimize(const KinematicCalibrationProblemPose6D& problem,
+                                    const double orientation_weight = 100.0,
+                                    const ceres::Solver::Options& options = ceres::Solver::Options());
 
 } // namespace rct_optimizations
 
