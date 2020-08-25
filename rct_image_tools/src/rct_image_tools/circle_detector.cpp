@@ -52,87 +52,52 @@ the use of this software, even if advised of the possibility of such damage.
 #include <iterator>
 #include <yaml-cpp/yaml.h>
 
-namespace rct_image_tools
+namespace
 {
-
-class CircleDetectorImpl : public CircleDetector
+/**
+ * @brief The DetectionOutput struct
+ */
+struct DetectionResult
 {
-public:
-  using CircleDetector::detect; // Note(gChiou): Fixes woverloaded-virtual
-                                // warnings
-
-  explicit CircleDetectorImpl(const CircleDetector::Params& parameters = CircleDetector::Params());
-
-  //  virtual void read(const FileNode &fn);
-  //  virtual void write(FileStorage &fs) const;
-
-protected:
-  struct CV_EXPORTS Center
-  {
-    cv::Point2d location;
-    double radius;
-    double confidence;
-  };
-
-  virtual void detect(cv::InputArray image, std::vector<cv::KeyPoint>& keypoints, cv::InputArray mask = cv::noArray());
-
-  virtual void findCircles(cv::InputArray image, cv::InputArray binaryImage, std::vector<Center>& centers) const;
-
-  Params params;
+  std::vector<rct_image_tools::CircleDetector::Center> centers;
+  std::vector<std::vector<cv::Point>> contours;
 };
 
-CircleDetector::Params::Params()
+/**
+ * @brief Helper function for finding circles within an image
+ * This function thresholds the input image at the input intensity, applies filtering, and attempts to find circles from contours in the image
+ * @param image - grayscale image
+ * @param threshold - threshold intensity
+ * @param params - circle detection parameters
+ * @return
+ */
+DetectionResult findCircles(const cv::Mat& image, const double threshold,
+                            const rct_image_tools::CircleDetectorParams& params)
 {
-  thresholdStep = 10;
-  minThreshold = 50;
-  maxThreshold = 220;
-  minRepeatability = 2;
-  minDistBetweenCircles = 10;
-  minRadiusDiff = 10;
+  // Threshold the image
+  cv::Mat binarized_image;
+  cv::threshold(image, binarized_image, threshold, 255, cv::THRESH_BINARY);
 
-  filterByColor = true;
-  circleColor = 0;
-
-  filterByArea = true;
-  minArea = 25;
-  maxArea = 5000;
-
-  filterByCircularity = false;
-  minCircularity = 0.8f;
-  maxCircularity = std::numeric_limits<float>::max();
-
-  filterByInertia = true;
-  minInertiaRatio = 0.1f;
-  maxInertiaRatio = std::numeric_limits<float>::max();
-
-  filterByConvexity = true;
-  minConvexity = 0.95f;
-  maxConvexity = std::numeric_limits<float>::max();
-}
-
-CircleDetectorImpl::CircleDetectorImpl(const CircleDetector::Params& parameters) : params(parameters) {}
-
-void CircleDetectorImpl::findCircles(cv::InputArray _image, cv::InputArray _binaryImage,
-                                     std::vector<Center>& centers) const
-{
-  cv::Mat image = _image.getMat(); // Oh so much  cleaner this way :(
-  cv::Mat binaryImage = _binaryImage.getMat();
-
-  (void)image;
-  centers.clear();
-
+  // Get the contours of the image
   std::vector<std::vector<cv::Point>> contours;
-  cv::Mat tmpBinaryImage = binaryImage.clone();
-  cv::findContours(tmpBinaryImage, contours, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
+  cv::findContours(binarized_image, contours, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
+
+  // Debug
+  cv::Mat debug_img;
+  cv::cvtColor(binarized_image, debug_img, CV_GRAY2RGB);
+  const CvScalar color(255, 0, 0);
 
   // Loop on all contours
-  for (std::size_t contourIdx = 0; contourIdx < contours.size(); contourIdx++)
+  DetectionResult result;
+  for (std::size_t i = 0; i < contours.size(); ++i)
   {
     // Each if statement may eliminate a contour through the continue function
-    // Some if statements may also set the confidence whose default is 1.0
-    Center center;
-    center.confidence = 1;
-    cv::Moments moms = cv::moments(cv::Mat(contours[contourIdx]));
+    const std::vector<cv::Point>& contour = contours[i];
+
+    // Calculate the moment of inertia of the contour
+    cv::Moments moms = cv::moments(cv::Mat(contour));
+
+    // Area filter
     if (params.filterByArea)
     {
       double area = moms.m00;
@@ -140,15 +105,17 @@ void CircleDetectorImpl::findCircles(cv::InputArray _image, cv::InputArray _bina
         continue;
     }
 
+    // Circularity filter
     if (params.filterByCircularity)
     {
       double area = moms.m00;
-      double perimeter = cv::arcLength(cv::Mat(contours[contourIdx]), true);
+      double perimeter = cv::arcLength(cv::Mat(contour), true);
       double ratio = 4 * CV_PI * area / (perimeter * perimeter);
       if (ratio < params.minCircularity || ratio >= params.maxCircularity)
         continue;
     }
 
+    // Inertia filter
     if (params.filterByInertia)
     {
       double denominator = sqrt(pow(2 * moms.mu11, 2) + pow(moms.mu20 - moms.mu02, 2));
@@ -172,113 +139,291 @@ void CircleDetectorImpl::findCircles(cv::InputArray _image, cv::InputArray _bina
 
       if (ratio < params.minInertiaRatio || ratio >= params.maxInertiaRatio)
         continue;
-
-      center.confidence = ratio * ratio;
     }
 
+    // Convexity filter
     if (params.filterByConvexity)
     {
       std::vector<cv::Point> hull;
-      cv::convexHull(cv::Mat(contours[contourIdx]), hull);
-      double area = cv::contourArea(cv::Mat(contours[contourIdx]));
+      cv::convexHull(cv::Mat(contour), hull);
+      double area = cv::contourArea(cv::Mat(contour));
       double hullArea = cv::contourArea(cv::Mat(hull));
       double ratio = area / hullArea;
       if (ratio < params.minConvexity || ratio >= params.maxConvexity)
         continue;
     }
-    cv::Mat pointsf;
-    cv::Mat(contours[contourIdx]).convertTo(pointsf, CV_32F);
-    if (pointsf.rows < 5)
-      continue;
-    cv::RotatedRect box = cv::fitEllipse(pointsf);
 
-    // Find center
-    center.location = box.center;
+    // Fit an ellipse to the contour
+    cv::RotatedRect box = cv::fitEllipse(contour);
 
-    // One more filter by color of central pixel
+    // Check that the color of the center pixel matches the expectation
     if (params.filterByColor)
     {
-      if (binaryImage.at<uchar>(cvRound(center.location.y), cvRound(center.location.x)) != params.circleColor)
+      if (binarized_image.at<uchar>(cvRound(box.center.y), cvRound(box.center.x)) != params.circleColor)
         continue;
     }
 
-    center.radius = (box.size.height + box.size.width) / 4.0;
-    centers.push_back(center);
+    // Check that the contour matches a model of an ellipse within tolerance
+    double err = 0.0;
+    {
+      // Get the angle of the ellipse and its major (a) and minor (b) axes
+      double angle = box.angle * CV_PI / 180.0;
+      double a = box.size.width / 2.0;
+      double b = box.size.height / 2.0;
+
+      // Calculate the output of the ellipse equation ( x^2/a^2 + y^2/b^2 = 1) for each point in the contour
+      double output = 0.0;
+      for (const cv::Point& pt : contour)
+      {
+        // Get the vector from the center of the ellipse to the point on the contour
+        cv::Point2f v = cv::Point2f(pt) - box.center;
+
+        // Since the major and minor axes are not aligned with the coordinate system, we need to transform the x and y
+        // coordinates
+        double x = v.x * std::cos(angle) + v.y * std::sin(angle);
+        double y = v.x * std::sin(angle) - v.y * std::cos(angle);
+
+        // The output of the ellipse equation using this point should equal one
+        double one = std::sqrt((std::pow(x, 2.0) / std::pow(a, 2.0)) + (std::pow(y, 2.0) / std::pow(b, 2.0)));
+
+        // Accumulate the output
+        output += one;
+      }
+
+      // Average the error and subtract the expected output of the ellipse equation (i.e. 1.0)
+      err = std::abs((output / contour.size()) - 1.0);
+    }
+
+    // If the error is below the threshold then add it to the list of circles
+    if (err < params.maxAverageEllipseError)
+    {
+      // Create the center
+      rct_image_tools::CircleDetector::Center center;
+      center.location = box.center;
+      center.confidence = 1.0 / err;
+      center.radius = (box.size.height + box.size.width) / 4.0;
+
+      result.centers.push_back(center);
+      result.contours.push_back(contours[i]);
+    }
   }
+
+  return result;
 }
 
-void CircleDetectorImpl::detect(cv::InputArray _image, std::vector<cv::KeyPoint>& keypoints, cv::InputArray)
+/**
+ * @brief Applies various thresholds to the input image and attempts to find all circles within the images
+ * @param image - grayscale image
+ * @param params - circle detection parameters
+ * @return
+ */
+std::vector<DetectionResult> applyThresholds(const cv::Mat& image, const rct_image_tools::CircleDetectorParams& params)
 {
-  cv::Mat image = _image.getMat();
-  keypoints.clear();
-  cv::Mat grayscaleImage;
+  using namespace rct_image_tools;
 
-  if (image.channels() == 3)
-    cv::cvtColor(image, grayscaleImage, CV_BGR2GRAY);
-  else
-    grayscaleImage = image;
-
-  std::vector<std::vector<Center>> centers;
-  for (double thresh = params.minThreshold; thresh < params.maxThreshold; thresh += params.thresholdStep)
+  // Check that the detection parameters make sense
+  if (params.minRepeatability > params.nThresholds)
   {
-    cv::Mat binarizedImage;
-    cv::threshold(grayscaleImage, binarizedImage, thresh, 255, cv::THRESH_BINARY);
-    std::vector<Center> curCenters;
-    findCircles(grayscaleImage, binarizedImage, curCenters);
-    std::vector<std::vector<Center>> newCenters;
-    for (std::size_t i = 0; i < curCenters.size(); i++)
+    std::stringstream ss;
+    ss << "Minimum repeatability (" << params.minRepeatability << ") cannot exceed the number of thresholds ("
+       << params.nThresholds << ")";
+    throw std::runtime_error(ss.str());
+  }
+
+  // Create a container for all of the circle centers and contours detected at the different threshold levels
+  std::vector<DetectionResult> results;
+  results.reserve(params.nThresholds);
+
+  // Threshold the image per the input parameters and attempt to find all circles
+  const double threshold_range = params.maxThreshold - params.minThreshold;
+  for (std::size_t i = 0; i < params.nThresholds; ++i)
+  {
+    double threshold = 0.0;
+    if (params.nThresholds < 2)
     {
-      bool isNew = true;
-      for (std::size_t j = 0; j < centers.size(); j++)
+      threshold = params.minThreshold + (threshold_range / 2.0);
+    }
+    else
+    {
+      threshold = params.minThreshold + (static_cast<double>(i) / (params.nThresholds - 1)) * threshold_range;
+    }
+
+    // Find all the circles in the image
+    results.push_back(findCircles(image, threshold, params));
+  }
+
+  return results;
+}
+
+/**
+ * @brief Given a list of potential circle centers acquired from differently threshold-ed images, this function matches circle centers that are close in position
+ * and radius, and performs a weighted average of their position and radius to create keypoints
+ * @param all_centers - a vector of vector of circle centers acquired from images with different threshold values
+ * @param params - circle detection parameters
+ * @return
+ */
+std::vector<cv::KeyPoint> detectKeyPoints(const std::vector<std::vector<rct_image_tools::CircleDetector::Center>>& all_centers,
+                                          const rct_image_tools::CircleDetectorParams& params)
+{
+  using namespace rct_image_tools;
+
+  // Lambda for determining if the input circle center already exists in the list of known circle centers
+  auto exists = [&params](const CircleDetector::Center& c,
+                          const std::vector<std::vector<CircleDetector::Center>>& known_centers) -> int {
+    for (std::size_t i = 0; i < known_centers.size(); ++i)
+    {
+      const std::vector<CircleDetector::Center>& existing_centers = known_centers.at(i);
+      if (!existing_centers.empty())
       {
-        double dist = norm(centers[j][centers[j].size() / 2].location - curCenters[i].location);
-        double rad_diff = fabs(centers[j][centers[j].size() / 2].radius - curCenters[i].radius);
+        // Compare the identified center with the first existing center
+        const CircleDetector::Center& existing = existing_centers.front();
+        double pos_diff = cv::norm(existing.location - c.location);
+        double radius_diff = std::abs(existing.radius - c.radius);
 
-        isNew = dist >= params.minDistBetweenCircles || rad_diff >= params.minRadiusDiff;
-
-        if (!isNew)
+        // If the position and radius differences are within tolerance, add this point to this list of same centers
+        // (to be weight-averaged later)
+        if (pos_diff <= params.circleInclusionRadius && radius_diff <= params.maxRadiusDiff)
         {
-          centers[j].push_back(curCenters[i]);
-
-          std::size_t k = centers[j].size() - 1;
-          while (k > 0 && centers[j][k].radius < centers[j][k - 1].radius)
-          {
-            centers[j][k] = centers[j][k - 1];
-            k--;
-          }
-          centers[j][k] = curCenters[i];
-          break;
+          return i;
         }
       }
+    }
 
-      if (isNew)
+    return -1;
+  };
+
+  // Create a container for the grouped circle centers
+  std::vector<std::vector<CircleDetector::Center>> grouped_centers;
+
+  // Loop over all of the circle centers detected at the various threshold levels and try to group circle centers that are close together
+  for (const std::vector<CircleDetector::Center>& centers : all_centers)
+  {
+    // Loop over all of the circle centers for the current threshold level
+    for (const CircleDetector::Center& c : centers)
+    {
+      // Check if this circle center has already been identified
+      int match_idx = exists(c, grouped_centers);
+
+      // If so, then add this center to the vector of other circle centers at approximately the same location
+      if (match_idx >= 0)
       {
-        newCenters.push_back(std::vector<Center>(1, curCenters[i]));
+        grouped_centers.at(match_idx).push_back(c);
+      }
+      else
+      {
+        // Otherwise, add it in a new vector to the circle centers list
+        grouped_centers.push_back({ c });
       }
     }
-    std::copy(newCenters.begin(), newCenters.end(), std::back_inserter(centers));
   }
 
-  for (std::size_t i = 0; i < centers.size(); i++)
+  // Once all circle centers have been found in the variously thresholded image, create a keypoint based on the weighted
+  // average of each center
+  std::vector<cv::KeyPoint> keypoints;
+  keypoints.reserve(grouped_centers.size());
+
+  for (std::size_t i = 0; i < grouped_centers.size(); i++)
   {
-    if (centers[i].size() < params.minRepeatability)
-      continue;
-    cv::Point2d sumPoint(0, 0);
-    double normalizer = 0;
-    for (std::size_t j = 0; j < centers[i].size(); j++)
+    // Check that the circle center meets the minimum repeatability criteria
+    if (grouped_centers[i].size() >= params.minRepeatability)
     {
-      sumPoint += centers[i][j].confidence * centers[i][j].location;
-      normalizer += centers[i][j].confidence;
+      // Get the weighted average of the circle center's location
+      cv::Point2d sum_point(0, 0);
+      double sum_radius = 0.0;
+      double normalizer = 0;
+      for (std::size_t j = 0; j < grouped_centers[i].size(); j++)
+      {
+        sum_point += grouped_centers[i][j].confidence * grouped_centers[i][j].location;
+        sum_radius += grouped_centers[i][j].confidence * grouped_centers[i][j].radius;
+        normalizer += grouped_centers[i][j].confidence;
+      }
+      sum_point /= normalizer;
+      sum_radius /= normalizer;
+
+      // Create a key point and add it to the output parameter
+      keypoints.emplace_back(sum_point, sum_radius * 2.0);
     }
-    sumPoint *= (1. / normalizer);
-    cv::KeyPoint kpt(sumPoint, static_cast<float>(centers[i][centers[i].size() / 2].radius * 2.0));
-    keypoints.push_back(kpt);
   }
+
+  return keypoints;
 }
 
-cv::Ptr<CircleDetector> CircleDetector::create(const CircleDetector::Params& params)
+} // namespace anonymous
+
+namespace rct_image_tools
 {
-  return cv::makePtr<CircleDetectorImpl>(params);
+CircleDetector::CircleDetector(const CircleDetectorParams& parameters)
+  : params(parameters)
+{
+}
+
+void CircleDetector::detect(cv::InputArray input, std::vector<cv::KeyPoint>& keypoints, cv::InputArray)
+{
+  cv::Mat image = input.getMat();
+  cv::Mat grayscale_image;
+
+  if (image.channels() == 3)
+    cv::cvtColor(image, grayscale_image, CV_BGR2GRAY);
+  else
+    grayscale_image = image;
+
+  // Get the circle detection results (circle centers and contours) at all of the threshold levels
+  const std::vector<DetectionResult> results = applyThresholds(grayscale_image, params);
+
+  // Create a container of all the circle centers identified in each threshold step
+  std::vector<std::vector<Center>> centers;
+  centers.reserve(results.size());
+  for (const auto& result : results)
+  {
+    centers.push_back(result.centers);
+  }
+
+  // Use the circle centers to detect the key points
+  keypoints = detectKeyPoints(centers, params);
+}
+
+cv::Mat CircleDetector::drawDetectedCircles(const cv::Mat& image)
+{
+  cv::Mat grayscale_image;
+  if (image.channels() == 3)
+    cv::cvtColor(image, grayscale_image, CV_BGR2GRAY);
+  else
+    grayscale_image = image;
+
+  // Detect the keypoints
+  const std::vector<DetectionResult> results = applyThresholds(grayscale_image, params);
+
+  // Output
+  cv::Mat output = image.clone();
+
+  // Draw the contours on the image
+  const cv::Scalar color(255, 0, 0);
+  for (const auto& result : results)
+  {
+    for (std::size_t i = 0; i < result.contours.size(); ++i)
+    {
+      cv::drawContours(output, result.contours, i, color, 2);
+    }
+  }
+
+  // Create a container of all the circle centers identified in each threshold step
+  std::vector<std::vector<Center>> centers;
+  centers.reserve(results.size());
+  for (const auto& result : results)
+  {
+    centers.push_back(result.centers);
+  }
+
+  // Draw the keypoints on the image
+  const std::vector<cv::KeyPoint> keypoints = detectKeyPoints(centers, params);
+  cv::drawKeypoints(output, keypoints, output);
+
+  return output;
+}
+
+cv::Ptr<CircleDetector> CircleDetector::create(const CircleDetectorParams& params)
+{
+  return cv::makePtr<CircleDetector>(params);
 }
 
 template <typename T>
@@ -307,20 +452,21 @@ bool optionalLoad(YAML::Node& n, const std::string& key, T& value)
   }
 }
 
-bool CircleDetector::loadParams(const std::string& path, CircleDetector::Params& params)
+bool CircleDetector::loadParams(const std::string& path, CircleDetectorParams& params)
 {
   YAML::Node n = YAML::LoadFile(path);
 
-  CircleDetector::Params p;
+  CircleDetectorParams p;
 
   try
   {
-    optionalLoad(n, "thresholdStep", p.thresholdStep);
+    optionalLoad(n, "nThresholds", p.nThresholds);
     optionalLoad(n, "minThreshold", p.minThreshold);
     optionalLoad(n, "maxThreshold", p.maxThreshold);
     optionalLoad(n, "minRepeatability", p.minRepeatability);
-    optionalLoad(n, "minDistBetweenCircles", p.minDistBetweenCircles);
-    optionalLoad(n, "minRadiusDiff", p.minRadiusDiff);
+    optionalLoad(n, "circleInclusionRadius", p.circleInclusionRadius);
+    optionalLoad(n, "maxRadiusDiff", p.maxRadiusDiff);
+    optionalLoad(n, "maxAverageEllipseError", p.maxAverageEllipseError);
 
     optionalLoad(n, "filterByColor", p.filterByColor);
     unsigned short circleColor;

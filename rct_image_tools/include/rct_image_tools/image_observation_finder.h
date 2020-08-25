@@ -10,7 +10,6 @@
 
 namespace rct_image_tools
 {
-using CircleDetectorParams = CircleDetector::Params;
 /**
  * @brief This class finds 2D observations from images of a known ModifiedCircleGridTarget.
  * All points must be seen or it will fail. Observations are returned in the same order
@@ -22,6 +21,7 @@ public:
   ModifiedCircleGridObservationFinder(const ModifiedCircleGridTarget& target);
 
   boost::optional<std::vector<Eigen::Vector2d>> findObservations(const cv::Mat& image) const;
+
   boost::optional<std::vector<Eigen::Vector2d>> findObservations(const cv::Mat& image,
                                                                  const CircleDetectorParams* params) const;
 

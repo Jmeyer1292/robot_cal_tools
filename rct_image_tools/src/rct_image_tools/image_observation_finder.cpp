@@ -331,6 +331,7 @@ static bool extractModifiedCircleGrid(const cv::Mat& image, const rct_image_tool
 
     detector_ptr = DETECTOR::create(detector_params);
 
+
   bool flipped = false;
 
   std::size_t cols = target.cols;
@@ -368,8 +369,9 @@ static bool extractModifiedCircleGrid(const cv::Mat& image, const rct_image_tool
   return extractKeyPoints(centers, observation_points, detector_ptr, rows, cols, flipped, image);
 }
 
-rct_image_tools::ModifiedCircleGridObservationFinder::ModifiedCircleGridObservationFinder(const ModifiedCircleGridTarget& target)
-    : target_(target)
+rct_image_tools::ModifiedCircleGridObservationFinder::ModifiedCircleGridObservationFinder(
+    const ModifiedCircleGridTarget& target)
+  : target_(target)
 {
   assert(target.cols != 0);
   assert(target.rows != 0);
@@ -387,8 +389,7 @@ boost::optional<std::vector<Eigen::Vector2d>> rct_image_tools::ModifiedCircleGri
   // Call modified circle finder
   ObservationPoints points;
 
-  if (!extractModifiedCircleGrid<CircleDetector::Params, CircleDetector, CircleDetector>(image, target_, points,
-                                                                                         params))
+  if (!extractModifiedCircleGrid<CircleDetectorParams, CircleDetector, CircleDetector>(image, target_, points, params))
   {
     // If we fail to detect the grid, then return an empty optional
     return {};
