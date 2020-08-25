@@ -38,6 +38,7 @@ include_directories(
 #####################
 ## SIMPLE Examples ##
 #####################
+# Executable for extrinsic camera on wrist calibration
 add_executable(${PROJECT_NAME}_wrist_example src/examples/camera_on_wrist.cpp)
 
 set_target_properties(${PROJECT_NAME}_wrist_example PROPERTIES OUTPUT_NAME example_camera_on_wrist PREFIX "")
@@ -45,6 +46,16 @@ set_target_properties(${PROJECT_NAME}_wrist_example PROPERTIES OUTPUT_NAME examp
 add_dependencies(${PROJECT_NAME}_wrist_example ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(${PROJECT_NAME}_wrist_example ${catkin_LIBRARIES} rct::rct_optimizations rct::rct_image_tools)
+
+
+#Executable for kinematic calibration
+add_executable(${PROJECT_NAME}_kinematic_calibration src/examples/kinematic_calibration.cpp)
+
+set_target_properties(${PROJECT_NAME}_kinematic_calibration PROPERTIES OUTPUT_NAME kinematic_calibration PREFIX "")
+
+add_dependencies(${PROJECT_NAME}_kinematic_calibration ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(${PROJECT_NAME}_kinematic_calibration ${catkin_LIBRARIES} rct::rct_optimizations rct::rct_image_tools)
 
 ###############################
 ## Offline Calibration Tools ##
@@ -123,7 +134,6 @@ add_dependencies(${PROJECT_NAME}_camera_intrinsic_calibration_validation ${${PRO
 
 target_link_libraries(${PROJECT_NAME}_camera_intrinsic_calibration_validation ${catkin_LIBRARIES} rct::rct_optimizations rct::rct_image_tools)
 
-
 #Executable for testing camera noise
 add_executable(${PROJECT_NAME}_noise_qualification_2d src/tools/noise_qualification_2d.cpp)
 
@@ -132,20 +142,6 @@ set_target_properties(${PROJECT_NAME}_noise_qualification_2d PROPERTIES OUTPUT_N
 add_dependencies(${PROJECT_NAME}_noise_qualification_2d ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(${PROJECT_NAME}_noise_qualification_2d ${catkin_LIBRARIES} rct::rct_optimizations rct::rct_image_tools)
-
-
-
-
-#Executable for kinematic calibration
-add_executable(${PROJECT_NAME}_kinematic_calibration src/tools/kinematic_calibration.cpp)
-
-set_target_properties(${PROJECT_NAME}_kinematic_calibration PROPERTIES OUTPUT_NAME kinematic_calibration PREFIX "")
-
-add_dependencies(${PROJECT_NAME}_kinematic_calibration ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-target_link_libraries(${PROJECT_NAME}_kinematic_calibration ${catkin_LIBRARIES} rct::rct_optimizations rct::rct_image_tools)
-
-
 
 #############
 ## Testing ##
