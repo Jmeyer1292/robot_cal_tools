@@ -17,7 +17,7 @@ jobs:
              VERBOSE_TESTS: true,
              TARGET_CMAKE_ARGS: "-DRCT_BUILD_TESTS=ON",
              CTEST_OUTPUT_ON_FAILURE: true,
-             AFTER_SCRIPT: "cd $target_ws/build/rct_optimizations && ctest -V"}
+             AFTER_SCRIPT: "cd $target_ws/build/rct_optimizations && ctest -V && cd $target_ws/build/rct_image_tools && ctest -V"}
           - {BADGE: xenial,
              OS_NAME: ubuntu,
              OS_CODE_NAME: xenial,
@@ -27,7 +27,7 @@ jobs:
              VERBOSE_TESTS: true,
              TARGET_CMAKE_ARGS: "-DRCT_BUILD_TESTS=ON",
              CTEST_OUTPUT_ON_FAILURE: true,
-             AFTER_SCRIPT: 'cd $target_ws/build/rct_optimizations && ctest -V'}
+             AFTER_SCRIPT: 'cd $target_ws/build/rct_optimizations && ctest -V && cd $target_ws/build/rct_image_tools && ctest -V'}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1

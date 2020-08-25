@@ -1,0 +1,5 @@
+target_definition:
+  rows: 7
+  cols: 5
+  chessboard_dim: 0.036195
+  aruco_marker_dim: 0.018256

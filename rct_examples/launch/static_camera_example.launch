@@ -1,5 +1,5 @@
 <launch>
-  <arg name="camera_file" default="$(find rct_examples)/config/avt_gige_camera_intr.yaml"/>
+  <arg name="camera_file" default="$(find rct_examples)/config/avt_gige_camera_intr_nominal.yaml"/>
   <arg name="target_file" default="$(find rct_examples)/config/target_5x5.yaml"/>
   <arg name="guess_file" default="$(find rct_examples)/config/static_camera_guesses.yaml"/>
   <arg name="data_path"/>
