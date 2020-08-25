@@ -240,7 +240,8 @@ class DualDHChainCost2D3D
   Eigen::VectorXd target_chain_joints_;
 };
 
-KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &problem);
+KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &problem,
+                                    const ceres::Solver::Options& options = ceres::Solver::Options());
 
 } // namespace rct_optimizations
 

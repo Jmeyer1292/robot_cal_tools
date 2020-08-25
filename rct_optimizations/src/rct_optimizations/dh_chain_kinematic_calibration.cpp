@@ -23,7 +23,8 @@ Eigen::Isometry3d createTransform(const Eigen::Vector3d& t, const Eigen::Vector3
   return result;
 }
 
-KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &params)
+KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &params,
+                                    const ceres::Solver::Options& options)
 {
   // Initialize the optimization variables
   // Camera mount to camera (cm_to_c) unnormalized angle axis and translation
@@ -168,7 +169,7 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &param
   addSubsetParameterization(problem, params.mask, tmp);
 
   // Add a cost to drive the camera chain DH parameters towards an expected mean
-  if (params.camera_chain.dof() != 0)
+  if (params.camera_chain.dof() != 0 && !problem.IsParameterBlockConstant(parameters[0]))
   {
     Eigen::ArrayXXd mean(
       Eigen::ArrayXXd::Zero(camera_chain_dh_offsets.rows(), camera_chain_dh_offsets.cols()));
@@ -186,7 +187,7 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &param
   }
 
   // Add a cost to drive the target chain DH parameters towards an expected mean
-  if (params.target_chain.dof() != 0)
+  if (params.target_chain.dof() != 0 && !problem.IsParameterBlockConstant(parameters[1]))
   {
     Eigen::ArrayXXd mean(
       Eigen::ArrayXXd::Zero(target_chain_dh_offsets.rows(), target_chain_dh_offsets.cols()));
@@ -203,14 +204,8 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &param
     problem.AddResidualBlock(cost_block, nullptr, target_chain_dh_offsets.data());
   }
 
-  // Setup the Ceres optimization parameters
-  ceres::Solver::Options options;
-  options.max_num_iterations = 150;
-  options.num_threads = 4;
-  options.minimizer_progress_to_stdout = true;
-  ceres::Solver::Summary summary;
-
   // Solve the optimization
+  ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);
 
   // Report and save the results
