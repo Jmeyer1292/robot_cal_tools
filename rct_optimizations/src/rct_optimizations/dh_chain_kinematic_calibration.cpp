@@ -244,7 +244,9 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &param
   return result;
 }
 
-KinematicCalibrationResult optimize(const KinematicCalibrationProblemPose3D &params)
+KinematicCalibrationResult optimize(const KinematicCalibrationProblemPose6D &params,
+                                    const double orientation_weight,
+                                    const ceres::Solver::Options& options)
 {
   // Initialize the optimization variables
   // Camera mount to camera (cm_to_c) quaternion and translation
@@ -314,7 +316,7 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblemPose3D &par
 
   // Create a vector of the pointers to the optimization variables in the order that the cost function expects them
   std::vector<double *> parameters
-    = DualDHChainCostPose3D::constructParameters(camera_chain_dh_offsets,
+    = DualDHChainCostPose6D::constructParameters(camera_chain_dh_offsets,
                                                  target_chain_dh_offsets,
                                                  t_cm_to_c,
                                                  aa_cm_to_c,
@@ -324,7 +326,7 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblemPose3D &par
                                                  aa_ccb_to_tcb);
 
   std::vector<std::vector<std::string>> param_labels
-      = DualDHChainCostPose3D::constructParameterLabels(camera_chain_param_labels,
+      = DualDHChainCostPose6D::constructParameterLabels(camera_chain_param_labels,
                                                         target_chain_param_labels,
                                                         t_cm_to_c_labels,
                                                         aa_cm_to_c_labels,
@@ -340,9 +342,9 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblemPose3D &par
   {
     // Allocate Ceres data structures - ownership is taken by the ceres
     // Problem data structure
-    auto* cost_fn = new DualDHChainCostPose3D(observation, params.camera_chain, params.target_chain);
+    auto* cost_fn = new DualDHChainCostPose6D(observation, params.camera_chain, params.target_chain, orientation_weight);
 
-    auto *cost_block = new ceres::DynamicAutoDiffCostFunction<DualDHChainCostPose3D>(cost_fn);
+    auto *cost_block = new ceres::DynamicAutoDiffCostFunction<DualDHChainCostPose6D>(cost_fn);
 
     // Add the optimization parameters
     // DH parameters for both kinematic chains
@@ -415,20 +417,8 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblemPose3D &par
     problem.AddResidualBlock(cost_block, nullptr, target_chain_dh_offsets.data());
   }
 
-  // Setup the Ceres optimization parameters
-  ceres::Solver::Options options;
-  options.max_num_iterations = 500;
-  options.num_threads = 4;
-  options.minimizer_progress_to_stdout = true;
-
-  options.use_nonmonotonic_steps = true;
-  options.gradient_tolerance = 1.0e-20;
-  options.parameter_tolerance = 1.0e-16;
-  options.function_tolerance = 1.0e-12;
-
-  ceres::Solver::Summary summary;
-
   // Solve the optimization
+  ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);
 
   // Report and save the results

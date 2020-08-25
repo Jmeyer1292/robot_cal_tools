@@ -22,7 +22,13 @@ public:
     : camera_chain_truth(test::perturbDHChain(test::createABBIRB2400(), 1.0e-3))
     , target_chain_truth({})
     , problem(camera_chain_truth, target_chain_truth)
+    , orientation_weight(100.0)
   {
+    // Set a few specific Ceres solver parameters
+    options.max_num_iterations = 500;
+    options.num_threads = 4;
+    options.minimizer_progress_to_stdout = true;
+    options.use_nonmonotonic_steps = true;
   }
 
   void SetUp() override
@@ -146,7 +152,9 @@ public:
   Eigen::Isometry3d target_mount_to_target_truth;
   Eigen::Isometry3d camera_base_to_target_base_truth;
 
-  KinematicCalibrationProblemPose3D problem;
+  KinematicCalibrationProblemPose6D problem;
+  ceres::Solver::Options options;
+  double orientation_weight;
 };
 
 /**
@@ -281,7 +289,7 @@ TEST_F(DHChainMeasurementTest, TestCostFunction)
 
   // Create a vector of the pointers to the optimization variables in the order that the cost function expects them
   std::vector<double *> parameters
-      = DualDHChainCostPose3D::constructParameters(camera_chain_dh_offsets,
+      = DualDHChainCostPose6D::constructParameters(camera_chain_dh_offsets,
                                                  target_chain_dh_offsets,
                                                  t_cm_to_c,
                                                  aa_cm_to_c,
@@ -301,9 +309,9 @@ TEST_F(DHChainMeasurementTest, TestCostFunction)
   // Test the cost function
   for (const auto &obs : observations)
   {
-    DualDHChainCostPose3D cost(obs, camera_chain_truth, target_chain_truth);
+    DualDHChainCostPose6D cost(obs, camera_chain_truth, target_chain_truth, orientation_weight);
 
-    double residual[9];
+    double residual[4];
     EXPECT_TRUE(cost(parameters.data(), residual));
 
     EXPECT_NEAR(residual[0], 0, 1.0e-12);  // x
@@ -316,21 +324,21 @@ TEST_F(DHChainMeasurementTest, TestCostFunction)
 
 TEST_F(DHChainMeasurementTest_PerfectInitial, PerfectInitialConditions)
 {
-  KinematicCalibrationResult result = optimize(problem);
+  KinematicCalibrationResult result = optimize(problem, orientation_weight, options);
   std::cout << result.covariance.printCorrelationCoeffAboveThreshold(0.5) << std::endl;
   analyzeResults(result);
 }
 
 TEST_F(DHChainMeasurementTest_PerturbedDH, PerfectGuessPerturbedDH)
 {
-  KinematicCalibrationResult result = optimize(problem);
+  KinematicCalibrationResult result = optimize(problem, orientation_weight, options);
   std::cout << result.covariance.printCorrelationCoeffAboveThreshold(0.5) << std::endl;
   analyzeResults(result);
 }
 
 TEST_F(DHChainMeasurementTest_PerturbedDH_PertubedGuess, PerturbedDHPerturbedGuess)
 {
-  KinematicCalibrationResult result = optimize(problem);
+  KinematicCalibrationResult result = optimize(problem, orientation_weight, options);
   std::cout << result.covariance.printCorrelationCoeffAboveThreshold(0.5) << std::endl;
   analyzeResults(result);
 }
