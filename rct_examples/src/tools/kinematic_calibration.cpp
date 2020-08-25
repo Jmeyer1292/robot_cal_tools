@@ -3,6 +3,7 @@
 #include <rct_image_tools/image_observation_finder.h>
 #include <rct_ros_tools/parameter_loaders.h>
 #include <rct_ros_tools/exceptions.h>
+#include <rct_ros_tools/target_loaders.h>
 
 #include <boost/accumulators/accumulators.hpp>
 #include <boost/accumulators/statistics.hpp>
@@ -77,7 +78,7 @@ KinObservation2D3D::Set loadMeasurements(const std::string& filename, const Modi
     auto features = target_finder.findObservations(image, &detector_params);
     if (!features)
     {
-      ROS_WARN_STREAM("Failed to find observations for image '" << image_file << "'");
+      std::cout << "Failed to find observations for image '" << image_file << "'" << std::endl;
       cv::imshow("circle_detection_debug", image);
       cv::waitKey();
       continue;
@@ -97,14 +98,12 @@ KinObservation2D3D::Set loadMeasurements(const std::string& filename, const Modi
       };
 
       cv::setMouseCallback("circle_detection_debug", cb, &accepted);
-
       cv::waitKey();
 
       if (!accepted)
-      {
-        ROS_WARN_STREAM("Not accepted!");
         continue;
-      }
+
+      std::cout << "Image accepted!" << std::endl;
     }
 
     // Create the correspondences
@@ -142,39 +141,6 @@ KinObservation2D3D::Set loadMeasurements(const std::string& filename, const Modi
   }
 
   return measurements;
-}
-
-std::pair<KinObservation2D3D::Set, KinObservation2D3D::Set> divide(const KinObservation2D3D::Set& measurements,
-                                                                   const double training_pct)
-{
-  std::vector<std::size_t> cal_indices(measurements.size());
-  std::iota(cal_indices.begin(), cal_indices.end(), 0);
-  std::mt19937 mt_rand(std::random_device{}());
-  std::shuffle(cal_indices.begin(), cal_indices.end(), mt_rand);
-
-  std::size_t n = static_cast<std::size_t>(static_cast<double>(measurements.size()) * training_pct);
-
-  KinObservation2D3D::Set training_set;
-  {
-    std::vector<std::size_t> training_indices(cal_indices.begin(), cal_indices.begin() + n);
-    training_set.reserve(training_indices.size());
-    for (const std::size_t idx : training_indices)
-    {
-      training_set.push_back(measurements.at(idx));
-    }
-  }
-
-  KinObservation2D3D::Set test_set;
-  {
-    std::vector<std::size_t> test_indices(cal_indices.begin() + n, cal_indices.end());
-    test_set.reserve(test_indices.size());
-    for (const std::size_t idx : test_indices)
-    {
-      test_set.push_back(measurements.at(idx));
-    }
-  }
-
-  return std::make_pair(training_set, test_set);
 }
 
 DHChain createTwoAxisPositioner()
@@ -250,7 +216,7 @@ void test(const DHChain& initial_camera_chain, const DHChain& initial_target_cha
     }
     else
     {
-      ROS_WARN_STREAM("PnP optimization failed");
+      std::cout << "PnP optimization failed" << std::endl;
     }
   }
 
@@ -274,67 +240,30 @@ bool get(const ros::NodeHandle& nh, const std::string& key, T& val)
 
 int main(int argc, char** argv)
 {
-  //  ros::init(argc, argv, "kinematic_calibration");
-  //  ros::NodeHandle pnh("~");
+  if (argc != 6)
+  {
+    std::cout << "Incorrect number of arguments: " << argc << std::endl;
+    return -1;
+  }
 
-  //  std::string data_file;
-  //  if (!get(pnh, "data_file", data_file))
-  //    return -1;
-
-  ModifiedCircleGridTarget target(9, 7, 0.078581);
-//  ModifiedCircleGridTarget target(7, 5, 0.06);
+  ModifiedCircleGridTarget target = TargetLoader<ModifiedCircleGridTarget>::load(argv[2]);
   ModifiedCircleGridObservationFinder target_finder(target);
+
+  // Create the problem
+  KinematicCalibrationProblem2D3D problem(DHChain({}), createTwoAxisPositioner());
+
+  // Load the camera intrinsics
+  problem.intr = loadIntrinsics(argv[3]);
+
+  // Load the pose guesses
+  problem.target_mount_to_target_guess = loadPose(argv[4]);
+  problem.camera_mount_to_camera_guess = loadPose(argv[5]);
 
   // Load the observations
   KinObservation2D3D::Set measurements = loadMeasurements(argv[1], target_finder);
 
-  // Split the observations into a training and validation group
-  std::pair<KinObservation2D3D::Set, KinObservation2D3D::Set> measurement_sets = divide(measurements, 0.8);
-
-  KinematicCalibrationProblem2D3D problem(DHChain({}), createTwoAxisPositioner());
-  problem.intr.fx() = 2246.59;
-  problem.intr.fy() = 2245.66;
-  problem.intr.cx() = 1039.16;
-  problem.intr.cy() = 800.869;
-
-  problem.observations = measurement_sets.first;
-  ROS_INFO_STREAM("Performing calibration with " << problem.observations.size() << " observations");
-
-  problem.target_mount_to_target_guess = Eigen::Isometry3d::Identity();
-
-//  // Vicon
-//  {
-//    problem.target_mount_to_target_guess.translate(Eigen::Vector3d(0.17, -0.65, 0.5));
-//    problem.target_mount_to_target_guess.rotate(Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitX()));
-//    problem.target_mount_to_target_guess.rotate(Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitY()));
-//    problem.target_mount_to_target_guess.rotate(Eigen::AngleAxisd(0.2, Eigen::Vector3d::UnitZ()));
-
-//    problem.camera_mount_to_camera_guess = Eigen::Isometry3d::Identity();
-//    problem.camera_mount_to_camera_guess.translate(Eigen::Vector3d(2.2, 0.7, 1.075));
-//  }
-
-//  // 7x5 Target
-//  {
-//    problem.target_mount_to_target_guess.translate(Eigen::Vector3d(-0.2, -0.15, 0.7));
-//    problem.target_mount_to_target_guess.rotate(Eigen::Quaterniond(0.743, 0.0, 0.0, -0.669));
-
-//    problem.camera_mount_to_camera_guess.translate(Eigen::Vector3d(2.58, -1.6, 2.83));
-//    problem.camera_mount_to_camera_guess.rotate(Eigen::Quaterniond(-0.463, 0.883, 0.002, -0.075));
-//  }
-
-  // 9x7 Target
-  {
-    problem.target_mount_to_target_guess.translate(Eigen::Vector3d(0.2806, -0.5019, 0.7042));
-//    problem.target_mount_to_target_guess.rotate(Eigen::Quaterniond(0.669, 0.0, 0.0, 0.743));
-    problem.target_mount_to_target_guess.rotate(Eigen::Quaterniond(0.6744918, -0.0005498, -0.0008313, 0.7382817));
-
-    problem.camera_mount_to_camera_guess.translate(Eigen::Vector3d(2.555, -1.762, 2.832));
-//    problem.camera_mount_to_camera_guess.rotate(Eigen::Quaterniond(-0.463, 0.883, 0.002, -0.075));
-    problem.camera_mount_to_camera_guess.rotate(Eigen::Quaterniond(0.4608509, -0.8808954, -0.0562409, 0.092069));
-  }
-
-
-  problem.camera_base_to_target_base_guess = Eigen::Isometry3d::Identity();
+  problem.observations = measurements;
+  std::cout << "Performing calibration with " << problem.observations.size() << " observations" << std::endl;
 
   problem.camera_chain_dh_stdev_expectation = 0.001;
   problem.target_chain_dh_stdev_expectation = 0.005;
@@ -356,10 +285,16 @@ int main(int argc, char** argv)
   problem.mask.at(6) = { 0, 1, 2 };
   problem.mask.at(7) = { 0, 1, 2 };
 
-  // Mask the z-value of the camera mount to camera position
-//  problem.mask.at(2) = { 0, 1, 2 };
+  ceres::Solver::Options options;
+  options.num_threads = 4;
+  options.minimizer_progress_to_stdout = true;
+  options.max_num_iterations = 500;
+  options.use_nonmonotonic_steps = true;
+  options.function_tolerance = 1.0e-12;
+  options.parameter_tolerance = 1.0e-20;
+  options.gradient_tolerance = 1.0e-16;
 
-  KinematicCalibrationResult result = optimize(problem);
+  KinematicCalibrationResult result = optimize(problem, options);
 
   Eigen::IOFormat fmt(4, 0, "|", "\n", "|", "|");
 
@@ -380,8 +315,8 @@ int main(int argc, char** argv)
 
   std::cout << ss.str() << std::endl;
 
-  ROS_INFO_STREAM("Validating calibration with " << measurement_sets.second.size() << " observations");
-  test(problem.camera_chain, problem.target_chain, result, measurement_sets.second, problem.intr);
+  ROS_INFO_STREAM("Validating calibration with " << measurements.size() << " observations");
+  test(problem.camera_chain, problem.target_chain, result, measurements, problem.intr);
 
   return 0;
 }
