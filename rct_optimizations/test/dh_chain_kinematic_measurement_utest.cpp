@@ -42,7 +42,6 @@ public:
   virtual void setActualData()
   {
     n_observations = 150;
-    residual_threshold_sqr = 1.0e-12;
 
     position_diff_mean_threshold = 0.005;
     position_diff_std_dev_threshold = 0.003;
@@ -87,7 +86,6 @@ public:
   virtual void analyzeResults(const KinematicCalibrationResult& result)
   {
     EXPECT_TRUE(result.converged);
-    EXPECT_LT(result.final_cost_per_obs, residual_threshold_sqr);
 
     // Expect the resulting DH parameter offsets to be the same shape as the input
     // This is an important check of the case where the cost function modifies for 0 DoF chains
@@ -134,8 +132,6 @@ public:
     EXPECT_LT(ba::mean(ori_acc), orientation_diff_mean_threshold);
     EXPECT_LT(std::sqrt(ba::variance(ori_acc)), orientation_diff_std_dev_threshold);
   }
-
-  double residual_threshold_sqr;
 
   double position_diff_mean_threshold;
   double position_diff_std_dev_threshold;
@@ -206,8 +202,6 @@ public:
     DHChainMeasurementTest::setInitialGuess();
 
     problem.camera_chain = test::createABBIRB2400();
-
-    residual_threshold_sqr = 0.001;
   }
 
   virtual void applyMasks() override
