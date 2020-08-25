@@ -74,35 +74,6 @@ KinematicMeasurement::Set loadMeasurements(const std::string& filename)
   return measurements;
 }
 
-std::pair<KinematicMeasurement::Set, KinematicMeasurement::Set> divide(const KinematicMeasurement::Set& measurements,
-                                                                       const double training_pct)
-{
-  std::vector<std::size_t> cal_indices(measurements.size());
-  std::iota(cal_indices.begin(), cal_indices.end(), 0);
-  std::mt19937 mt_rand(std::random_device{}());
-  std::shuffle(cal_indices.begin(), cal_indices.end(), mt_rand);
-
-  std::size_t n = static_cast<std::size_t>(static_cast<double>(measurements.size()) * training_pct);
-
-  std::vector<std::size_t> training_indices(cal_indices.begin(), cal_indices.begin() + n);
-  KinematicMeasurement::Set training_set;
-  training_set.reserve(training_indices.size());
-  for (const std::size_t idx : training_indices)
-  {
-    training_set.push_back(measurements.at(idx));
-  }
-
-  std::vector<std::size_t> test_indices(cal_indices.begin() + n, cal_indices.end());
-  KinematicMeasurement::Set test_set;
-  test_set.reserve(test_indices.size());
-  for (const std::size_t idx : test_indices)
-  {
-    test_set.push_back(measurements.at(idx));
-  }
-
-  return std::make_pair(training_set, test_set);
-}
-
 DHChain createTwoAxisPositioner()
 {
   std::vector<DHTransform> transforms;
@@ -233,8 +204,15 @@ bool get(const ros::NodeHandle& nh, const std::string& key, T& val)
 
 int main(int argc, char** argv)
 {
+  ros::init(argc, argv, "kinematic_calibration_example");
+  ros::NodeHandle pnh("~");
+
+  std::string measurements_file;
+  if (!get(pnh, "measurements_file", measurements_file))
+    return -1;
+
   // Load the observations
-  KinematicMeasurement::Set measurements = loadMeasurements(argv[1]);
+  KinematicMeasurement::Set measurements = loadMeasurements(measurements_file);
 
   KinematicCalibrationProblemPose6D problem(DHChain({}), createTwoAxisPositioner());
 
