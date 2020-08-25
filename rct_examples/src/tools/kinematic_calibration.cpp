@@ -236,7 +236,7 @@ int main(int argc, char** argv)
   // Load the observations
   KinematicMeasurement::Set measurements = loadMeasurements(argv[1]);
 
-  KinematicCalibrationProblemPose3D problem(DHChain({}), createTwoAxisPositioner());
+  KinematicCalibrationProblemPose6D problem(DHChain({}), createTwoAxisPositioner());
 
   problem.observations = measurements;
 
@@ -271,13 +271,17 @@ int main(int argc, char** argv)
   problem.mask.at(6) = { 0, 1, 2 };
   problem.mask.at(7) = { 0, 1, 2 };
 
-  // Mask the z-value of the camera mount to camera position
-//  problem.mask.at(4) = { 0, 2 };
-
   // Run the calibration
   Stats cal_stats_optimal_dh;
   {
-    KinematicCalibrationResult result = optimize(problem);
+    // Setup the Ceres optimization parameters
+    ceres::Solver::Options options;
+    options.max_num_iterations = 500;
+    options.num_threads = 4;
+    options.minimizer_progress_to_stdout = true;
+    options.use_nonmonotonic_steps = true;
+
+    KinematicCalibrationResult result = optimize(problem, 100.0, options);
     printResults(result);
 
     //  test(problem.camera_chain, problem.target_chain, result, measurement_sets.second);
@@ -298,7 +302,13 @@ int main(int argc, char** argv)
       problem.mask.at(1) = createDHMask(mask);
     }
 
-    KinematicCalibrationResult result = optimize(problem);
+    ceres::Solver::Options options;
+    options.max_num_iterations = 500;
+    options.num_threads = 4;
+    options.minimizer_progress_to_stdout = true;
+    options.use_nonmonotonic_steps = true;
+
+    KinematicCalibrationResult result = optimize(problem, 100.0, options);
     printResults(result);
 
     // Compare the results of this optimization with the measurements using the measured joints and nominal kinematic chain
