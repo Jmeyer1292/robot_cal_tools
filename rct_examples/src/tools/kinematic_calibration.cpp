@@ -175,14 +175,10 @@ DHChain createTwoAxisPositioner()
   return DHChain(transforms, base_offset);
 }
 
-void test(const DHChain& initial_camera_chain, const DHChain& initial_target_chain,
+void test(const DHChain& camera_chain, const DHChain& target_chain,
           const KinematicCalibrationResult& result, const KinObservation2D3D::Set& observations,
           const CameraIntrinsics& intr)
 {
-  // Test the result by moving the robot around to a lot of positions and seeing of the results match
-  DHChain camera_chain(initial_camera_chain, result.camera_chain_dh_offsets);
-  DHChain target_chain(initial_target_chain, result.target_chain_dh_offsets);
-
   namespace ba = boost::accumulators;
   ba::accumulator_set<double, ba::stats<ba::tag::mean, ba::tag::variance>> pos_acc;
   ba::accumulator_set<double, ba::stats<ba::tag::mean, ba::tag::variance>> ori_acc;
@@ -296,7 +292,7 @@ int main(int argc, char** argv)
 
   KinematicCalibrationResult result = optimize(problem, options);
 
-  Eigen::IOFormat fmt(4, 0, "|", "\n", "|", "|");
+  Eigen::IOFormat fmt(6, 0, "|", "\n", "|", "|");
 
   std::stringstream ss;
   ss << "\nCalibration " << (result.converged ? "did" : "did not") << " converge\n";
@@ -304,10 +300,10 @@ int main(int argc, char** argv)
   ss << "Final cost per observation: " << std::sqrt(result.final_cost_per_obs) << "\n";
 
   ss << "\nCamera mount to camera\n" << result.camera_mount_to_camera.matrix().format(fmt) << "\n";
-  ss << result.camera_mount_to_camera.rotation().eulerAngles(0, 1, 2).transpose() << "\n";
+  ss << "Euler ZYX: " << result.camera_mount_to_camera.rotation().eulerAngles(2, 1, 0).transpose().format(fmt) << "\n";
 
   ss << "\nTarget mount to target\n" << result.target_mount_to_target.matrix().format(fmt) << "\n";
-  ss << result.target_mount_to_target.rotation().eulerAngles(0, 1, 2).transpose() << "\n";
+  ss << "Euler ZYX: " << result.target_mount_to_target.rotation().eulerAngles(2, 1, 0).transpose().format(fmt) << "\n";
 
   ss << "\nTarget chain DH parameter offsets\n" << result.target_chain_dh_offsets.matrix().format(fmt) << "\n";
   ss << "\nCamera chain DH parameter offsets\n" << result.camera_chain_dh_offsets.matrix().format(fmt) << "\n";
@@ -315,8 +311,15 @@ int main(int argc, char** argv)
 
   std::cout << ss.str() << std::endl;
 
-  ROS_INFO_STREAM("Validating calibration with " << measurements.size() << " observations");
-  test(problem.camera_chain, problem.target_chain, result, measurements, problem.intr);
+  // Test the result by moving the robot around to a lot of positions and seeing of the results match
+  DHChain optimized_camera_chain(problem.camera_chain, result.camera_chain_dh_offsets);
+  DHChain optimized_target_chain(problem.target_chain, result.target_chain_dh_offsets);
+
+  std::cout << "Optimized camera chain DH parameters\n" << optimized_camera_chain.getDHTable().format(fmt) << std::endl;
+  std::cout << "Optimized target chain DH parameters\n" << optimized_target_chain.getDHTable().format(fmt) << std::endl;
+
+  std::cout << "\nValidating calibration with " << measurements.size() << " observations" << std::endl;
+  test(optimized_camera_chain, optimized_target_chain, result, measurements, problem.intr);
 
   return 0;
 }
