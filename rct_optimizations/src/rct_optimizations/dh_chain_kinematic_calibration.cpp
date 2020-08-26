@@ -10,7 +10,6 @@
 namespace rct_optimizations
 {
 
-// TODO: replace; duplicates a member function
 Eigen::Isometry3d createTransform(const Eigen::Vector3d& t, const Eigen::Vector3d& aa)
 {
   Eigen::Isometry3d result = Eigen::Isometry3d::Identity() * Eigen::Translation3d(t);
