@@ -49,17 +49,14 @@ KinematicMeasurement::Set loadMeasurements(const std::string& filename)
         double x = pose["x"].as<double>();
         double y = pose["y"].as<double>();
         double z = pose["z"].as<double>();
-        double rx = pose["rx"].as<double>();
-        double ry = pose["ry"].as<double>();
-        double rz = pose["rz"].as<double>();
+        double qw = pose["qw"].as<double>();
+        double qx = pose["qx"].as<double>();
+        double qy = pose["qy"].as<double>();
+        double qz = pose["qz"].as<double>();
 
         measurement.camera_to_target = Eigen::Isometry3d::Identity();
         measurement.camera_to_target.translate(Eigen::Vector3d(x, y, z));
-
-        // Euler XYZ
-        measurement.camera_to_target.rotate(Eigen::AngleAxisd(rx, Eigen::Vector3d::UnitX()));
-        measurement.camera_to_target.rotate(Eigen::AngleAxisd(ry, Eigen::Vector3d::UnitY()));
-        measurement.camera_to_target.rotate(Eigen::AngleAxisd(rz, Eigen::Vector3d::UnitZ()));
+        measurement.camera_to_target.rotate(Eigen::Quaterniond(qw, qx, qy, qz));
 
         // Add the measurement to the set
         measurements.push_back(measurement);
