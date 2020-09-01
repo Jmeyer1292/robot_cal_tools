@@ -105,5 +105,36 @@ Eigen::VectorXd calculateHomographyError(const Correspondence2D3D::Set &correspo
   return error;
 }
 
+Eigen::VectorXd calculateHomographyError(const Correspondence3D3D::Set& correspondences,
+                                         const CorrespondenceSampler& correspondence_sampler)
+{
+  // Convert the 3D correspondence points into 2D points by scaling the x and y components by the z component
+  Correspondence2D3D::Set correspondences_2d;
+  correspondences_2d.reserve(correspondences.size());
+
+  // Store the z values for scaling later
+  Eigen::VectorXd z_values(correspondences.size());
+
+  for (std::size_t i = 0; i < correspondences.size(); ++i)
+  {
+    const auto& corr = correspondences[i];
+
+    // Store the z value of the correspondence
+    z_values[i] = corr.in_image.z();
+
+    // Generate a scaled 2D correspondence
+    Correspondence2D3D corr_2d;
+    corr_2d.in_target = corr.in_target;
+    corr_2d.in_image = (corr.in_image / corr.in_image.z()).head<2>();
+    correspondences_2d.push_back(corr_2d);
+  }
+
+  // Calculate the homography error
+  Eigen::VectorXd error = calculateHomographyError(correspondences_2d, correspondence_sampler);
+
+  // Scale the errors again by the z values of the original correspondences
+  return error.cwiseProduct(z_values);
+}
+
 } // namespace rct_optimizations
 
