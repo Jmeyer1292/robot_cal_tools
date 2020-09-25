@@ -25,7 +25,7 @@ KinematicMeasurement::Set loadMeasurements(const std::string& filename)
 
       // Target chain joints
       {
-        YAML::Node joints = it->second["camera_joints"];
+        YAML::Node joints = it->second["target_joints"];
         measurement.target_chain_joints.resize(joints.size());
         for (std::size_t i = 0; i < joints.size(); ++i)
         {
@@ -35,11 +35,11 @@ KinematicMeasurement::Set loadMeasurements(const std::string& filename)
 
       // Camera chain joints
       {
-        YAML::Node joints = it->second["target_joints"];
-        measurement.target_chain_joints.resize(joints.size());
+        YAML::Node joints = it->second["camera_joints"];
+        measurement.camera_chain_joints.resize(joints.size());
         for (std::size_t i = 0; i < joints.size(); ++i)
         {
-          measurement.target_chain_joints[i] = joints[i].as<double>();
+          measurement.camera_chain_joints[i] = joints[i].as<double>();
         }
       }
 
