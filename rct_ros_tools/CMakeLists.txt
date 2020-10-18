@@ -29,6 +29,7 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   image_transport
   eigen_conversions
+  std_srvs
 )
 
 # This package only provides examples. It does not export any tools.
@@ -43,6 +44,7 @@ catkin_package(
     cv_bridge
     image_transport
     eigen_conversions
+    std_srvs
 )
 
 ###########
