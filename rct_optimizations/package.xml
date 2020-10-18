@@ -15,7 +15,6 @@
   <author email="clewis@swri.org">Chris Lewis</author>
 
   <license>Apache 2.0</license>
-
   <depend>libceres-dev</depend>
   <depend>rct_common</depend>
 

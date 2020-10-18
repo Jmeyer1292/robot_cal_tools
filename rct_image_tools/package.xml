@@ -8,6 +8,7 @@
 
   <license>Apache 2.0</license>
 
+  <depend>boost</depend>
   <depend>rct_common</depend>
   <depend>rct_optimizations</depend>
   <depend>yaml-cpp</depend>

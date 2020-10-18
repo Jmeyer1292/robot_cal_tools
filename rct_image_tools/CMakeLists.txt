@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.5.0)
 project(rct_image_tools VERSION 0.1.0 LANGUAGES CXX)
 
+find_package(Boost REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(rct_common REQUIRED)
@@ -31,6 +32,9 @@ target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra)
 target_include_directories(${PROJECT_NAME} PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
   "$<INSTALL_INTERFACE:include>")
+target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
+  ${Boost_INCLUDE_DIRS}
+)
 target_link_libraries(${PROJECT_NAME} PUBLIC
   opencv_core
   opencv_aruco
@@ -38,6 +42,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   opencv_imgproc
   opencv_highgui
   yaml-cpp
+  ${Boost_LIBRARIES}
   Eigen3::Eigen
   rct::rct_optimizations
 )
