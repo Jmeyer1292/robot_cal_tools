@@ -80,12 +80,12 @@ DetectionResult findCircles(const cv::Mat& image, const double threshold,
 
   // Get the contours of the image
   std::vector<std::vector<cv::Point>> contours;
-  cv::findContours(binarized_image, contours, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
+  cv::findContours(binarized_image, contours, cv::RETR_LIST, cv::CHAIN_APPROX_NONE);
 
   // Debug
   cv::Mat debug_img;
-  cv::cvtColor(binarized_image, debug_img, CV_GRAY2RGB);
-  const CvScalar color(255, 0, 0);
+  cv::cvtColor(binarized_image, debug_img, cv::COLOR_GRAY2RGB);
+  const cv::Scalar color(255, 0, 0);
 
   // Loop on all contours
   DetectionResult result;
@@ -363,7 +363,7 @@ void CircleDetector::detect(cv::InputArray input, std::vector<cv::KeyPoint>& key
   cv::Mat grayscale_image;
 
   if (image.channels() == 3)
-    cv::cvtColor(image, grayscale_image, CV_BGR2GRAY);
+    cv::cvtColor(image, grayscale_image, cv::COLOR_BGR2GRAY);
   else
     grayscale_image = image;
 
@@ -386,7 +386,7 @@ cv::Mat CircleDetector::drawDetectedCircles(const cv::Mat& image)
 {
   cv::Mat grayscale_image;
   if (image.channels() == 3)
-    cv::cvtColor(image, grayscale_image, CV_BGR2GRAY);
+    cv::cvtColor(image, grayscale_image, cv::COLOR_BGR2GRAY);
   else
     grayscale_image = image;
 
