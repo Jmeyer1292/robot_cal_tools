@@ -16,6 +16,7 @@
   <depend>image_transport</depend>
   <depend>rct_image_tools</depend>
   <depend>roscpp</depend>
+  <depend>std_srvs</depend>
   <depend>tf2_ros</depend>
   <depend>yaml-cpp</depend>
 

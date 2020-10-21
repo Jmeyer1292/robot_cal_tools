@@ -4,24 +4,18 @@
 
 using ObservationPoints = std::vector<cv::Point2d>;
 
-static void drawPointLabel(const std::string& label, const cv::Point2d& position, const CvScalar& color, cv::Mat& image)
+static void drawPointLabel(const std::string& label, const cv::Point2d& position, const cv::Scalar& color, cv::Mat& image)
 {
-  CvFont font;
-  cvInitFont(&font, CV_FONT_HERSHEY_SIMPLEX, 0.5, 0.5);
   const double font_scale = 0.75;
   const int line_thickness = 2;
 
-  CvSize label_size;
-  int label_baseline;
-  cvGetTextSize(label.c_str(), &font, &label_size, &label_baseline);
-
-  cv::Point label_origin = cv::Point(position.x, position.y);
+  cv::Point label_origin = cv::Point(static_cast<int>(position.x), static_cast<int>(position.y));
 
   cv::putText(image, label, label_origin, cv::FONT_HERSHEY_SIMPLEX, font_scale, color, line_thickness);
 
   // Draw dot
-  const int RADIUS = 5.0;
-  cv::circle(image, position, RADIUS, color, -1);
+  const int radius = 5.0;
+  cv::circle(image, position, radius, color, -1);
 }
 
 static cv::Mat renderObservations(const cv::Mat& input, const ObservationPoints& observation_points,
@@ -32,7 +26,7 @@ static cv::Mat renderObservations(const cv::Mat& input, const ObservationPoints&
 
   if (!observation_points.empty())
   {
-    cv::Size pattern_size(target.cols, target.rows);
+    cv::Size pattern_size(static_cast<int>(target.cols), static_cast<int>(target.rows));
 
     cv::Mat center_image = cv::Mat(observation_points);
     cv::Mat center_converted;
@@ -40,10 +34,10 @@ static cv::Mat renderObservations(const cv::Mat& input, const ObservationPoints&
     cv::drawChessboardCorners(output_image, pattern_size, center_converted, true);
 
     // Draw point labels // TODO
-    drawPointLabel("First Point", observation_points[0], CvScalar(0, 255, 0), output_image);
-    drawPointLabel("Origin", observation_points[target.rows * target.cols - target.cols], CvScalar(255, 0, 0),
+    drawPointLabel("First Point", observation_points[0], cv::Scalar(0, 255, 0), output_image);
+    drawPointLabel("Origin", observation_points[target.rows * target.cols - target.cols], cv::Scalar(255, 0, 0),
                    output_image);
-    drawPointLabel("Last Point", observation_points[observation_points.size() - 1], CvScalar(0, 0, 255), output_image);
+    drawPointLabel("Last Point", observation_points[observation_points.size() - 1], cv::Scalar(0, 0, 255), output_image);
   }
 
   return output_image;

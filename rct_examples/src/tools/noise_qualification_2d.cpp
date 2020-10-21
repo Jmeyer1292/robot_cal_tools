@@ -1,4 +1,5 @@
-#include <opencv/cv.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
 #include <rct_image_tools/image_observation_finder.h>
 #include <rct_optimizations/validation/noise_qualification.h>
 #include "rct_ros_tools/data_set.h"

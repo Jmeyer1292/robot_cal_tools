@@ -24,7 +24,7 @@ static std::string combine(const std::string& dir, const std::string& rel_path)
 
 cv::Mat rct_ros_tools::readImageOpenCV(const std::string& path)
 {
-  cv::Mat image = cv::imread(path, CV_LOAD_IMAGE_COLOR); // TODO: Is CV_LOAD_IMAGE_COLOR needed?
+  cv::Mat image = cv::imread(path, cv::IMREAD_COLOR);
   if (image.data == NULL)
   {
     ROS_ERROR("File failed to load or does not exist: %s", path.c_str());
