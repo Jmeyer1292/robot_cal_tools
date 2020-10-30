@@ -1,5 +1,6 @@
 #pragma once
 #include <rct_optimizations/types.h>
+#include <random>
 
 namespace rct_optimizations
 {
@@ -62,6 +63,29 @@ struct GridCorrespondenceSampler : CorrespondenceSampler
    * ArUco grid targets, for example, have 4 observations associated with each element in the grid, so the stride would be 4
    */
   const std::size_t stride;
+};
+
+struct RandomCorrespondenceSampler : CorrespondenceSampler
+{
+  RandomCorrespondenceSampler(const std::size_t n) : n_correspondences(n)
+  {
+  }
+
+  virtual std::vector<std::size_t> getSampleCorrespondenceIndices() const final override
+  {
+    // Create a random number generator with a uniform distribution across all indices
+    std::mt19937 rand_gen(std::random_device{}());
+    std::uniform_int_distribution<std::size_t> dist(0, n_correspondences - 1);
+    auto fn = [&rand_gen, &dist]() -> std::size_t { return dist(rand_gen); };
+
+    // Generate a vector of 4 random correspondence indices
+    std::vector<std::size_t> output(4);
+    std::generate(output.begin(), output.end(), fn);
+
+    return output;
+  }
+
+  const std::size_t n_correspondences;
 };
 
 /**
