@@ -5,7 +5,7 @@
 #include <rct_ros_tools/data_set.h>
 
 // To find 2D  observations from images
-#include <rct_image_tools/image_observation_finder.h>
+#include <rct_image_tools/modified_circle_grid_finder.h>
 #include <rct_image_tools/image_utils.h>
 
 // For display of found targets
@@ -73,7 +73,7 @@ int main(int argc, char **argv)
     Eigen::Isometry3d camera_mount_to_camera = loadPose(pnh, "wrist_to_camera_guess");
 
     // Lets create a class that will search for the target in our raw images.
-    ModifiedCircleGridObservationFinder obs_finder(target);
+    ModifiedCircleGridTargetFinder target_finder(target);
 
     // Finally, we need to process our images into correspondence sets: for each dot in the
     // target this will be where that dot is in the target and where it was seen in the image.
@@ -83,23 +83,25 @@ int main(int argc, char **argv)
     for (std::size_t i = 0; i < data_set.images.size(); ++i)
     {
       // Try to find the circle grid in this image:
-      auto maybe_obs = obs_finder.findObservations(data_set.images[i]);
-      if (!maybe_obs)
+      rct_image_tools::TargetFeatures target_features;
+      try
       {
-        ROS_WARN_STREAM("Unable to find the circle grid in image: " << i);
+        target_features = target_finder.findTargetFeatures(data_set.images[i]);
+
+        // Show the points we detected
+        cv::imshow("points", target_finder.drawTargetFeatures(data_set.images[i], target_features));
+        cv::waitKey();
+      }
+      catch(const std::runtime_error& ex)
+      {
+        ROS_WARN_STREAM("Unable to find the circle grid in image " << i << ": '" << ex.what() << "'");
         cv::imshow("points", data_set.images[i]);
         cv::waitKey();
         continue;
       }
-      else
-      {
-        // Show the points we detected
-        cv::imshow("points", obs_finder.drawObservations(data_set.images[i], *maybe_obs));
-        cv::waitKey();
-      }
 
       Observation2D3D obs;
-      obs.correspondence_set.reserve(maybe_obs->size());
+      obs.correspondence_set.reserve(target_features.size());
 
       // So for each image we need to:
       //// 1. Record the wrist position
@@ -107,7 +109,7 @@ int main(int argc, char **argv)
       obs.to_target_mount = Eigen::Isometry3d::Identity();
 
       //// And finally add that to the problem
-      obs.correspondence_set = getCorrespondenceSet(*maybe_obs, target.createPoints());
+      obs.correspondence_set = target.createCorrespondences(target_features);
 
       observations.push_back(obs);
     }

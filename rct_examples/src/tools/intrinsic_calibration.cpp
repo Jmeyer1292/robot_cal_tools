@@ -1,4 +1,4 @@
-#include <rct_image_tools/image_observation_finder.h>
+#include <rct_image_tools/modified_circle_grid_finder.h>
 #include <rct_image_tools/image_utils.h>
 #include <rct_optimizations/eigen_conversions.h>
 #include <rct_optimizations/experimental/camera_intrinsic.h>
@@ -105,7 +105,7 @@ int main(int argc, char** argv)
   }
 
   // Create obs finder
-  ModifiedCircleGridObservationFinder obs_finder (target);
+  ModifiedCircleGridTargetFinder target_finder (target);
 
   // Construct problem
   IntrinsicEstimationProblem problem_def;
@@ -114,17 +114,22 @@ int main(int argc, char** argv)
   for (std::size_t i = 0; i < data_set.images.size(); ++i)
   {
     // Extract observations
-    auto maybe_obs = obs_finder.findObservations(data_set.images[i]);
-    if (!maybe_obs)
+    rct_image_tools::TargetFeatures target_features;
+    try
     {
+      target_features = target_finder.findTargetFeatures(data_set.images[i]);
+    }
+    catch (const std::runtime_error& ex)
+    {
+      ROS_WARN_STREAM("Failed to find observations in image " << i << ": '" << ex.what() << "'");
       continue;
     }
 
     // Show drawing
-    cv::imshow("points", obs_finder.drawObservations(data_set.images[i], *maybe_obs));
+    cv::imshow("points", target_finder.drawTargetFeatures(data_set.images[i], target_features));
     cv::waitKey();
 
-    problem_def.image_observations.push_back(getCorrespondenceSet(*maybe_obs, target.createPoints()));
+    problem_def.image_observations.push_back(target.createCorrespondences(target_features));
   }
 
   // Run optimization

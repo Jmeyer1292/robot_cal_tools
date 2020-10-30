@@ -5,7 +5,7 @@
 #include "rct_ros_tools/print_utils.h"
 
 // To find 2D  observations from images
-#include <rct_image_tools/image_observation_finder.h>
+#include <rct_image_tools/modified_circle_grid_finder.h>
 #include <rct_image_tools/image_utils.h>
 // The calibration function for 'static camera' on robot wrist
 #include <rct_optimizations/extrinsic_multi_static_camera.h>
@@ -153,9 +153,9 @@ int main(int argc, char** argv)
   }
 
   // Lets create a class that will search for the target in our raw images.
-  ModifiedCircleGridObservationFinder obs_finder(target);
+  ModifiedCircleGridTargetFinder target_finder(target);
 
-  ExtrinsicCorrespondenceDataSet corr_data_set(maybe_data_set, obs_finder, true);
+  ExtrinsicCorrespondenceDataSet corr_data_set(maybe_data_set, target_finder, true);
 
   // build problem
   for (std::size_t c = 0; c < corr_data_set.getCameraCount(); ++c)

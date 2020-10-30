@@ -9,7 +9,7 @@
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include <rct_image_tools/image_observation_finder.h>
+#include <rct_image_tools/modified_circle_grid_finder.h>
 #include <rct_image_tools/image_utils.h>
 #include <rct_optimizations/experimental/multi_camera_pnp.h>
 #include <rct_optimizations/ceres_math_utilities.h>
@@ -147,9 +147,9 @@ int main(int argc, char** argv)
   }
 
   // Lets create a class that will search for the target in our raw images.
-  ModifiedCircleGridObservationFinder obs_finder(target);
+  ModifiedCircleGridTargetFinder target_finder(target);
 
-  ExtrinsicCorrespondenceDataSet corr_data_set(maybe_data_set, obs_finder, true);
+  ExtrinsicCorrespondenceDataSet corr_data_set(maybe_data_set, target_finder, true);
 
   for (std::size_t i = 0; i < corr_data_set.getImageCount(); ++i)
   {

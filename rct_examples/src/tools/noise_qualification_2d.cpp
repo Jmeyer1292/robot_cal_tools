@@ -1,6 +1,6 @@
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
-#include <rct_image_tools/image_observation_finder.h>
+#include <rct_image_tools/modified_circle_grid_finder.h>
 #include <rct_optimizations/validation/noise_qualification.h>
 #include "rct_ros_tools/data_set.h"
 #include "rct_ros_tools/parameter_loaders.h"
@@ -41,7 +41,7 @@ int main(int argc, char** argv)
   {
     // Load the target definition and observation finder
     auto target = TargetLoader<ModifiedCircleGridTarget>::load(pnh, "target_definition");
-    ModifiedCircleGridObservationFinder obs_finder(target);
+    ModifiedCircleGridTargetFinder target_finder(target);
 
     // Load camera intrinsics
     CameraIntrinsics camera = loadIntrinsics(pnh, "intrinsics");
@@ -63,20 +63,23 @@ int main(int argc, char** argv)
       static cv::Mat image = readImageOpenCV(image_name);
 
       // Find the observations in the image
-      auto maybe_obs = obs_finder.findObservations(image);
-      if (!maybe_obs)
+      rct_image_tools::TargetFeatures target_features;
+      try
       {
-        cv::imshow("points", image);
+        target_features = target_finder.findTargetFeatures(image);
+
+        // Show the points we detected
         ROS_INFO_STREAM("Hit enter in the OpenCV window to continue");
+        cv::imshow("points", target_finder.drawTargetFeatures(image, target_features));
+        cv::waitKey();
+      }
+      catch (const std::runtime_error& ex)
+      {
+        ROS_WARN_STREAM("Failed to find observations in image " << i << ": '" << ex.what() << "'");
+        ROS_INFO_STREAM("Hit enter in the OpenCV window to continue");
+        cv::imshow("points", image);
         cv::waitKey();
         continue;
-      }
-      else
-      {
-        // Show the points we detected
-        cv::imshow("points", obs_finder.drawObservations(image, *maybe_obs));
-        ROS_INFO_STREAM("Hit enter in the OpenCV window to continue");
-        cv::waitKey();
       }
 
       // Set up the PnP problem for this image
@@ -85,12 +88,7 @@ int main(int argc, char** argv)
       problem.camera_to_target_guess = camera_to_target_guess;
 
       // Add the detected correspondences
-      problem.correspondences.reserve(maybe_obs->size());
-      const std::vector<Eigen::Vector3d> target_points = target.createPoints();
-      for (std::size_t j = 0; j < maybe_obs->size(); ++j)
-      {
-        problem.correspondences.emplace_back(maybe_obs->at(j), target_points.at(j));
-      };
+      problem.correspondences = target.createCorrespondences(target_features);
 
       problem_set.push_back(problem);
     }
