@@ -1,4 +1,4 @@
-#include "rct_image_tools/image_observation_finder.h"
+#include "rct_image_tools/modified_circle_grid_finder.h"
 #include <iostream>
 #include <opencv2/highgui.hpp>
 
@@ -23,25 +23,24 @@ int main(int argc, char** argv)
   rct_image_tools::ModifiedCircleGridTarget target (rows, cols, 0.01);
 
   // Create a finder that works with this target
-  rct_image_tools::ModifiedCircleGridObservationFinder obs_finder(target);
+  rct_image_tools::ModifiedCircleGridTargetFinder target_finder(target);
 
   // Attempt to find the grid: The optional will be set if it succeeded.
-  boost::optional<std::vector<Eigen::Vector2d>> maybe_obs = obs_finder.findObservations(m);
-
-  if (maybe_obs) // If we found it...
+  try
   {
-    std::cout << "Grid observed: Found " << maybe_obs->size() << " observations!\n";
+    rct_image_tools::TargetFeatures obs = target_finder.findTargetFeatures(m);
+    std::cout << "Grid observed: Found " << obs.size() << " features!\n";
 
     // For debug purposes, let's draw the dots
-    cv::Mat dots = obs_finder.drawObservations(m, *maybe_obs);
+    cv::Mat dots = target_finder.drawTargetFeatures(m, obs);
     // And display the resulting image
     cv::imshow("out", dots);
     cv::moveWindow("out", 400, 400);
     cv::waitKey();
   }
-  else // Otherwise we failed
+  catch (const std::exception& ex)
   {
-    std::cout << "Failed to find observations\n";
+    std::cout << ex.what() << std::endl;
   }
 
   return 0;
