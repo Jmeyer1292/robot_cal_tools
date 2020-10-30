@@ -7,6 +7,36 @@ ModifiedCircleGridTarget::ModifiedCircleGridTarget(const unsigned rows_, const u
 {
 }
 
+bool ModifiedCircleGridTarget::operator==(const ModifiedCircleGridTarget &other) const
+{
+  bool equal = true;
+  equal &= (rows == other.rows);
+  equal &= (cols == other.cols);
+  equal &= (spacing == other.spacing);
+
+  return equal;
+}
+
+rct_optimizations::Correspondence2D3D::Set ModifiedCircleGridTarget::createCorrespondences(const TargetFeatures &target_features) const
+{
+  std::vector<Eigen::Vector3d> target_points = createPoints();
+  assert(target_features.size() == target_points.size());
+
+  rct_optimizations::Correspondence2D3D::Set correspondences;
+  correspondences.reserve(target_features.size());
+
+  for (std::size_t i = 0; i < target_points.size(); ++i)
+  {
+    rct_optimizations::Correspondence2D3D corr;
+    corr.in_target = target_points.at(i);
+    // Get the first (and only) element of the features at the current index; increment the index
+    corr.in_image = target_features.at(i).at(0);
+    correspondences.push_back(corr);
+  }
+
+  return correspondences;
+}
+
 std::vector<Eigen::Vector3d> ModifiedCircleGridTarget::createPoints() const
 {
   std::vector<Eigen::Vector3d> points;
@@ -26,16 +56,6 @@ std::vector<Eigen::Vector3d> ModifiedCircleGridTarget::createPoints() const
   assert(points.size() == (rows * cols));
 
   return points;
-}
-
-bool ModifiedCircleGridTarget::operator==(const ModifiedCircleGridTarget &other) const
-{
-  bool equal = true;
-  equal &= (rows == other.rows);
-  equal &= (cols == other.cols);
-  equal &= (spacing == other.spacing);
-
-  return equal;
 }
 
 } // namespace rct_image_tools
