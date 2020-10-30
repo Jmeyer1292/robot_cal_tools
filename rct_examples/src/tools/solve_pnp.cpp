@@ -74,20 +74,10 @@ int main(int argc, char** argv)
     cv::Mat mat = cv::imread(image_path);
 
     // Load target definition from parameter server
-    ModifiedCircleGridTarget target;
-    if (!TargetLoader<ModifiedCircleGridTarget>::load(pnh, "target_definition", target))
-    {
-      ROS_WARN_STREAM("Unable to load target from the 'target_definition' parameter struct");
-      return 1;
-    }
+    ModifiedCircleGridTarget target = TargetLoader<ModifiedCircleGridTarget>::load(pnh, "target_definition");
 
     // Load the camera intrinsics from the parameter server
-    CameraIntrinsics intr;
-    if (!loadIntrinsics(pnh, "intrinsics", intr))
-    {
-      ROS_WARN_STREAM("Unable to load camera intrinsics from the 'intrinsics' parameter struct");
-      return 1;
-    }
+    CameraIntrinsics intr = loadIntrinsics(pnh, "intrinsics");
 
     ModifiedCircleGridTargetFinder finder(target);
     rct_image_tools::TargetFeatures target_features = finder.findTargetFeatures(mat);
@@ -115,13 +105,12 @@ int main(int argc, char** argv)
 
     printTransform(pnp_result.camera_to_target, "Camera", "Target", "RCT CAMERA TO TARGET");
     printNewLine();
-
   }
   catch(const std::exception& ex)
   {
-
+    ROS_ERROR_STREAM(ex.what());
+    return -1;
   }
-
 
   return 0;
 }

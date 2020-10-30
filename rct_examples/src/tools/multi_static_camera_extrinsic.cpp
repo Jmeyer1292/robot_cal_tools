@@ -145,12 +145,7 @@ int main(int argc, char** argv)
 
   // Load target definition from parameter server. Target will get
   // reset if such a parameter was set.
-  ModifiedCircleGridTarget target;
-  if (!TargetLoader<ModifiedCircleGridTarget>::load(target_path, target))
-  {
-    ROS_WARN_STREAM("Unable to load target file from the 'target_path' parameter");
-    return 1;
-  }
+  ModifiedCircleGridTarget target = TargetLoader<ModifiedCircleGridTarget>::load(target_path);
 
   // Lets create a class that will search for the target in our raw images.
   ModifiedCircleGridTargetFinder target_finder(target);

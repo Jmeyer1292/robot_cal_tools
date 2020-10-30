@@ -71,107 +71,92 @@ int main(int argc, char** argv)
   // We know it exists, so define a helpful alias
   const ExtrinsicDataSet& data_set = *maybe_data_set;
 
-  ModifiedCircleGridTarget target(5, 5, 0.015);
-  if (!TargetLoader<ModifiedCircleGridTarget>::load(pnh, "target_definition", target))
+  try
   {
-    ROS_WARN_STREAM("Unable to load target from the 'target_definition' parameter struct");
-    return 1;
-  }
+    ModifiedCircleGridTarget target = TargetLoader<ModifiedCircleGridTarget>::load(pnh, "target_definition");
 
-  CameraIntrinsics intr;
-  if (!loadIntrinsics(pnh, "intrinsics", intr))
-  {
-    ROS_WARN_STREAM("Unable to load camera intrinsics from the 'intrinsics' parameter struct");
-    return 1;
-  }
+    CameraIntrinsics intr = loadIntrinsics(pnh, "intrinsics");
 
-  // Lets create a class that will search for the target in our raw images.
-  ModifiedCircleGridTargetFinder target_finder(target);
+    // Lets create a class that will search for the target in our raw images.
+    ModifiedCircleGridTargetFinder target_finder(target);
 
-  // Now we construct our problem:
-  ExtrinsicHandEyeProblem2D3D problem_def;
-  // Our camera intrinsics to use
-  problem_def.intr = intr;
+    // Now we construct our problem:
+    ExtrinsicHandEyeProblem2D3D problem_def;
+    // Our camera intrinsics to use
+    problem_def.intr = intr;
 
-  // Our 'base to camera guess': A camera off to the side, looking at a point centered in front of the robot
-  if (!loadPose(pnh, "base_to_camera_guess", problem_def.camera_mount_to_camera_guess))
-  {
-    ROS_WARN_STREAM("Unable to load guess for base to camera from the 'base_to_camera_guess' parameter struct");
-    return 1;
-  }
+    // Our 'base to camera guess': A camera off to the side, looking at a point centered in front of the robot
+    problem_def.camera_mount_to_camera_guess = loadPose(pnh, "base_to_camera_guess");
+    problem_def.target_mount_to_target_guess = loadPose(pnh, "wrist_to_target_guess");
 
-  if (!loadPose(pnh, "wrist_to_target_guess", problem_def.target_mount_to_target_guess))
-  {
-    ROS_WARN_STREAM("Unable to load guess for wrist to target from the 'wrist_to_target_guess' parameter struct");
-    return 1;
-  }
-
-  // Finally, we need to process our images into correspondence sets: for each dot in the
-  // target this will be where that dot is in the target and where it was seen in the image.
-  // Repeat for each image. We also tell where the wrist was when the image was taken.
-  ExtrinsicDataSet found_images;
-  problem_def.observations.reserve(data_set.images.size());
-  for (std::size_t i = 0; i < data_set.images.size(); ++i)
-  {
-    // Try to find the circle grid in this image:
-    rct_image_tools::TargetFeatures target_features;
-    try
+    // Finally, we need to process our images into correspondence sets: for each dot in the
+    // target this will be where that dot is in the target and where it was seen in the image.
+    // Repeat for each image. We also tell where the wrist was when the image was taken.
+    ExtrinsicDataSet found_images;
+    problem_def.observations.reserve(data_set.images.size());
+    for (std::size_t i = 0; i < data_set.images.size(); ++i)
     {
-      target_features = target_finder.findTargetFeatures(data_set.images[i]);
+      // Try to find the circle grid in this image:
+      rct_image_tools::TargetFeatures target_features;
+      try
+      {
+        target_features = target_finder.findTargetFeatures(data_set.images[i]);
 
-      // Show the points we detected
-      cv::imshow("points", target_finder.drawTargetFeatures(data_set.images[i], target_features));
-      cv::waitKey();
+        // Show the points we detected
+        cv::imshow("points", target_finder.drawTargetFeatures(data_set.images[i], target_features));
+        cv::waitKey();
+      }
+      catch (const std::runtime_error& ex)
+      {
+        ROS_WARN_STREAM("Unable to find the circle grid in image " << i << "' :" << ex.what() << "'");
+        cv::imshow("points", data_set.images[i]);
+        cv::waitKey();
+        continue;
+      }
+
+      // cache found image data
+      found_images.images.push_back(data_set.images[i]);
+      found_images.tool_poses.push_back(data_set.tool_poses[i]);
+
+      Observation2D3D obs;
+
+      // So for each image we need to:
+      //// 1. Record the wrist position
+      obs.to_target_mount = data_set.tool_poses[i];
+      obs.to_camera_mount = Eigen::Isometry3d::Identity();
+
+      //// And finally add that to the problem
+      obs.correspondence_set = target.createCorrespondences(target_features);
+
+      problem_def.observations.push_back(obs);
     }
-    catch(const std::runtime_error& ex)
+
+    // Run optimization
+    ExtrinsicHandEyeResult opt_result = optimize(problem_def);
+
+    // Report results
+    printOptResults(opt_result.converged, opt_result.initial_cost_per_obs, opt_result.final_cost_per_obs);
+    printNewLine();
+
+    Eigen::Isometry3d c = opt_result.camera_mount_to_camera;
+    printTransform(c, "Base", "Camera", "BASE TO CAMERA");
+    printNewLine();
+
+    Eigen::Isometry3d t = opt_result.target_mount_to_target;
+    printTransform(t, "Wrist", "Target", "WRIST_TO_TARGET");
+    printNewLine();
+
+    for (std::size_t i = 0; i < found_images.images.size(); ++i)
     {
-      ROS_WARN_STREAM("Unable to find the circle grid in image " << i << "' :" << ex.what() << "'");
-      cv::imshow("points", data_set.images[i]);
-      cv::waitKey();
-      continue;
+      printTitle("REPROJECT IMAGE " + std::to_string(i));
+      reproject(opt_result.target_mount_to_target, opt_result.camera_mount_to_camera, problem_def.observations[i], intr,
+                target, found_images.images[i]);
     }
-
-    // cache found image data
-    found_images.images.push_back(data_set.images[i]);
-    found_images.tool_poses.push_back(data_set.tool_poses[i]);
-
-    Observation2D3D obs;
-
-    // So for each image we need to:
-    //// 1. Record the wrist position
-    obs.to_target_mount = data_set.tool_poses[i];
-    obs.to_camera_mount = Eigen::Isometry3d::Identity();
-
-    //// And finally add that to the problem
-    obs.correspondence_set = target.createCorrespondences(target_features);
-
-    problem_def.observations.push_back(obs);
   }
-
-  // Run optimization
-  ExtrinsicHandEyeResult opt_result = optimize(problem_def);
-
-  // Report results
-  printOptResults(opt_result.converged, opt_result.initial_cost_per_obs, opt_result.final_cost_per_obs);
-  printNewLine();
-
-  Eigen::Isometry3d c = opt_result.camera_mount_to_camera;
-  printTransform(c, "Base", "Camera", "BASE TO CAMERA");
-  printNewLine();
-
-  Eigen::Isometry3d t = opt_result.target_mount_to_target;
-  printTransform(t, "Wrist", "Target", "WRIST_TO_TARGET");
-  printNewLine();
-
-  for (std::size_t i = 0; i < found_images.images.size(); ++i)
+  catch (const std::exception& ex)
   {
-    printTitle("REPROJECT IMAGE " + std::to_string(i));
-    reproject(opt_result.target_mount_to_target,
-              opt_result.camera_mount_to_camera,
-              problem_def.observations[i],
-              intr,
-              target,
-              found_images.images[i]);
+    ROS_ERROR_STREAM(ex.what());
+    return -1;
   }
 
   return 0;

@@ -141,9 +141,13 @@ int main(int argc, char** argv)
   // Load target definition from parameter server. Target will get
   // reset if such a parameter was set.
   ModifiedCircleGridTarget target(5, 5, 0.015);
-  if (!TargetLoader<ModifiedCircleGridTarget>::load(target_path, target))
+  try
   {
-    ROS_WARN_STREAM("Unable to load target file from the 'target_path' parameter");
+    target = TargetLoader<ModifiedCircleGridTarget>::load(target_path);
+  }
+  catch(const std::exception& ex)
+  {
+    ROS_WARN_STREAM(ex.what());
   }
 
   Eigen::Isometry3d wrist_to_target;

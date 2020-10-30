@@ -88,73 +88,72 @@ int main(int argc, char** argv)
   }
   auto& data_set = *maybe_data_set;
 
-  // Load target definition from parameter server
-  ModifiedCircleGridTarget target;
-  if (!TargetLoader<ModifiedCircleGridTarget>::load(pnh, "target_definition", target))
+  try
   {
-    ROS_WARN_STREAM("Unable to load target from the 'target_definition' parameter struct");
-    return 1;
-  }
+    // Load target definition from parameter server
+    ModifiedCircleGridTarget target = TargetLoader<ModifiedCircleGridTarget>::load(pnh, "target_definition");
 
-  // Load the camera intrinsics from the parameter server
-  CameraIntrinsics intr;
-  if (!loadIntrinsics(pnh, "intrinsics", intr))
-  {
-    ROS_WARN_STREAM("Unable to load camera intrinsics from the 'intrinsics' parameter struct");
-    return 1;
-  }
+    // Load the camera intrinsics from the parameter server
+    CameraIntrinsics intr = loadIntrinsics(pnh, "intrinsics");
 
-  // Create obs finder
-  ModifiedCircleGridTargetFinder target_finder (target);
+    // Create obs finder
+    ModifiedCircleGridTargetFinder target_finder (target);
 
-  // Construct problem
-  IntrinsicEstimationProblem problem_def;
-  problem_def.intrinsics_guess = intr;
+    // Construct problem
+    IntrinsicEstimationProblem problem_def;
+    problem_def.intrinsics_guess = intr;
 
-  for (std::size_t i = 0; i < data_set.images.size(); ++i)
-  {
-    // Extract observations
-    rct_image_tools::TargetFeatures target_features;
-    try
+    for (std::size_t i = 0; i < data_set.images.size(); ++i)
     {
-      target_features = target_finder.findTargetFeatures(data_set.images[i]);
-    }
-    catch (const std::runtime_error& ex)
-    {
-      ROS_WARN_STREAM("Failed to find observations in image " << i << ": '" << ex.what() << "'");
-      continue;
+      // Extract observations
+      rct_image_tools::TargetFeatures target_features;
+      try
+      {
+        target_features = target_finder.findTargetFeatures(data_set.images[i]);
+      }
+      catch (const std::runtime_error& ex)
+      {
+        ROS_WARN_STREAM("Failed to find observations in image " << i << ": '" << ex.what() << "'");
+        continue;
+      }
+
+      // Show drawing
+      cv::imshow("points", target_finder.drawTargetFeatures(data_set.images[i], target_features));
+      cv::waitKey();
+
+      problem_def.image_observations.push_back(target.createCorrespondences(target_features));
     }
 
-    // Show drawing
-    cv::imshow("points", target_finder.drawTargetFeatures(data_set.images[i], target_features));
-    cv::waitKey();
+    // Run optimization
+    auto opt_result = optimize(problem_def);
 
-    problem_def.image_observations.push_back(target.createCorrespondences(target_features));
+    // Report results
+    printTitle("Calibration Complete");
+
+    printOptResults(opt_result.converged, opt_result.initial_cost_per_obs, opt_result.final_cost_per_obs);
+    printNewLine();
+
+    auto new_intr = opt_result.intrinsics;
+    auto new_dist = opt_result.distortions;
+
+    printCameraIntrinsics(new_intr.values, "RCT Intrinsics");
+    printNewLine();
+
+    printCameraDistortion(new_dist, "RCT Distortion");
+    printNewLine();
+
+    std::cout << opt_result.covariance.toString() << std::endl;
+
+    // Also try the OpenCV cameraCalibrate function
+    printTitle("OpenCV Calibration");
+    opencvCameraCalibration(problem_def.image_observations, data_set.images.front().size(),
+                            problem_def.intrinsics_guess);
+  }
+  catch (const std::exception& ex)
+  {
+    ROS_ERROR_STREAM(ex.what());
+    return -1;
   }
 
-  // Run optimization
-  auto opt_result = optimize(problem_def);
-
-  // Report results
-  printTitle("Calibration Complete");
-
-  printOptResults(opt_result.converged, opt_result.initial_cost_per_obs, opt_result.final_cost_per_obs);
-  printNewLine();
-
-  auto new_intr = opt_result.intrinsics;
-  auto new_dist = opt_result.distortions;
-
-  printCameraIntrinsics(new_intr.values, "RCT Intrinsics");
-  printNewLine();
-
-  printCameraDistortion(new_dist, "RCT Distortion");
-  printNewLine();
-
-  std::cout << opt_result.covariance.toString() << std::endl;
-
-  // Also try the OpenCV cameraCalibrate function
-  printTitle("OpenCV Calibration");
-  opencvCameraCalibration(problem_def.image_observations, data_set.images.front().size(),
-                          problem_def.intrinsics_guess);
   return 0;
 }
