@@ -33,16 +33,17 @@ bool CharucoGridTarget::operator==(const CharucoGridTarget& other) const
 }
 
 std::vector<rct_optimizations::Correspondence2D3D>
-CharucoGridTarget::createCorrespondences(const std::map<int, Eigen::Vector2d>& features) const
+CharucoGridTarget::createCorrespondences(const TargetFeatures& target_features) const
 {
   std::vector<rct_optimizations::Correspondence2D3D> correspondences;
-  correspondences.reserve(features.size());
+  correspondences.reserve(target_features.size());
 
-  for(auto it = features.begin(); it != features.end(); it++)
+  for(auto it = target_features.begin(); it != target_features.end(); it++)
   {
     rct_optimizations::Correspondence2D3D corr;
     corr.in_target = points.at(it->first);
-    corr.in_image = features.at(it->first);
+    // Get the first (and only) feature from the current iterator
+    corr.in_image = target_features.at(it->first).at(0);
     correspondences.push_back(corr);
   }
   return correspondences;
