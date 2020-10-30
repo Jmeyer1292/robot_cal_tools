@@ -25,8 +25,6 @@ struct CharucoGridTarget
   CharucoGridTarget(const int rows, const int cols, const double chessboard_dim, const double aruco_marker_dim,
                     const int dictionary_id = cv::aruco::DICT_6X6_250);
 
-//  CharucoGridTarget() = default;
-
   bool operator==(const CharucoGridTarget& other) const;
 
   /**

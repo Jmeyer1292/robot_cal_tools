@@ -17,7 +17,6 @@ struct ModifiedCircleGridTarget
    * @param spacing - The spacing between adjacent circle centers (m)
    */
   ModifiedCircleGridTarget(const unsigned rows, const unsigned cols, const double spacing);
-  ModifiedCircleGridTarget() = default;
 
   bool operator==(const ModifiedCircleGridTarget& other) const;
 

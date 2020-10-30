@@ -23,8 +23,6 @@ struct ArucoGridTarget
   ArucoGridTarget(const int rows, const int cols, const double aruco_marker_dim, const double marker_gap,
                   const int dictionary_id = cv::aruco::DICT_6X6_250);
 
-//  ArucoGridTarget() = default;
-
   bool operator==(const ArucoGridTarget& other) const;
 
   /**
