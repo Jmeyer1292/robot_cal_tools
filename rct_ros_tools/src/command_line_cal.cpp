@@ -133,7 +133,7 @@ struct DataCollectionConfig
   std::string tool_frame;
 
   std::string image_topic;
-  rct_image_tools::ModifiedCircleGridTarget target;
+  std::shared_ptr<rct_image_tools::ModifiedCircleGridTarget> target;
 
   std::string save_dir;
 };
@@ -143,7 +143,7 @@ struct DataCollection
 
   DataCollection(const DataCollectionConfig& config)
     : tf_monitor(config.base_frame, config.tool_frame)
-    , image_monitor(config.target, config.image_topic)
+    , image_monitor(*config.target, config.image_topic)
     , save_dir_(config.save_dir)
   {
     ros::NodeHandle nh;
@@ -234,13 +234,17 @@ int main(int argc, char** argv)
   using namespace rct_ros_tools;
   using namespace rct_image_tools;
 
-  if (!TargetLoader<ModifiedCircleGridTarget>::load(pnh, "target_definition", config.target))
+  try
   {
-    ROS_ERROR_STREAM("Must provide parameters to load target!");
-    return 1;
+    config.target = std::make_shared<ModifiedCircleGridTarget>(TargetLoader<ModifiedCircleGridTarget>::load(pnh, "target_definition"));
+    DataCollection dc(config);
+    ros::spin();
+  }
+  catch (const std::exception& ex)
+  {
+    ROS_ERROR_STREAM(ex.what());
+    return -1;
   }
 
-  DataCollection dc (config);
-  ros::spin();
   return 0;
 }

@@ -54,30 +54,16 @@ TYPED_TEST(TargetLoaderTest, test)
 
   // Method 1 (From ROS parameter, throwing)
   {
-    TypeParam target;
-    ASSERT_NO_THROW(target = rct_ros_tools::TargetLoader<TypeParam>::load(nh, target_definition_param));
-    EXPECT_EQ(target, nominal_target);
+    std::shared_ptr<TypeParam> target;
+    ASSERT_NO_THROW(target = std::make_shared<TypeParam>(rct_ros_tools::TargetLoader<TypeParam>::load(nh, target_definition_param)));
+    EXPECT_EQ(*target, nominal_target);
   }
 
-  // Method 2 (From ROS parameter, non-throwing
+  // Method 2 (From file, throwing)
   {
-    TypeParam target;
-    ASSERT_TRUE(rct_ros_tools::TargetLoader<TypeParam>::load(nh, target_definition_param, target));
-    EXPECT_EQ(target, nominal_target);
-  }
-
-  // Method 3 (From file, throwing)
-  {
-    TypeParam target;
-    ASSERT_NO_THROW(target = rct_ros_tools::TargetLoader<TypeParam>::load(filename));
-    EXPECT_EQ(target, nominal_target);
-  }
-
-  // Method 4 (From file, non-throwing)
-  {
-    TypeParam target;
-    ASSERT_TRUE(rct_ros_tools::TargetLoader<TypeParam>::load(filename, target));
-    EXPECT_EQ(target, nominal_target);
+    std::shared_ptr<TypeParam> target;
+    ASSERT_NO_THROW(target = std::make_shared<TypeParam>(rct_ros_tools::TargetLoader<TypeParam>::load(filename)));
+    EXPECT_EQ(*target, nominal_target);
   }
 }
 

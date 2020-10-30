@@ -25,21 +25,6 @@ rct_image_tools::CharucoGridTarget TargetLoader<rct_image_tools::CharucoGridTarg
 }
 
 template<>
-bool TargetLoader<rct_image_tools::CharucoGridTarget>::load(const ros::NodeHandle& nh, const std::string& key, rct_image_tools::CharucoGridTarget& target)
-{
-  try
-  {
-    target = load(nh, key);
-  }
-  catch (ros::InvalidParameterException &ex)
-  {
-    ROS_ERROR_STREAM("Failed to load target parameter: " << ex.what());
-    return false;
-  }
-  return true;
-}
-
-template<>
 rct_image_tools::CharucoGridTarget TargetLoader<rct_image_tools::CharucoGridTarget>::load(const std::string &path)
 {
   try
@@ -55,21 +40,6 @@ rct_image_tools::CharucoGridTarget TargetLoader<rct_image_tools::CharucoGridTarg
   {
     throw BadFileException(std::string("YAML failure: ") + ex.what());
   }
-}
-
-template<>
-bool TargetLoader<rct_image_tools::CharucoGridTarget>::load(const std::string& path, rct_image_tools::CharucoGridTarget& target)
-{
-  try
-  {
-    target = load(path);
-  }
-  catch (ros::InvalidParameterException &ex)
-  {
-    ROS_ERROR_STREAM("Failed to load target from file: " << ex.what());
-    return false;
-  }
-  return true;
 }
 
 } // namespace rct_ros_tools
