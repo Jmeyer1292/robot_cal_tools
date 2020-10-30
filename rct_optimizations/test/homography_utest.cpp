@@ -28,7 +28,7 @@ class HomographyTest : public ::testing::Test
   test::Camera camera;
   test::Target target;
   Eigen::Isometry3d target_to_camera;
-  ModifiedCircleGridCorrespondenceSampler sampler;
+  GridCorrespondenceSampler sampler;
 };
 
 TEST_F(HomographyTest, PerfectInitialConditions)

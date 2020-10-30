@@ -13,13 +13,14 @@ struct CorrespondenceSampler
 };
 
 /**
- * @brief A correspondence sampler specifically for modified circle grid targets
+ * @brief A correspondence sampler specifically for grid targets
  */
-struct ModifiedCircleGridCorrespondenceSampler : CorrespondenceSampler
+struct GridCorrespondenceSampler : CorrespondenceSampler
 {
-  ModifiedCircleGridCorrespondenceSampler(const std::size_t rows_, const std::size_t cols_)
+  GridCorrespondenceSampler(const std::size_t rows_, const std::size_t cols_, const std::size_t stride_ = 1)
     : rows(rows_)
     , cols(cols_)
+    , stride(stride_)
   {
   }
 
@@ -38,17 +39,29 @@ struct ModifiedCircleGridCorrespondenceSampler : CorrespondenceSampler
     std::vector<std::size_t> correspondence_indices;
     correspondence_indices.reserve(n_samples);
 
-    // For a modified circle target grid, the sample points should be the corners of the grid
-    correspondence_indices.push_back(0); // upper left point
-    correspondence_indices.push_back(rows - 1); // upper right point
-    correspondence_indices.push_back(rows * cols - cols - 1); // lower left point
-    correspondence_indices.push_back(rows * cols - 1); // lower right point
+    // Sample points should be the corners of the grid, using the first element in the stride
+    std::size_t upper_left_idx = 0;
+    std::size_t upper_right_idx = (cols - 1) * stride;
+    std::size_t lower_left_idx = (rows - 1) * (cols * stride);
+    std::size_t lower_right_idx = (rows * cols * stride) - stride;
+
+    correspondence_indices.push_back(upper_left_idx);
+    correspondence_indices.push_back(upper_right_idx);
+    correspondence_indices.push_back(lower_left_idx);
+    correspondence_indices.push_back(lower_right_idx);
 
     return correspondence_indices;
   }
 
-  std::size_t rows;
-  std::size_t cols;
+  /** @brief Number of rows in the target */
+  const std::size_t rows;
+  /** @brief Number of columns in the target */
+  const std::size_t cols;
+  /**
+   * @brief Number elements associated with each grid point (i.e. depth)
+   * ArUco grid targets, for example, have 4 observations associated with each element in the grid, so the stride would be 4
+   */
+  const std::size_t stride;
 };
 
 /**
