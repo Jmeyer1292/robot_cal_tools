@@ -12,7 +12,6 @@
 
 using namespace rct_image_tools;
 
-template<typename TargetT>
 class TargetFinderTestFixture : public ::testing::Test
 {
 public:
@@ -54,14 +53,14 @@ public:
     }
   }
 
-  std::shared_ptr<TargetFinder<TargetT>> finder;
+  std::shared_ptr<TargetFinder> finder;
   std::string filename;
   std::vector<unsigned> expected_ids;
   std::shared_ptr<rct_optimizations::CorrespondenceSampler> corr_sampler;
   double homography_error_threshold;
 };
 
-class ModifiedCircleGridFinderTest : public TargetFinderTestFixture<ModifiedCircleGridTarget>
+class ModifiedCircleGridFinderTest : public TargetFinderTestFixture
 {
 public:
   ModifiedCircleGridFinderTest() : TargetFinderTestFixture(), target(10, 10, 0.025)
@@ -85,10 +84,10 @@ public:
   const ModifiedCircleGridTarget target;
 };
 
-class CharucoFinderTest : public TargetFinderTestFixture<CharucoGridTarget>
+class CharucoFinderTest : public TargetFinderTestFixture
 {
 public:
-  CharucoFinderTest() : TargetFinderTestFixture(), target(7, 5, 0.02, 0.01, 10)
+  CharucoFinderTest() : TargetFinderTestFixture(), target(7, 5, 0.02f, 0.01f, 10)
   {
     finder = std::make_shared<CharucoGridBoardTargetFinder>(target);
   }
@@ -145,12 +144,12 @@ public:
   }
 };
 
-class ArucoFinderTest : public TargetFinderTestFixture<ArucoGridTarget>
+class ArucoFinderTest : public TargetFinderTestFixture
 {
 public:
   ArucoFinderTest()
     : TargetFinderTestFixture()
-    , target(20, 20, 0.035, 0.010, cv::aruco::DICT_6X6_1000)
+    , target(20, 20, 0.035f, 0.010f, cv::aruco::DICT_6X6_1000)
   {
     finder = std::make_shared<ArucoGridBoardTargetFinder>(target);
   }
@@ -160,7 +159,7 @@ public:
     filename = std::string(TEST_SUPPORT_DIR) + "aruco.jpg";
 
     // Expect to see the entire board
-    expected_ids.resize(target.board->getGridSize().area());
+    expected_ids.resize(static_cast<unsigned>(target.board->getGridSize().area()));
     std::iota(expected_ids.begin(), expected_ids.end(), 0);
 
     // Set up the homography check correspondence sampler
