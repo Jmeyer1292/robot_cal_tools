@@ -1,7 +1,6 @@
 #pragma once
 
-#include <rct_image_tools/target_features.h>
-#include <rct_optimizations/types.h>
+#include <rct_image_tools/target.h>
 
 #include <opencv2/aruco.hpp>
 
@@ -10,7 +9,7 @@ namespace rct_image_tools
 /**
  * @brief Structure containing relevant data for a ArUco grid target
  */
-struct ArucoGridTarget
+struct ArucoGridTarget : Target
 {
   /**
    * @brief Constructor
@@ -20,7 +19,7 @@ struct ArucoGridTarget
    * @param marker_gap - The size of the gap between adjacent arUco markers (m)
    * @param dictionary_id - The dictionary of ArUco markers to use
    */
-  ArucoGridTarget(const int rows, const int cols, const double aruco_marker_dim, const double marker_gap,
+  ArucoGridTarget(const int rows, const int cols, const float aruco_marker_dim, const float marker_gap,
                   const int dictionary_id = cv::aruco::DICT_6X6_250);
 
   bool operator==(const ArucoGridTarget& other) const;
@@ -31,7 +30,7 @@ struct ArucoGridTarget
    * @param target_features - Map of ArUco tag corners observed in an image
    * @return Set of corresponding features in the image to features in the ArUco grid target
    */
-  rct_optimizations::Correspondence2D3D::Set createCorrespondences(const TargetFeatures& target_features) const;
+  virtual rct_optimizations::Correspondence2D3D::Set createCorrespondences(const TargetFeatures& target_features) const override;
 
   /** @brief Representation of the ArUco grid target */
   cv::Ptr<cv::aruco::GridBoard> board;

@@ -12,7 +12,7 @@ bool ModifiedCircleGridTarget::operator==(const ModifiedCircleGridTarget &other)
   bool equal = true;
   equal &= (rows == other.rows);
   equal &= (cols == other.cols);
-  equal &= (spacing == other.spacing);
+  equal &= (std::abs(spacing - other.spacing) < std::numeric_limits<double>::epsilon());
 
   return equal;
 }
@@ -30,7 +30,7 @@ rct_optimizations::Correspondence2D3D::Set ModifiedCircleGridTarget::createCorre
     rct_optimizations::Correspondence2D3D corr;
     corr.in_target = target_points.at(i);
     // Get the first (and only) element of the features at the current index; increment the index
-    corr.in_image = target_features.at(i).at(0);
+    corr.in_image = target_features.at(static_cast<const unsigned>(i)).at(0);
     correspondences.push_back(corr);
   }
 

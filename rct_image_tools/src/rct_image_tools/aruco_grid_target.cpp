@@ -2,7 +2,7 @@
 
 namespace rct_image_tools
 {
-ArucoGridTarget::ArucoGridTarget(const int rows, const int cols, const double aruco_marker_dim, const double marker_gap,
+ArucoGridTarget::ArucoGridTarget(const int rows, const int cols, const float aruco_marker_dim, const float marker_gap,
                                  const int dictionary_id)
 {
   cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(dictionary_id);
@@ -14,8 +14,9 @@ ArucoGridTarget::ArucoGridTarget(const int rows, const int cols, const double ar
   for (unsigned i = 0; i < board->ids.size(); i++)
   {
     std::vector<Eigen::Vector3d> obj_pts(board->objPoints[i].size());
-    std::transform(board->objPoints[i].begin(), board->objPoints[i].end(), obj_pts.begin(),
-                   [](const cv::Point3f& o) { return Eigen::Vector3d(o.x, o.y, o.z); });
+    std::transform(
+        board->objPoints[i].begin(), board->objPoints[i].end(), obj_pts.begin(),
+        [](const cv::Point3f& o) -> Eigen::Vector3d { return Eigen::Vector3f(o.x, o.y, o.z).cast<double>(); });
     points.insert(std::make_pair(board->ids[i], obj_pts));
   }
 }
@@ -27,8 +28,8 @@ bool ArucoGridTarget::operator==(const ArucoGridTarget& other) const
   bool equal = true;
   equal &= other_board_size.width == board_size.width;
   equal &= other_board_size.height == board_size.height;
-  equal &= other.board->getMarkerLength() == board->getMarkerLength();
-  equal &= other.board->getMarkerSeparation() == board->getMarkerSeparation();
+  equal &= (std::abs(other.board->getMarkerLength() - board->getMarkerLength()) < std::numeric_limits<float>::epsilon());
+  equal &= (std::abs(other.board->getMarkerSeparation() - board->getMarkerSeparation()) < std::numeric_limits<float>::epsilon());
   equal &= other.points == points;
   return equal;
 }
@@ -39,7 +40,7 @@ ArucoGridTarget::createCorrespondences(const TargetFeatures& target_features) co
   rct_optimizations::Correspondence2D3D::Set correspondences;
   correspondences.reserve(target_features.size());
 
-  for (auto it = target_features.begin(); it != target_features.end(); it++)
+  for (auto it = target_features.begin(); it != target_features.end(); ++it)
   {
     for (std::size_t i = 0; i < it->second.size(); ++i)
     {

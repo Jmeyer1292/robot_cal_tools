@@ -2,8 +2,8 @@
 
 namespace rct_image_tools
 {
-CharucoGridTarget::CharucoGridTarget(const int rows, const int cols, const double chessboard_dim,
-                                     const double aruco_marker_dim, const int dictionary_id)
+CharucoGridTarget::CharucoGridTarget(const int rows, const int cols, const float chessboard_dim,
+                                     const float aruco_marker_dim, const int dictionary_id)
 {
   cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(dictionary_id);
 
@@ -25,8 +25,8 @@ bool CharucoGridTarget::operator==(const CharucoGridTarget& other) const
   auto other_board_size = other.board->getChessboardSize();
   bool equal = true;
   equal &= other.points == points;
-  equal &= other.board->getMarkerLength() == board->getMarkerLength();
-  equal &= other.board->getSquareLength() == board->getSquareLength();
+  equal &= (std::abs(other.board->getMarkerLength() - board->getMarkerLength()) < std::numeric_limits<float>::epsilon());
+  equal &= (std::abs(other.board->getSquareLength() - board->getSquareLength()) < std::numeric_limits<float>::epsilon());
   equal &= other_board_size.width == board_size.width;
   equal &= other_board_size.height == board_size.height;
   return equal;

@@ -1,7 +1,6 @@
 #pragma once
 
-#include <rct_image_tools/target_features.h>
-#include <rct_optimizations/types.h>
+#include <rct_image_tools/target_finder.h>
 
 #include <Eigen/Dense>
 #include <map>
@@ -12,7 +11,7 @@ namespace rct_image_tools
 /**
  * @brief Structure containing relevant data for a ChArUco grid target
  */
-struct CharucoGridTarget
+struct CharucoGridTarget : public Target
 {
   /**
    * @brief Constructor
@@ -22,7 +21,7 @@ struct CharucoGridTarget
    * @param aruco_marker_dim - The length of the side of one ArUco marker (m)
    * @param dictionary_id - The dictionary of ArUco markers to use
    */
-  CharucoGridTarget(const int rows, const int cols, const double chessboard_dim, const double aruco_marker_dim,
+  CharucoGridTarget(const int rows, const int cols, const float chessboard_dim, const float aruco_marker_dim,
                     const int dictionary_id = cv::aruco::DICT_6X6_250);
 
   bool operator==(const CharucoGridTarget& other) const;
@@ -33,7 +32,7 @@ struct CharucoGridTarget
    * @param target_features - Map of observed chessboard intersections and their IDs
    * @return Set of corresponding features in the image to features in the ChArUco target
    */
-  rct_optimizations::Correspondence2D3D::Set createCorrespondences(const TargetFeatures& target_features) const;
+  virtual rct_optimizations::Correspondence2D3D::Set createCorrespondences(const TargetFeatures& target_features) const override;
 
   /** @brief Representation of the ChArUco board target */
   cv::Ptr<cv::aruco::CharucoBoard> board;

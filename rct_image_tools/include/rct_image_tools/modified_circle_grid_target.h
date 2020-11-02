@@ -1,14 +1,13 @@
 #pragma once
 
-#include <rct_optimizations/types.h>
-#include <rct_image_tools/target_features.h>
+#include <rct_image_tools/target.h>
 
 namespace rct_image_tools
 {
 /**
  * @brief Structure containing the necessary data to represent a modified circle grid target
  */
-struct ModifiedCircleGridTarget
+struct ModifiedCircleGridTarget : Target
 {
   /**
    * @brief Constructor
@@ -20,7 +19,8 @@ struct ModifiedCircleGridTarget
 
   bool operator==(const ModifiedCircleGridTarget& other) const;
 
-  rct_optimizations::Correspondence2D3D::Set createCorrespondences(const TargetFeatures& target_features) const;
+  virtual rct_optimizations::Correspondence2D3D::Set
+    createCorrespondences(const TargetFeatures& target_features) const override;
 
   std::vector<Eigen::Vector3d> createPoints() const;
 
