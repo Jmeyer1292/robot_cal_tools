@@ -354,8 +354,9 @@ static std::vector<cv::Point2d> extractModifiedCircleGrid(const cv::Mat& image,
 namespace rct_image_tools
 {
 ModifiedCircleGridTargetFinder::ModifiedCircleGridTargetFinder(const ModifiedCircleGridTarget& target,
-                                                                         const CircleDetectorParams& params)
-  : TargetFinder(target)
+                                                               const CircleDetectorParams& params)
+  : TargetFinder()
+  , target_(target)
   , params_(params)
 {
   assert(target_.cols > 0);
@@ -378,7 +379,7 @@ TargetFeatures ModifiedCircleGridTargetFinder::findTargetFeatures(const cv::Mat&
   for (unsigned i = 0; i < points.size(); ++i)
   {
     const cv::Point2d& pt = points.at(i);
-    std::vector<Eigen::Vector2d> v_obs;
+    VectorEigenVector<2> v_obs;
     v_obs.push_back(Eigen::Vector2d(pt.x, pt.y));
     observations.emplace(i, v_obs);
   }

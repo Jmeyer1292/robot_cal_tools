@@ -8,7 +8,8 @@
 namespace rct_image_tools
 {
 ArucoGridBoardTargetFinder::ArucoGridBoardTargetFinder(const ArucoGridTarget& target)
-  : TargetFinder(target)
+  : TargetFinder()
+  , target_(target)
 {
 }
 
@@ -26,13 +27,13 @@ TargetFeatures ArucoGridBoardTargetFinder::findTargetFeatures(const cv::Mat& ima
   for (unsigned i = 0; i < marker_ids.size(); i++)
   {
     std::vector<cv::Point2f> corner_pts = marker_corners[i];
+    VectorEigenVector<2> obs_pts(4);
 
-    std::vector<Eigen::Vector2d> obs_pts(4);
     for (unsigned j = 0; j < corner_pts.size(); j++)
     {
-      obs_pts[j] << corner_pts[j].x, corner_pts[j].y;
+      obs_pts[j] = Eigen::Vector2d(corner_pts[j].x, corner_pts[j].y).cast<double>();
     }
-    map_ids_to_obs_corners.insert(std::make_pair(marker_ids[i], obs_pts));
+    map_ids_to_obs_corners.emplace(marker_ids[i], obs_pts);
   }
   return map_ids_to_obs_corners;
 }
@@ -58,7 +59,7 @@ std::map<unsigned, std::vector<Eigen::Vector3d>> mapArucoIdsToObjPts(const cv::P
   for (unsigned i = 0; i < board->ids.size(); i++)
   {
     std::vector<Eigen::Vector3d> obj_pts(board->objPoints[i].size());
-    std::transform(board->objPoints[i].begin(), board->objPoints[i].end(), obj_pts.begin(), [](const cv::Point3f& o) {return Eigen::Vector3d(o.x, o.y, o.z); });
+    std::transform(board->objPoints[i].begin(), board->objPoints[i].end(), obj_pts.begin(), [](const cv::Point3f& o) {return Eigen::Vector3f(o.x, o.y, o.z).cast<double>(); });
     map_ids_to_corners.insert(std::make_pair(board->ids[i], obj_pts));
   }
   return map_ids_to_corners;

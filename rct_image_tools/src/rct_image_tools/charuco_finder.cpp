@@ -6,7 +6,8 @@
 namespace rct_image_tools
 {
 CharucoGridBoardTargetFinder::CharucoGridBoardTargetFinder(const CharucoGridTarget& target)
-  : TargetFinder(target)
+  : TargetFinder()
+  , target_(target)
 {
 }
 
@@ -29,10 +30,10 @@ TargetFeatures CharucoGridBoardTargetFinder::findTargetFeatures(const cv::Mat& i
 
   // Create the map of observed features
   TargetFeatures target_features;
-  for (int i = 0; i < detected_corners; i++)
+  for (unsigned i = 0; i < static_cast<unsigned>(detected_corners); i++)
   {
     const cv::Point2f& corner = charuco_corners.at(i);
-    std::vector<Eigen::Vector2d> v_obs;
+    VectorEigenVector<2> v_obs;
     v_obs.push_back(Eigen::Vector2d (corner.x, corner.y));
     target_features.emplace(static_cast<unsigned>(charuco_ids[i]), v_obs);
   }
@@ -52,10 +53,10 @@ cv::Mat CharucoGridBoardTargetFinder::drawTargetFeatures(const cv::Mat& image,
   for(auto it = target_features.begin(); it != target_features.end(); ++it)
   {
     // Add the ID
-    charuco_ids.push_back(it->first);
+    charuco_ids.push_back(static_cast<int>(it->first));
 
     // Add the image coordinates
-    const Eigen::Vector2d& pt = it->second.at(0);
+    const Eigen::Vector2f& pt = it->second.at(0).cast<float>();
     charuco_corners.push_back(cv::Point2f(pt.x(), pt.y()));
   }
 

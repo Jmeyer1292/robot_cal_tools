@@ -10,7 +10,7 @@ namespace rct_image_tools
  * @brief This class finds 2D features (circle centers) from images of a known ModifiedCircleGridTarget.
  * All points must be seen or it will fail. Features are returned in the same order as points are defined in the target.
  */
-class ModifiedCircleGridTargetFinder : public TargetFinder<ModifiedCircleGridTarget>
+class ModifiedCircleGridTargetFinder : public TargetFinder
 {
 public:
   ModifiedCircleGridTargetFinder(const ModifiedCircleGridTarget& target);
@@ -29,7 +29,18 @@ public:
    */
   virtual cv::Mat drawTargetFeatures(const cv::Mat& image, const TargetFeatures& target_features) const override;
 
+  virtual const Target& target() const override
+  {
+    return target_;
+  }
+
+  inline const CircleDetectorParams& getCircleDetectorParams() const
+  {
+    return params_;
+  }
+
 protected:
+  const ModifiedCircleGridTarget target_;
   const CircleDetectorParams params_;
 };
 

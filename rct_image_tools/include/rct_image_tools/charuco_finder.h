@@ -14,7 +14,7 @@ namespace rct_image_tools
  * @brief This class finds 2D features from images of a specified ChArUco gridboard target.
  * The main advantage of this kind of target is that partial views still provide usable correspondences.
  */
-class CharucoGridBoardTargetFinder : public TargetFinder<CharucoGridTarget>
+class CharucoGridBoardTargetFinder : public TargetFinder
 {
 public:
   CharucoGridBoardTargetFinder(const CharucoGridTarget& target);
@@ -33,6 +33,14 @@ public:
    * @return An image with the chessboard intersections and IDs overlaid on the input image
    */
   virtual cv::Mat drawTargetFeatures(const cv::Mat& image, const TargetFeatures& target_features) const override;
+
+  virtual const Target& target() const override
+  {
+    return target_;
+  }
+
+protected:
+  const CharucoGridTarget target_;
 };
 
 } // namespace rct_image_tools

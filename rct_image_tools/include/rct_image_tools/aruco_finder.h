@@ -15,7 +15,7 @@ namespace rct_image_tools
  * Target features are returned as a map where the marker ID is the key and the image coordinates of the
  * marker corners are the mapped value.
  */
-class ArucoGridBoardTargetFinder : public TargetFinder<ArucoGridTarget>
+class ArucoGridBoardTargetFinder : public TargetFinder
 {
 public:
   ArucoGridBoardTargetFinder(const ArucoGridTarget& target);
@@ -36,6 +36,14 @@ public:
    * @param target_features - The target features identified in the input image
    */
   virtual cv::Mat drawTargetFeatures(const cv::Mat& image, const TargetFeatures& target_features) const override;
+
+  virtual const Target& target() const override
+  {
+    return target_;
+  }
+
+protected:
+  const ArucoGridTarget target_;
 };
 
 } // namespace rct_image_tools
