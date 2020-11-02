@@ -1,6 +1,7 @@
 #pragma once
 
 #include <rct_image_tools/target_features.h>
+#include <rct_image_tools/target.h>
 #include <opencv2/core/mat.hpp>
 
 namespace rct_image_tools
@@ -8,15 +9,10 @@ namespace rct_image_tools
 /**
  * @brief Base class for target finders
  */
-template<typename TargetT>
 class TargetFinder
 {
 public:
-  TargetFinder(const TargetT& target)
-    : target_(target)
-  {
-  }
-
+  TargetFinder() = default;
   virtual ~TargetFinder() = default;
 
   /**
@@ -34,13 +30,11 @@ public:
    */
   virtual cv::Mat drawTargetFeatures(const cv::Mat& image, const TargetFeatures& target_features) const = 0;
 
-  const TargetT& target() const
-  {
-    return target_;
-  }
-
-protected:
-  TargetT target_;
+  /**
+   * @brief Returns the definition of the target used by the finder
+   * @return
+   */
+  virtual const Target& target() const = 0;
 };
 
 } // namespace rct_image_tools
