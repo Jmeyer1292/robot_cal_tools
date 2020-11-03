@@ -93,8 +93,7 @@ public:
     EXPECT_EQ(problem.target_chain.dof(), result.target_chain_dh_offsets.rows());
 
     // Test the result by moving the robot around to a lot of positions and seeing of the results match
-    DHChain optimized_chain = test::createChain(problem.camera_chain.getDHTable() + result.camera_chain_dh_offsets,
-                                                problem.camera_chain.getJointTypes());
+    DHChain optimized_chain(problem.camera_chain, result.camera_chain_dh_offsets);
 
     std::cout << "true chain:\n" << camera_chain_truth.getDHTable().matrix() << std::endl << std::endl;
     std::cout << "optimized chain:\n" << optimized_chain.getDHTable().matrix() << std::endl << std::endl;

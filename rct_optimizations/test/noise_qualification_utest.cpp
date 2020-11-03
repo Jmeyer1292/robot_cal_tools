@@ -20,7 +20,7 @@ TEST(NoiseTest, QuatMeanTest)
   Eigen::Quaterniond q_mean(1, 0, 0, 0);
 
   // Make a lot of quaternions randomly oriented about the x-axis
-  std::mt19937 mt_rand(std::random_device{}());
+  std::mt19937 mt_rand(RCT_RANDOM_SEED);
   double stdev = M_PI / 8.0;
   std::normal_distribution<double> dist(0.0, stdev);
 
@@ -47,7 +47,7 @@ class NoiseQualification2D : public ::testing::Test
     : target(TARGET_ROWS, TARGET_COLS, SPACING)
     , camera(test::makeKinectCamera())
     , target_to_camera(Eigen::Isometry3d::Identity())
-    , mt_rand(std::random_device{}())
+    , mt_rand(RCT_RANDOM_SEED)
   {
     // Put the camera over the center of the target facing normal to the target
     double x = static_cast<double>(TARGET_ROWS - 1) * SPACING / 2.0;
@@ -212,7 +212,7 @@ class NoiseQualification3D : public ::testing::Test
   NoiseQualification3D()
     : target(test::Target(TARGET_ROWS, TARGET_COLS, SPACING))
     , target_to_camera(Eigen::Isometry3d::Identity())
-    , mt_rand(std::random_device{}())
+    , mt_rand(RCT_RANDOM_SEED)
   {
     // Put the camera over the center of the target facing normal to the target
     double x = static_cast<double>(TARGET_ROWS - 1) * SPACING / 2.0;

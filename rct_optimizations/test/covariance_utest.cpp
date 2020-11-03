@@ -8,16 +8,18 @@
 #include <rct_optimizations/covariance_analysis.h>
 #include <rct_optimizations/circle_fit.h>
 
+static std::mt19937 RAND_GEN(RCT_RANDOM_SEED);
+
 template <typename T>
 T perturb_normal(T val, T std_dev)
 {
-  return std::bind(std::normal_distribution<T>{val, std_dev}, std::mt19937(std::random_device{}()))();
+  return std::bind(std::normal_distribution<T>{val, std_dev}, RAND_GEN)();
 }
 
 template <typename T>
 T perturb_random(T mean, T offset)
 {
-  return std::bind(std::uniform_real_distribution<T>{mean - offset, mean + offset}, std::mt19937(std::random_device{}()))();
+  return std::bind(std::uniform_real_distribution<T>{mean - offset, mean + offset}, RAND_GEN)();
 }
 
 class CircleFitUnit : public ::testing::Test
