@@ -10,6 +10,7 @@ namespace rct_optimizations
  */
 struct CorrespondenceSampler
 {
+  virtual ~CorrespondenceSampler() = default;
   virtual std::vector<std::size_t> getSampleCorrespondenceIndices() const = 0;
 };
 
@@ -67,8 +68,12 @@ struct GridCorrespondenceSampler : CorrespondenceSampler
 
 struct RandomCorrespondenceSampler : CorrespondenceSampler
 {
-  RandomCorrespondenceSampler(const std::size_t n) : n_correspondences(n)
+  RandomCorrespondenceSampler(const std::size_t n_correspondences_, const std::size_t n_samples_)
+    : n_correspondences(n_correspondences_)
+    , n_samples(n_samples_)
   {
+    assert(n_samples_ >= 4);
+    assert(n_samples_ < n_correspondences_);
   }
 
   virtual std::vector<std::size_t> getSampleCorrespondenceIndices() const final override
@@ -79,13 +84,17 @@ struct RandomCorrespondenceSampler : CorrespondenceSampler
     auto fn = [&rand_gen, &dist]() -> std::size_t { return dist(rand_gen); };
 
     // Generate a vector of 4 random correspondence indices
-    std::vector<std::size_t> output(4);
+    std::vector<std::size_t> output(n_samples);
     std::generate(output.begin(), output.end(), fn);
 
     return output;
   }
 
+  /** @brief Number of total correspondences */
   const std::size_t n_correspondences;
+  /** @brief Number of samples with which to calculate the homography transform. This number must be at least 4.
+   * Typically a lower number of samples (i.e. 4) does not produce an accurate homography transform; one quarter to half the total number of correspondences is a good rule of thumb */
+  const std::size_t n_samples;
 };
 
 /**
