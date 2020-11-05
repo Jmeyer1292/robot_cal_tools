@@ -56,11 +56,6 @@ target_link_libraries(${PROJECT_NAME}_test
   rct::rct_optimizations
 )
 
-# Interface library to expose test image directory
-add_library(${PROJECT_NAME}_images INTERFACE)
-target_link_libraries(${PROJECT_NAME}_images INTERFACE)
-target_compile_definitions(${PROJECT_NAME}_images INTERFACE TEST_SUPPORT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/test/images/")
-
 if(RCT_BUILD_TESTS)
   enable_testing()
   rct_add_run_tests_target()

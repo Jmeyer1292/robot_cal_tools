@@ -23,7 +23,7 @@ Camera makeKinectCamera()
 
 Eigen::Isometry3d perturbPose(const Eigen::Isometry3d& pose, double spatial_noise, double angle_noise)
 {
-  auto mt_rand = std::mt19937(std::random_device{}());
+  auto mt_rand = std::mt19937(RCT_RANDOM_SEED);
 
   auto spatial_dist = std::bind(std::uniform_real_distribution<double>{-spatial_noise, spatial_noise}, mt_rand);
   auto angle_dist = std::bind(std::uniform_real_distribution<double>{-angle_noise, angle_noise}, mt_rand);
@@ -40,21 +40,6 @@ Eigen::Isometry3d perturbPose(const Eigen::Isometry3d& pose, double spatial_nois
   return new_pose;
 }
 
-DHChain createChain(const Eigen::MatrixXd &dh, const std::vector<DHJointType> &joint_types)
-{
-  if (dh.rows() != joint_types.size())
-    throw OptimizationException("DH table rows does not match joint types size");
-
-  std::vector<DHTransform> joints;
-  joints.reserve(joint_types.size());
-  for (std::size_t i = 0; i < joint_types.size(); ++i)
-  {
-    joints.push_back(DHTransform(dh.row(i), joint_types.at(i)));
-  }
-
-  return DHChain(joints);
-}
-
 DHChain createABBIRB2400()
 {
   std::vector<DHTransform> transforms;
@@ -69,12 +54,12 @@ DHChain createABBIRB2400()
   p5 << 0.0, 0.0, 0.0, -M_PI / 2.0;
   p6 << 0.085, M_PI, 0.0, 0.0;
 
-  transforms.emplace_back(p1, DHJointType::REVOLUTE, "j1");
-  transforms.emplace_back(p2, DHJointType::REVOLUTE, "j2");
-  transforms.emplace_back(p3, DHJointType::REVOLUTE, "j3");
-  transforms.emplace_back(p4, DHJointType::REVOLUTE, "j4");
-  transforms.emplace_back(p5, DHJointType::REVOLUTE, "j5");
-  transforms.emplace_back(p6, DHJointType::REVOLUTE, "j6");
+  transforms.emplace_back(p1, DHJointType::REVOLUTE, "j1", RCT_RANDOM_SEED);
+  transforms.emplace_back(p2, DHJointType::REVOLUTE, "j2", RCT_RANDOM_SEED);
+  transforms.emplace_back(p3, DHJointType::REVOLUTE, "j3", RCT_RANDOM_SEED);
+  transforms.emplace_back(p4, DHJointType::REVOLUTE, "j4", RCT_RANDOM_SEED);
+  transforms.emplace_back(p5, DHJointType::REVOLUTE, "j5", RCT_RANDOM_SEED);
+  transforms.emplace_back(p6, DHJointType::REVOLUTE, "j6", RCT_RANDOM_SEED);
 
   return DHChain(transforms);
 }
@@ -90,14 +75,14 @@ DHChain createTwoAxisPositioner()
 
   // Add the first DH transform
   {
-    DHTransform t(p1, DHJointType::REVOLUTE, "j1");
+    DHTransform t(p1, DHJointType::REVOLUTE, "j1", RCT_RANDOM_SEED);
     t.max = M_PI;
     t.min = -M_PI;
     transforms.push_back(t);
   }
   // Add the second DH transform
   {
-    DHTransform dh_transform(p2, DHJointType::REVOLUTE, "j2");
+    DHTransform dh_transform(p2, DHJointType::REVOLUTE, "j2", RCT_RANDOM_SEED);
     dh_transform.max = 2.0 * M_PI;
     dh_transform.min = -2.0 * M_PI;
     transforms.push_back(dh_transform);
@@ -113,7 +98,7 @@ DHChain createTwoAxisPositioner()
 
 DHChain perturbDHChain(const DHChain &in, const double stddev)
 {
-  std::mt19937 mt_rand(std::random_device{}());
+  std::mt19937 mt_rand(RCT_RANDOM_SEED);
   std::normal_distribution<double> norm(0.0, stddev);
 
   // Get the joint types and nominal DH table
@@ -127,13 +112,10 @@ DHChain perturbDHChain(const DHChain &in, const double stddev)
   transforms.reserve(joint_types.size());
   for (std::size_t i = 0; i < joint_types.size(); ++i)
   {
-    transforms.emplace_back(dh.row(i), joint_types[i], "j" + std::to_string(i + 1));
+    transforms.emplace_back(dh.row(i), joint_types[i], "j" + std::to_string(i + 1), RCT_RANDOM_SEED);
   }
   return DHChain(transforms, in.getBaseOffset());
 }
 
 } // namespace test
 } // namespace rct_optimizations
-
-
-

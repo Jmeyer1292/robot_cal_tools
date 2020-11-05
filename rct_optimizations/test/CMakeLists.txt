@@ -6,9 +6,9 @@ add_library(${PROJECT_NAME}_test_support
   src/observation_creator.cpp
   src/dh_chain_observation_creator.cpp
   src/utilities.cpp)
-
 target_link_libraries(${PROJECT_NAME}_test_support ${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME}_test_support PUBLIC include)
+target_compile_definitions(${PROJECT_NAME}_test_support PUBLIC RCT_RANDOM_SEED=0)
 
 # The actual tests...
 
@@ -50,7 +50,7 @@ add_dependencies(run_tests ${PROJECT_NAME}_extrinsic_hand_eye_dh_chain_tests)
 # Covariance
 # The expectations for the covariance matrices of these tests tends to be flaky due to random number generation, so let's only build but not run these tests
 add_executable(${PROJECT_NAME}_covariance_tests covariance_utest.cpp)
-target_link_libraries(${PROJECT_NAME}_covariance_tests PRIVATE ${PROJECT_NAME} GTest::GTest GTest::Main)
+target_link_libraries(${PROJECT_NAME}_covariance_tests PRIVATE ${PROJECT_NAME} ${PROJECT_NAME}_test_support GTest::GTest GTest::Main)
 add_dependencies(${PROJECT_NAME}_covariance_tests ${PROJECT_NAME})
 
 # Homography

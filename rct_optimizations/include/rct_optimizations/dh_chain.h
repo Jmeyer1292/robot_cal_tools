@@ -45,6 +45,8 @@ struct DHTransform
 
   DHTransform(const Eigen::Vector4d& params_, DHJointType type_, const std::string& name_);
 
+  DHTransform(const Eigen::Vector4d& params_, DHJointType type_, const std::string& name_, std::size_t random_seed);
+
   /**
    * @brief Creates the homogoneous transformation from the previous link to the current link
    * @param joint_value - The joint value to apply when caluclating the transform
@@ -114,6 +116,8 @@ struct DHTransform
   double min = -M_PI;
   /** @brief Label for this transform */
   std::string name;
+  /** @brief Seed for random number generator */
+  const std::size_t random_seed;
 };
 
 /**
@@ -122,8 +126,7 @@ struct DHTransform
 class DHChain
 {
 public:
-  DHChain(std::vector<DHTransform> transforms,
-          const Eigen::Isometry3d& base_offset = Eigen::Isometry3d::Identity());
+  DHChain(std::vector<DHTransform> transforms, const Eigen::Isometry3d& base_offset = Eigen::Isometry3d::Identity());
 
   DHChain(const DHChain& rhs, const Eigen::MatrixX4d& dh_offsets);
 
@@ -154,7 +157,7 @@ public:
   Isometry3<T> getFK(const Eigen::Matrix<T, Eigen::Dynamic, 1>& joint_values,
                      const Eigen::Matrix<T, Eigen::Dynamic, 4>& offsets) const
   {
-    if (joint_values.size() > dof())
+    if (static_cast<std::size_t>(joint_values.size()) > dof())
     {
       std::stringstream ss;
       ss << "Joint values size (" << joint_values.size() << ") is larger than the chain DoF (" << dof() << ")";
