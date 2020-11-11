@@ -52,17 +52,4 @@ cv::Mat ArucoGridBoardTargetFinder::drawTargetFeatures(const cv::Mat& image, con
   cv::aruco::drawDetectedMarkers(image, marker_corners, marker_ids);
   return image;
 }
-
-std::map<unsigned, std::vector<Eigen::Vector3d>> mapArucoIdsToObjPts(const cv::Ptr<cv::aruco::GridBoard> &board)
-{
-  std::map<unsigned, std::vector<Eigen::Vector3d>> map_ids_to_corners;
-  for (unsigned i = 0; i < board->ids.size(); i++)
-  {
-    std::vector<Eigen::Vector3d> obj_pts(board->objPoints[i].size());
-    std::transform(board->objPoints[i].begin(), board->objPoints[i].end(), obj_pts.begin(), [](const cv::Point3f& o) {return Eigen::Vector3f(o.x, o.y, o.z).cast<double>(); });
-    map_ids_to_corners.insert(std::make_pair(board->ids[i], obj_pts));
-  }
-  return map_ids_to_corners;
-}
-
 } // namespace rct_image_tools

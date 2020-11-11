@@ -172,6 +172,34 @@ public:
   ArucoGridTarget target;
 };
 
+class ArucoFinderPredefinedBoardTest : public TargetFinderTestFixture
+{
+public:
+  ArucoFinderPredefinedBoardTest()
+    : TargetFinderTestFixture()
+    , target(cv::aruco::GridBoard::create(20, 20, 0.035f, 0.010f, cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_1000)))
+  {
+    finder = std::make_shared<ArucoGridBoardTargetFinder>(target);
+  }
+
+  virtual void SetUp() override
+  {
+    filename = std::string(TEST_SUPPORT_DIR) + "aruco.jpg";
+
+    // Expect to see the entire board
+    expected_ids.resize(static_cast<unsigned>(target.board->getGridSize().area()));
+    std::iota(expected_ids.begin(), expected_ids.end(), 0);
+
+    // Set up the homography check correspondence sampler
+    // The stride of the correspondence sampler is 4, since there are 4 corners associated with each unique tag
+    auto grid_size = target.board->getGridSize();
+    corr_sampler = std::make_shared<rct_optimizations::GridCorrespondenceSampler>(grid_size.height, grid_size.width, 4);
+    homography_error_threshold = 3.0;
+  }
+
+  ArucoGridTarget target;
+};
+
 TEST_F(ModifiedCircleGridFinderTest, findTargetFeatures)
 {
   this->runTest();
@@ -193,6 +221,11 @@ TEST_F(OneFeatureCharucoFinderTest, findTargetFeatures)
 }
 
 TEST_F(ArucoFinderTest, findTargetFeatures)
+{
+  this->runTest();
+}
+
+TEST_F(ArucoFinderPredefinedBoardTest, findTargetFeatures)
 {
   this->runTest();
 }
