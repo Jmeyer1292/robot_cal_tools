@@ -22,6 +22,11 @@ TargetFeatures CharucoGridBoardTargetFinder::findTargetFeatures(const cv::Mat& i
   std::vector<std::vector<cv::Point2f>> marker_corners;
   cv::aruco::detectMarkers(image, target_.board->dictionary, marker_corners, marker_ids, parameters);
 
+  if (marker_ids.empty())
+  {
+    throw std::runtime_error("No ArUco markers were detected");
+  }
+
   // Detect the chessboard intersections given the observed ArUco markers
   std::vector<cv::Point2f> charuco_corners;
   std::vector<int> charuco_ids;
