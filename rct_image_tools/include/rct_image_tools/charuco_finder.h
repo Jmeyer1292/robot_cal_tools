@@ -27,7 +27,7 @@ public:
   virtual TargetFeatures findTargetFeatures(const cv::Mat& image) const override;
 
   /**
-   * @brief A debugging utility that will draw targer features set onto an input image for display purposes
+   * @brief A debugging utility that will draw target features set onto an input image for display purposes
    * @param image - Input image, ideally containing a ChArUco grid target
    * @param target_features - Chessboard intersections (obtained by calling @ref findTargetFeatures)
    * @return An image with the chessboard intersections and IDs overlaid on the input image

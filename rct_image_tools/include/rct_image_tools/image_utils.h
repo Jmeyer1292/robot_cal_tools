@@ -55,7 +55,7 @@ void drawReprojections(const std::vector<cv::Point2d> &reprojections,
 
 /**
  * @brief Get the correspondence set given target features in the image and 3d target points
- * @param observed featurs - Observed target features in the image frame
+ * @param observed features - Observed target features in the image frame
  * @param target_points The 3d target points
  * @return The correspondence set
  */
