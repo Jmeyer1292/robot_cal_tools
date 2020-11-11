@@ -1,8 +1,31 @@
 #include <rct_image_tools/aruco_grid_target.h>
 
+namespace
+{
+/**
+ * @brief For a given ArUco GridBoard, create a map of marker corner coordinates keyed to marker IDs.
+ * @param board - ArUco GridBoard to use when generating the map
+ * @return Resulting map. Keys are the IDs for the ArUco markers in the board. Values are vectors containing the four board-relative coordinates
+ * for the corners of the marker.
+ */
+std::map<int, std::vector<Eigen::Vector3d>> mapArucoIdsToObjPts(const cv::Ptr<cv::aruco::GridBoard> &board)
+{
+  std::map<int, std::vector<Eigen::Vector3d>> map_ids_to_corners;
+  for (std::size_t i = 0; i < board->ids.size(); i++)
+  {
+    std::vector<Eigen::Vector3d> obj_pts(board->objPoints[i].size());
+    std::transform(
+          board->objPoints[i].begin(), board->objPoints[i].end(), obj_pts.begin(),
+          [](const cv::Point3f& o) -> Eigen::Vector3d { return Eigen::Vector3f(o.x, o.y, o.z).cast<double>(); });
+
+    map_ids_to_corners.insert(std::make_pair(board->ids[i], obj_pts));
+  }
+  return map_ids_to_corners;
+}
+}
+
 namespace rct_image_tools
 {
-
 ArucoGridTarget::ArucoGridTarget(const int rows, const int cols, const float aruco_marker_dim, const float marker_gap,
                                  const int dictionary_id)
   : ArucoGridTarget(cv::aruco::GridBoard::create(cols, rows, aruco_marker_dim, marker_gap, cv::aruco::getPredefinedDictionary(dictionary_id)))
