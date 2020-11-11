@@ -44,8 +44,19 @@ RandomCorrespondenceSampler::RandomCorrespondenceSampler(const std::size_t n_cor
   : n_correspondences(n_correspondences_)
   , n_samples(n_samples_)
 {
-  assert(n_samples_ >= 4);
-  assert(n_samples_ < n_correspondences_);
+  const unsigned min_samples = 4;
+  if (n_samples < min_samples)
+  {
+    std::stringstream ss;
+    ss << "Not enough samples specified: " << n_samples << " vs. " << min_samples << " required";
+    throw std::runtime_error(ss.str());
+  }
+  if (n_samples < n_correspondences)
+  {
+    std::stringstream ss;
+    ss << "Not enough correspondences provided: " << n_correspondences << " vs. " << n_samples << " required";
+    throw std::runtime_error(ss.str());
+  }
 }
 
 std::vector<std::size_t> RandomCorrespondenceSampler::getSampleCorrespondenceIndices() const
