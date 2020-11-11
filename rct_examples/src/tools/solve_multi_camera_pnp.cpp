@@ -9,7 +9,7 @@
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include <rct_image_tools/image_observation_finder.h>
+#include <rct_image_tools/modified_circle_grid_finder.h>
 #include <rct_image_tools/image_utils.h>
 #include <rct_optimizations/experimental/multi_camera_pnp.h>
 #include <rct_optimizations/ceres_math_utilities.h>
@@ -138,18 +138,21 @@ int main(int argc, char** argv)
     return 1;
   }
 
-  // Load target definition from parameter server. Target will get
-  // reset if such a parameter was set.
+  // Load target definition from parameter server. Target will get reset if such a parameter was set.
   ModifiedCircleGridTarget target(5, 5, 0.015);
-  if (!TargetLoader<ModifiedCircleGridTarget>::load(target_path, target))
+  try
   {
-    ROS_WARN_STREAM("Unable to load target file from the 'target_path' parameter");
+    target = TargetLoader<ModifiedCircleGridTarget>::load(target_path);
+  }
+  catch(const std::exception& ex)
+  {
+    ROS_WARN_STREAM(ex.what());
   }
 
   // Lets create a class that will search for the target in our raw images.
-  ModifiedCircleGridObservationFinder obs_finder(target);
+  ModifiedCircleGridTargetFinder target_finder(target);
 
-  ExtrinsicCorrespondenceDataSet corr_data_set(maybe_data_set, obs_finder, true);
+  ExtrinsicCorrespondenceDataSet corr_data_set(maybe_data_set, target_finder, true);
 
   for (std::size_t i = 0; i < corr_data_set.getImageCount(); ++i)
   {

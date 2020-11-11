@@ -18,11 +18,12 @@ if(NOT TARGET Eigen3::Eigen)
 endif()
 
 add_library(${PROJECT_NAME} SHARED
-  src/${PROJECT_NAME}/modified_circle_grid_target.cpp
-  src/${PROJECT_NAME}/charuco_grid_target.cpp
-  src/${PROJECT_NAME}/image_observation_finder.cpp
-  src/${PROJECT_NAME}/aruco_finder.cpp
   src/${PROJECT_NAME}/circle_detector.cpp
+  src/${PROJECT_NAME}/modified_circle_grid_target.cpp
+  src/${PROJECT_NAME}/modified_circle_grid_finder.cpp
+  src/${PROJECT_NAME}/aruco_grid_target.cpp
+  src/${PROJECT_NAME}/aruco_finder.cpp
+  src/${PROJECT_NAME}/charuco_grid_target.cpp
   src/${PROJECT_NAME}/charuco_finder.cpp
 )
 target_compile_options(${PROJECT_NAME} PUBLIC -std=c++11)
@@ -44,7 +45,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 # Modified circle grid finder executable
 # TODO: turn this into a unit test
 add_executable(${PROJECT_NAME}_test
-  src/observation_finder_tests.cpp
+  src/target_finder_tests.cpp
 )
 target_compile_options(${PROJECT_NAME}_test PUBLIC -std=c++11)
 target_compile_options(${PROJECT_NAME}_test PRIVATE -Wall -Wextra)

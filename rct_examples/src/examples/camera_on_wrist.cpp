@@ -16,7 +16,7 @@
 // This include provide useful print functions for outputing results to terminal
 #include <rct_ros_tools/print_utils.h>
 // This header brings in a tool for finding the target in a given image
-#include <rct_image_tools/image_observation_finder.h>
+#include <rct_image_tools/modified_circle_grid_finder.h>
 // This header brings in he calibration function for 'moving camera' on robot wrist - what we
 // want to calibrate here.
 #include <rct_optimizations/extrinsic_hand_eye.h>
@@ -90,7 +90,7 @@ int extrinsicWristCameraCalibration()
   rct_image_tools::ModifiedCircleGridTarget target(10, 10, 0.0254); // rows, cols, spacing between dots
 
   // The Observation Finder class uses the target definition to search images
-  rct_image_tools::ModifiedCircleGridObservationFinder obs_finder(target);
+  rct_image_tools::ModifiedCircleGridTargetFinder target_finder(target);
 
   // Now we'll loop over the images and 1) find the dots, 2) pair them with the target location,
   // and 3) push them into the problem definition.
@@ -100,8 +100,12 @@ int extrinsicWristCameraCalibration()
   for (std::size_t i = 0; i < image_set.size(); ++i)
   {
     // Try to find the circle grid in this image:
-    boost::optional<std::vector<Eigen::Vector2d>> maybe_obs = obs_finder.findObservations(image_set[i]);
-    if (!maybe_obs)
+    rct_image_tools::TargetFeatures target_features;
+    try
+    {
+      target_features = target_finder.findTargetFeatures(image_set[i]);
+    }
+    catch(const std::exception& ex)
     {
       std::cerr << "Unable to find the circle grid in image: " << i << "\n";
       continue;
@@ -110,20 +114,10 @@ int extrinsicWristCameraCalibration()
     // We found the target! Let's "zip-up" the correspondence pairs for this image - one for each
     // dot. So we create a data structure:
     rct_optimizations::Observation2D3D obs;
-    obs.correspondence_set.reserve(maybe_obs->size());
+    obs.correspondence_set.reserve(target_features.size());
 
-    // And loop over each detected dot:
-    const std::vector<Eigen::Vector3d> target_points = target.createPoints();
-    for (std::size_t j = 0; j < maybe_obs->size(); ++j)
-    {
-      // The 'target.points' data structure and the observation vector returned by
-      // 'obs_finder.findObservations()' are in the same order! So the j-th index in each
-      // respresents the same dot!
-      rct_optimizations::Correspondence2D3D pair;
-      pair.in_image = maybe_obs->at(j); // The obs finder and target define their points in the same order!
-      pair.in_target = target_points[j];
-      obs.correspondence_set.push_back(pair);
-    }
+    // Create correspondences given the target and the features in the image
+    obs.correspondence_set = target.createCorrespondences(target_features);
 
     // Let's add the wrist pose for this image as the "to_camera_mount" transform
     // Since the target is not moving relative to the camera, set the "to_target_mount" transform to identity

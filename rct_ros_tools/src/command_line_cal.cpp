@@ -11,7 +11,7 @@
 
 #include <std_srvs/Empty.h>
 
-#include <rct_image_tools/image_observation_finder.h>
+#include <rct_image_tools/modified_circle_grid_finder.h>
 
 class TransformMonitor
 {
@@ -56,7 +56,7 @@ private:
 class ImageMonitor
 {
 public:
-  ImageMonitor(const rct_image_tools::ModifiedCircleGridObservationFinder& finder,
+  ImageMonitor(const rct_image_tools::ModifiedCircleGridTargetFinder& finder,
                const std::string& nominal_image_topic)
     : finder_(finder)
     , it_(ros::NodeHandle())
@@ -85,17 +85,21 @@ public:
         cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
       }
 
-      auto obs = finder_.findObservations(cv_ptr->image);
-      if (obs)
+      rct_image_tools::TargetFeatures image_observations;
+      try
       {
-        auto modified = finder_.drawObservations(cv_ptr->image, *obs);
-        cv_bridge::CvImagePtr ptr (new cv_bridge::CvImage(cv_ptr->header, cv_ptr->encoding, modified));
+        image_observations = finder_.findTargetFeatures(cv_ptr->image);
+
+        auto modified = finder_.drawTargetFeatures(cv_ptr->image, image_observations);
+        cv_bridge::CvImagePtr ptr(new cv_bridge::CvImage(cv_ptr->header, cv_ptr->encoding, modified));
         im_pub_.publish(ptr->toImageMsg());
       }
-      else
+      catch (const std::runtime_error& ex)
       {
+        ROS_ERROR_STREAM(ex.what());
         im_pub_.publish(cv_ptr->toImageMsg());
       }
+
       last_frame_ = cv_ptr;
     }
     catch (cv_bridge::Exception& e)
@@ -116,7 +120,7 @@ public:
   }
 
 private:
-  rct_image_tools::ModifiedCircleGridObservationFinder finder_;
+  rct_image_tools::ModifiedCircleGridTargetFinder finder_;
   image_transport::ImageTransport it_;
   image_transport::Subscriber im_sub_;
   image_transport::Publisher im_pub_;
@@ -129,7 +133,7 @@ struct DataCollectionConfig
   std::string tool_frame;
 
   std::string image_topic;
-  rct_image_tools::ModifiedCircleGridTarget target;
+  std::shared_ptr<rct_image_tools::ModifiedCircleGridTarget> target;
 
   std::string save_dir;
 };
@@ -139,7 +143,7 @@ struct DataCollection
 
   DataCollection(const DataCollectionConfig& config)
     : tf_monitor(config.base_frame, config.tool_frame)
-    , image_monitor(config.target, config.image_topic)
+    , image_monitor(*config.target, config.image_topic)
     , save_dir_(config.save_dir)
   {
     ros::NodeHandle nh;
@@ -230,13 +234,17 @@ int main(int argc, char** argv)
   using namespace rct_ros_tools;
   using namespace rct_image_tools;
 
-  if (!TargetLoader<ModifiedCircleGridTarget>::load(pnh, "target_definition", config.target))
+  try
   {
-    ROS_ERROR_STREAM("Must provide parameters to load target!");
-    return 1;
+    config.target = std::make_shared<ModifiedCircleGridTarget>(TargetLoader<ModifiedCircleGridTarget>::load(pnh, "target_definition"));
+    DataCollection dc(config);
+    ros::spin();
+  }
+  catch (const std::exception& ex)
+  {
+    ROS_ERROR_STREAM(ex.what());
+    return -1;
   }
 
-  DataCollection dc (config);
-  ros::spin();
   return 0;
 }

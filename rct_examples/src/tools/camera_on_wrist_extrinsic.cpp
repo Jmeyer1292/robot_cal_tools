@@ -4,7 +4,7 @@
 #include "rct_ros_tools/target_loaders.h"
 #include "rct_ros_tools/print_utils.h"
 // To find 2D  observations from images
-#include <rct_image_tools/image_observation_finder.h>
+#include <rct_image_tools/modified_circle_grid_finder.h>
 #include <rct_image_tools/image_utils.h>
 // The calibration function for 'moving camera' on robot wrist
 #include <rct_optimizations/extrinsic_hand_eye.h>
@@ -64,113 +64,100 @@ int main(int argc, char** argv)
     return 1;
   }
 
-  ModifiedCircleGridTarget target;
-  if (!TargetLoader<ModifiedCircleGridTarget>::load(pnh, "target_definition", target))
+  try
   {
-    ROS_WARN_STREAM("Unable to load target from the 'target_definition' parameter struct");
-    return 1;
-  }
+    ModifiedCircleGridTarget target = TargetLoader<ModifiedCircleGridTarget>::load(pnh, "target_definition");
 
-  CameraIntrinsics intr;
-  if (!loadIntrinsics(pnh, "intrinsics", intr))
-  {
-    ROS_WARN_STREAM("Unable to load camera intrinsics from the 'intrinsics' parameter struct");
-    return 1;
-  }
+    CameraIntrinsics intr = loadIntrinsics(pnh, "intrinsics");
 
-  // Attempt to load the data set via the data record yaml file:
-  boost::optional<ExtrinsicDataSet> maybe_data_set = parseFromFile(data_path);
-  if (!maybe_data_set)
-  {
-    ROS_ERROR_STREAM("Failed to parse data set from path = " << data_path);
-    return 2;
-  }
-  // We know it exists, so define a helpful alias
-  const ExtrinsicDataSet& data_set = *maybe_data_set;
-
-  // Lets create a class that will search for the target in our raw images.
-  ModifiedCircleGridObservationFinder obs_finder(target);
-
-  // Now we create our calibration problem
-  ExtrinsicHandEyeProblem2D3D problem_def;
-  problem_def.intr = intr; // Set the camera properties
-
-  // Our 'base to camera guess': A camera off to the side, looking at a point centered in front of the robot
-  if (!loadPose(pnh, "base_to_target_guess", problem_def.target_mount_to_target_guess))
-  {
-    ROS_WARN_STREAM("Unable to load guess for base to camera from the 'base_to_target_guess' parameter struct");
-    return 1;
-  }
-
-  if (!loadPose(pnh, "wrist_to_camera_guess", problem_def.camera_mount_to_camera_guess))
-  {
-    ROS_WARN_STREAM("Unable to load guess for wrist to target from the 'wrist_to_camera_guess' parameter struct");
-    return 1;
-  }
-
-  // Finally, we need to process our images into correspondence sets: for each dot in the
-  // target this will be where that dot is in the target and where it was seen in the image.
-  // Repeat for each image. We also tell where the wrist was when the image was taken.
-  problem_def.observations.reserve(data_set.images.size());
-  for (std::size_t i = 0; i < data_set.images.size(); ++i)
-  {
-    // Try to find the circle grid in this image:
-    auto maybe_obs = obs_finder.findObservations(data_set.images[i]);
-    if (!maybe_obs)
+    // Attempt to load the data set via the data record yaml file:
+    boost::optional<ExtrinsicDataSet> maybe_data_set = parseFromFile(data_path);
+    if (!maybe_data_set)
     {
-      ROS_WARN_STREAM("Unable to find the circle grid in image: " << i);
-      cv::imshow("points", data_set.images[i]);
-      cv::waitKey();
-      continue;
+      ROS_ERROR_STREAM("Failed to parse data set from path = " << data_path);
+      return 2;
     }
-    else
+    // We know it exists, so define a helpful alias
+    const ExtrinsicDataSet& data_set = *maybe_data_set;
+
+    // Lets create a class that will search for the target in our raw images.
+    ModifiedCircleGridTargetFinder target_finder(target);
+
+    // Now we create our calibration problem
+    ExtrinsicHandEyeProblem2D3D problem_def;
+    problem_def.intr = intr;  // Set the camera properties
+
+    // Our 'base to camera guess': A camera off to the side, looking at a point centered in front of the robot
+    problem_def.target_mount_to_target_guess = loadPose(pnh, "base_to_target_guess");
+    problem_def.camera_mount_to_camera_guess = loadPose(pnh, "wrist_to_camera_guess");
+
+    // Finally, we need to process our images into correspondence sets: for each dot in the
+    // target this will be where that dot is in the target and where it was seen in the image.
+    // Repeat for each image. We also tell where the wrist was when the image was taken.
+    problem_def.observations.reserve(data_set.images.size());
+    for (std::size_t i = 0; i < data_set.images.size(); ++i)
     {
-      // Show the points we detected
-      cv::imshow("points", obs_finder.drawObservations(data_set.images[i], *maybe_obs));
-      cv::waitKey();
+      // Try to find the circle grid in this image:
+      rct_image_tools::TargetFeatures target_features;
+      try
+      {
+        target_features = target_finder.findTargetFeatures(data_set.images[i]);
+
+        // Show the points we detected
+        cv::imshow("points", target_finder.drawTargetFeatures(data_set.images[i], target_features));
+        cv::waitKey();
+      }
+      catch (const std::runtime_error& ex)
+      {
+        ROS_WARN_STREAM("Unable to find the circle grid in image " << i << ": '" << ex.what() << "'");
+        cv::imshow("points", data_set.images[i]);
+        cv::waitKey();
+        continue;
+      }
+
+      Observation2D3D obs;
+      obs.correspondence_set.reserve(target_features.size());
+
+      // So for each image we need to:
+      //// 1. Record the wrist position
+      obs.to_camera_mount = data_set.tool_poses[i];
+      obs.to_target_mount = Eigen::Isometry3d::Identity();
+
+      //// And finally add that to the problem
+      obs.correspondence_set = target.createCorrespondences(target_features);
+
+      problem_def.observations.push_back(obs);
     }
 
-    Observation2D3D obs;
-    obs.correspondence_set.reserve(maybe_obs->size());
+    // Now we have a defined problem, run optimization:
+    ExtrinsicHandEyeResult opt_result = optimize(problem_def);
 
-    // So for each image we need to:
-    //// 1. Record the wrist position
-    obs.to_camera_mount = data_set.tool_poses[i];
-    obs.to_target_mount = Eigen::Isometry3d::Identity();
+    // Report results
+    printOptResults(opt_result.converged, opt_result.initial_cost_per_obs, opt_result.final_cost_per_obs);
+    printNewLine();
 
-    //// And finally add that to the problem
-    obs.correspondence_set = getCorrespondenceSet(*maybe_obs, target.createPoints());
+    Eigen::Isometry3d c = opt_result.camera_mount_to_camera;
+    printTransform(c, "Wrist", "Camera", "WRIST TO CAMERA");
+    printNewLine();
 
-    problem_def.observations.push_back(obs);
+    Eigen::Isometry3d t = opt_result.target_mount_to_target;
+    printTransform(t, "Base", "Target", "BASE TO TARGET");
+    printNewLine();
+
+    std::cout << opt_result.covariance.toString() << std::endl;
+
+    printTitle("REPROJECTION ERROR");
+    for (std::size_t i = 0; i < data_set.images.size(); ++i)
+    {
+      printTitle("REPROJECT IMAGE " + std::to_string(i));
+      reproject(opt_result.camera_mount_to_camera, opt_result.target_mount_to_target, problem_def.observations[i], intr,
+                target, data_set.images[i]);
+    }
   }
-
-  // Now we have a defined problem, run optimization:
-  ExtrinsicHandEyeResult opt_result = optimize(problem_def);
-
-  // Report results
-  printOptResults(opt_result.converged, opt_result.initial_cost_per_obs, opt_result.final_cost_per_obs);
-  printNewLine();
-
-  Eigen::Isometry3d c = opt_result.camera_mount_to_camera;
-  printTransform(c, "Wrist", "Camera", "WRIST TO CAMERA");
-  printNewLine();
-
-  Eigen::Isometry3d t = opt_result.target_mount_to_target;
-  printTransform(t, "Base", "Target", "BASE TO TARGET");
-  printNewLine();
-
-  std::cout << opt_result.covariance.toString() << std::endl;
-
-  printTitle("REPROJECTION ERROR");
-  for (std::size_t i = 0; i < data_set.images.size(); ++i)
+  catch (const std::exception& ex)
   {
-    printTitle("REPROJECT IMAGE " + std::to_string(i));
-    reproject(opt_result.camera_mount_to_camera,
-              opt_result.target_mount_to_target,
-              problem_def.observations[i],
-              intr,
-              target,
-              data_set.images[i]);
+    ROS_ERROR_STREAM(ex.what());
+    return -1;
   }
 
   return 0;

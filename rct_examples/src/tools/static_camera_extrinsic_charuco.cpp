@@ -88,7 +88,7 @@ int main(int argc, char** argv)
     CameraIntrinsics intr = loadIntrinsics(pnh, "intrinsics");
 
     // Lets create a class that will search for the target in our raw images.
-    rct_image_tools::CharucoGridBoardObservationFinder obs_finder(target);
+    rct_image_tools::CharucoGridBoardTargetFinder target_finder(target);
 
     // Now we construct our problem:
     ExtrinsicHandEyeProblem2D3D problem_def;
@@ -109,7 +109,7 @@ int main(int argc, char** argv)
     for (std::size_t i = 0; i < data_set.images.size(); ++i)
     {
       // Try to find the circle grid in this image:
-      auto observations = obs_finder.findObservations(data_set.images[i]);
+      auto observations = target_finder.findTargetFeatures(data_set.images[i]);
       if (observations.empty())
       {
         ROS_WARN_STREAM("Unable to find the ChAruco grid in image: " << i);
@@ -120,7 +120,7 @@ int main(int argc, char** argv)
       else
       {
         // Show the points we detected
-        cv::imshow("points", obs_finder.drawObservations(data_set.images[i], observations));
+        cv::imshow("points", target_finder.drawTargetFeatures(data_set.images[i], observations));
         cv::waitKey();
       }
 

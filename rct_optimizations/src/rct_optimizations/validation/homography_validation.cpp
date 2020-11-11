@@ -4,6 +4,75 @@
 
 namespace rct_optimizations
 {
+GridCorrespondenceSampler::GridCorrespondenceSampler(const std::size_t rows_, const std::size_t cols_, const std::size_t stride_)
+  : rows(rows_)
+  , cols(cols_)
+  , stride(stride_)
+{
+}
+
+std::vector<std::size_t> GridCorrespondenceSampler::getSampleCorrespondenceIndices() const
+{
+  const std::size_t n_samples = 4;
+
+  // Make sure there are at least two times as many points as the number of sample points
+  if ((rows * cols / 2) < n_samples)
+  {
+    std::stringstream ss;
+    ss << "Number of correspondences does not exceed minimum of " << n_samples * 2 << " (" << rows * cols << " provided)";
+    throw std::runtime_error(ss.str());
+  }
+
+  std::vector<std::size_t> correspondence_indices;
+  correspondence_indices.reserve(n_samples);
+
+  // Sample points should be the corners of the grid, using the first element in the stride
+  std::size_t upper_left_idx = 0;
+  std::size_t upper_right_idx = (cols - 1) * stride;
+  std::size_t lower_left_idx = (rows - 1) * (cols * stride);
+  std::size_t lower_right_idx = (rows * cols * stride) - stride;
+
+  correspondence_indices.push_back(upper_left_idx);
+  correspondence_indices.push_back(upper_right_idx);
+  correspondence_indices.push_back(lower_left_idx);
+  correspondence_indices.push_back(lower_right_idx);
+
+  return correspondence_indices;
+}
+
+RandomCorrespondenceSampler::RandomCorrespondenceSampler(const std::size_t n_correspondences_, const std::size_t n_samples_)
+  : n_correspondences(n_correspondences_)
+  , n_samples(n_samples_)
+{
+  const unsigned min_samples = 4;
+  if (n_samples < min_samples)
+  {
+    std::stringstream ss;
+    ss << "Not enough samples specified: " << n_samples << " vs. " << min_samples << " required";
+    throw std::runtime_error(ss.str());
+  }
+  if (n_samples < n_correspondences)
+  {
+    std::stringstream ss;
+    ss << "Not enough correspondences provided: " << n_correspondences << " vs. " << n_samples << " required";
+    throw std::runtime_error(ss.str());
+  }
+}
+
+std::vector<std::size_t> RandomCorrespondenceSampler::getSampleCorrespondenceIndices() const
+{
+  // Create a random number generator with a uniform distribution across all indices
+  std::mt19937 rand_gen(std::random_device{}());
+  std::uniform_int_distribution<std::size_t> dist(0, n_correspondences - 1);
+  auto fn = [&rand_gen, &dist]() -> std::size_t { return dist(rand_gen); };
+
+  // Generate a vector of 4 random correspondence indices
+  std::vector<std::size_t> output(n_samples);
+  std::generate(output.begin(), output.end(), fn);
+
+  return output;
+}
+
 Eigen::VectorXd calculateHomographyError(const Correspondence2D3D::Set &correspondences,
                                          const CorrespondenceSampler &correspondence_sampler)
 {

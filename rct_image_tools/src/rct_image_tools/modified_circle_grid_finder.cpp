@@ -1,8 +1,7 @@
-#include "rct_image_tools/image_observation_finder.h"
-#include "rct_image_tools/circle_detector.h"
+#include <rct_image_tools/modified_circle_grid_finder.h>
+#include <rct_image_tools/circle_detector.h>
 #include <opencv2/calib3d.hpp>
-
-using ObservationPoints = std::vector<cv::Point2d>;
+#include <memory>
 
 static void drawPointLabel(const std::string& label, const cv::Point2d& position, const cv::Scalar& color, cv::Mat& image)
 {
@@ -18,7 +17,7 @@ static void drawPointLabel(const std::string& label, const cv::Point2d& position
   cv::circle(image, position, radius, color, -1);
 }
 
-static cv::Mat renderObservations(const cv::Mat& input, const ObservationPoints& observation_points,
+static cv::Mat renderObservations(const cv::Mat& input, const std::vector<cv::Point2d>& observation_points,
                                   const rct_image_tools::ModifiedCircleGridTarget& target)
 {
   cv::Mat output_image;
@@ -44,9 +43,9 @@ static cv::Mat renderObservations(const cv::Mat& input, const ObservationPoints&
 }
 
 template <typename DETECTOR_PTR>
-static bool extractKeyPoints(const ObservationPoints& centers, ObservationPoints& observation_points,
-                             cv::Ptr<DETECTOR_PTR>& detector_ptr, std::size_t rows, std::size_t cols, bool flipped,
-                             const cv::Mat& image)
+static std::vector<cv::Point2d> extractKeyPoints(const cv::Mat& image, const std::vector<cv::Point2d>& centers,
+                                                 cv::Ptr<DETECTOR_PTR>& detector_ptr, const std::size_t rows,
+                                                 const std::size_t cols, const bool flipped)
 {
   /*
     Note(cLewis):
@@ -88,7 +87,7 @@ static bool extractKeyPoints(const ObservationPoints& centers, ObservationPoints
 
   // OpenCV creates duplicate centers sometimes.  https://github.com/opencv/opencv/issues/4775
   // Make sure every center has a matching keypoint.  It may be sufficient just to check centers for duplicates.
-  ObservationPoints centers_tmp = centers;
+  std::vector<cv::Point2d> centers_tmp = centers;
   for (auto&& keypoint : keypoints)
   {
     auto it = std::find_if(centers_tmp.begin(), centers_tmp.end(),
@@ -101,11 +100,7 @@ static bool extractKeyPoints(const ObservationPoints& centers, ObservationPoints
   }
 
   if (!centers_tmp.empty())
-  {
-    // ROS_ERROR_STREAM("Centers and keypoints didn't match.  It's probably this: "
-    //               "https://github.com/opencv/opencv/issues/4775");
-    return false;
-  }
+    throw std::runtime_error("Centers and keypoints did not match. Check this issue: 'https://github.com/opencv/opencv/issues/4775'");
 
   // If a flipped pattern is found, flip the rows/columns
   std::size_t temp_rows = flipped ? cols : rows;
@@ -148,9 +143,7 @@ static bool extractKeyPoints(const ObservationPoints& centers, ObservationPoints
 
   // No keypoint match for one or more corners
   if (start_last_row_size < 0.0 || start_first_row_size < 0.0 || end_last_row_size < 0.0 || end_first_row_size < 0.0)
-  {
-    return false;
-  }
+    throw std::runtime_error("No keypoint match for one or more centers");
 
   /*
     Note(cLewis):
@@ -173,6 +166,10 @@ static bool extractKeyPoints(const ObservationPoints& centers, ObservationPoints
   {
     usual_ordering = false;
   }
+
+  // Construct the output object
+  std::vector<cv::Point2d> observation_points;
+  observation_points.reserve(centers.size());
 
   /*
     Note(cLewis): Largest circle at start of last row
@@ -307,24 +304,19 @@ static bool extractKeyPoints(const ObservationPoints& centers, ObservationPoints
 
   else
   {
-    return false;
+    throw std::runtime_error("No matching configuration");
   }
 
-  return true;
+  return observation_points;
 }
 
 template <typename PARAMS, typename DETECTOR_PTR, typename DETECTOR>
-static bool extractModifiedCircleGrid(const cv::Mat& image, const rct_image_tools::ModifiedCircleGridTarget& target,
-                                      ObservationPoints& observation_points, const PARAMS* set_params = nullptr)
+static std::vector<cv::Point2d> extractModifiedCircleGrid(const cv::Mat& image,
+                                                          const rct_image_tools::ModifiedCircleGridTarget& target,
+                                                          const PARAMS& params)
 {
-  PARAMS detector_params;
   cv::Ptr<DETECTOR_PTR> detector_ptr;
-  if (set_params)
-    detector_ptr = DETECTOR::create(*set_params);
-  else
-
-    detector_ptr = DETECTOR::create(detector_params);
-
+  detector_ptr = DETECTOR::create(params);
 
   bool flipped = false;
 
@@ -334,7 +326,7 @@ static bool extractModifiedCircleGrid(const cv::Mat& image, const rct_image_tool
   cv::Size pattern_size(cols, rows);
   cv::Size pattern_size_flipped(rows, cols);
 
-  ObservationPoints centers;
+  std::vector<cv::Point2d> centers;
 
   bool regular_pattern_found = cv::findCirclesGrid(image, pattern_size, centers,
                                                    cv::CALIB_CB_SYMMETRIC_GRID | cv::CALIB_CB_CLUSTERING, detector_ptr);
@@ -354,55 +346,59 @@ static bool extractModifiedCircleGrid(const cv::Mat& image, const rct_image_tool
   }
 
   if (centers.size() == 0)
-  {
-    return false;
-  }
+    throw std::runtime_error("Failed to find circle centers");
 
-  observation_points.reserve(centers.size());
-
-  return extractKeyPoints(centers, observation_points, detector_ptr, rows, cols, flipped, image);
+  return extractKeyPoints(image, centers, detector_ptr, rows, cols, flipped);
 }
 
-rct_image_tools::ModifiedCircleGridObservationFinder::ModifiedCircleGridObservationFinder(
-    const ModifiedCircleGridTarget& target)
-  : target_(target)
+namespace rct_image_tools
 {
-  assert(target.cols != 0);
-  assert(target.rows != 0);
-}
-
-boost::optional<std::vector<Eigen::Vector2d>>
-rct_image_tools::ModifiedCircleGridObservationFinder::findObservations(const cv::Mat& image) const
+ModifiedCircleGridTargetFinder::ModifiedCircleGridTargetFinder(const ModifiedCircleGridTarget& target,
+                                                               const CircleDetectorParams& params)
+  : TargetFinder()
+  , target_(target)
+  , params_(params)
 {
-  return findObservations(image, nullptr);
+  assert(target_.cols > 0);
+  assert(target_.rows > 0);
 }
 
-boost::optional<std::vector<Eigen::Vector2d>> rct_image_tools::ModifiedCircleGridObservationFinder::findObservations(
-    const cv::Mat& image, const CircleDetectorParams* params) const
+ModifiedCircleGridTargetFinder::ModifiedCircleGridTargetFinder(const ModifiedCircleGridTarget& target)
+  : ModifiedCircleGridTargetFinder(target, CircleDetectorParams())
+{
+}
+
+TargetFeatures ModifiedCircleGridTargetFinder::findTargetFeatures(const cv::Mat& image) const
 {
   // Call modified circle finder
-  ObservationPoints points;
+  std::vector<cv::Point2d> points =
+      extractModifiedCircleGrid<CircleDetectorParams, CircleDetector, CircleDetector>(image, target_, params_);
 
-  if (!extractModifiedCircleGrid<CircleDetectorParams, CircleDetector, CircleDetector>(image, target_, points, params))
+  // Construct the output map
+  TargetFeatures observations;
+  for (unsigned i = 0; i < points.size(); ++i)
   {
-    // If we fail to detect the grid, then return an empty optional
-    return {};
+    const cv::Point2d& pt = points.at(i);
+    VectorEigenVector<2> v_obs;
+    v_obs.push_back(Eigen::Vector2d(pt.x, pt.y));
+    observations.emplace(i, v_obs);
   }
 
-  // Otherwise, package the observation results
-  std::vector<Eigen::Vector2d> observations(points.size());
-  std::transform(points.begin(), points.end(), observations.begin(),
-                 [](const cv::Point2d& p) { return Eigen::Vector2d(p.x, p.y); });
-
-  return boost::optional<std::vector<Eigen::Vector2d>>(observations);
+  return observations;
 }
 
-cv::Mat
-rct_image_tools::ModifiedCircleGridObservationFinder::drawObservations(const cv::Mat& image,
-                                                          const std::vector<Eigen::Vector2d>& observations) const
+cv::Mat ModifiedCircleGridTargetFinder::drawTargetFeatures(const cv::Mat& image,
+                                                           const TargetFeatures& target_features) const
 {
-  ObservationPoints cv_obs(observations.size());
-  std::transform(observations.begin(), observations.end(), cv_obs.begin(),
-                 [](const Eigen::Vector2d& o) { return cv::Point2d(o.x(), o.y()); });
+  std::vector<cv::Point2d> cv_obs;
+  cv_obs.reserve(target_features.size());
+  for (auto it = target_features.begin(); it != target_features.end(); ++it)
+  {
+    const Eigen::Vector2d& pt = it->second.at(0);
+    cv_obs.push_back(cv::Point2d(pt.x(), pt.y()));
+  }
+
   return renderObservations(image, cv_obs, target_);
 }
+
+} // namespace rct_image_tools

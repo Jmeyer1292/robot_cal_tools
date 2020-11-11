@@ -1,5 +1,6 @@
 #pragma once
 #include <rct_optimizations/types.h>
+#include <random>
 
 namespace rct_optimizations
 {
@@ -9,46 +10,44 @@ namespace rct_optimizations
  */
 struct CorrespondenceSampler
 {
+  virtual ~CorrespondenceSampler() = default;
   virtual std::vector<std::size_t> getSampleCorrespondenceIndices() const = 0;
 };
 
 /**
- * @brief A correspondence sampler specifically for modified circle grid targets
+ * @brief A correspondence sampler specifically for grid targets
  */
-struct ModifiedCircleGridCorrespondenceSampler : CorrespondenceSampler
+struct GridCorrespondenceSampler : CorrespondenceSampler
 {
-  ModifiedCircleGridCorrespondenceSampler(const std::size_t rows_, const std::size_t cols_)
-    : rows(rows_)
-    , cols(cols_)
-  {
-  }
+  GridCorrespondenceSampler(const std::size_t rows_, const std::size_t cols_, const std::size_t stride_ = 1);
 
-  virtual std::vector<std::size_t> getSampleCorrespondenceIndices() const final override
-  {
-    const std::size_t n_samples = 4;
+  virtual std::vector<std::size_t> getSampleCorrespondenceIndices() const final override;
 
-    // Make sure there are at least two times as many points as the number of sample points
-    if ((rows * cols / 2) < n_samples)
-    {
-      std::stringstream ss;
-      ss << "Number of correspondences does not exceed minimum of " << n_samples * 2 << " (" << rows * cols << " provided)";
-      throw std::runtime_error(ss.str());
-    }
+  /** @brief Number of rows in the target */
+  const std::size_t rows;
+  /** @brief Number of columns in the target */
+  const std::size_t cols;
+  /**
+   * @brief Number elements associated with each grid point (i.e. depth)
+   * ArUco grid targets, for example, have 4 observations associated with each element in the grid, so the stride would be 4
+   */
+  const std::size_t stride;
+};
 
-    std::vector<std::size_t> correspondence_indices;
-    correspondence_indices.reserve(n_samples);
+/**
+ * @brief A correspondence sampler that randomly chooses a specifiable number of correspondence indices with a uniform probablility to use in generating a homography transform
+ */
+struct RandomCorrespondenceSampler : CorrespondenceSampler
+{
+  RandomCorrespondenceSampler(const std::size_t n_correspondences_, const std::size_t n_samples_);
 
-    // For a modified circle target grid, the sample points should be the corners of the grid
-    correspondence_indices.push_back(0); // upper left point
-    correspondence_indices.push_back(rows - 1); // upper right point
-    correspondence_indices.push_back(rows * cols - cols - 1); // lower left point
-    correspondence_indices.push_back(rows * cols - 1); // lower right point
+  virtual std::vector<std::size_t> getSampleCorrespondenceIndices() const final override;
 
-    return correspondence_indices;
-  }
-
-  std::size_t rows;
-  std::size_t cols;
+  /** @brief Number of total correspondences */
+  const std::size_t n_correspondences;
+  /** @brief Number of samples with which to calculate the homography transform. This number must be at least 4.
+   * Typically a lower number of samples (i.e. 4) does not produce an accurate homography transform; one quarter to half the total number of correspondences is a good rule of thumb */
+  const std::size_t n_samples;
 };
 
 /**

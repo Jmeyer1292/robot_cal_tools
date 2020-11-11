@@ -3,13 +3,15 @@
 
 #include <opencv2/aruco/charuco.hpp>
 
-rct_image_tools::CharucoGridBoardObservationFinder::CharucoGridBoardObservationFinder(const CharucoGridTarget& target)
-  : target_(target)
+namespace rct_image_tools
+{
+CharucoGridBoardTargetFinder::CharucoGridBoardTargetFinder(const CharucoGridTarget& target)
+  : TargetFinder()
+  , target_(target)
 {
 }
 
-std::map<int, Eigen::Vector2d>
-rct_image_tools::CharucoGridBoardObservationFinder::findObservations(const cv::Mat& image) const
+TargetFeatures CharucoGridBoardTargetFinder::findTargetFeatures(const cv::Mat& image) const
 {
   // Create a generic set of parameters
   // TODO: expose the setting of these parameters
@@ -20,6 +22,11 @@ rct_image_tools::CharucoGridBoardObservationFinder::findObservations(const cv::M
   std::vector<std::vector<cv::Point2f>> marker_corners;
   cv::aruco::detectMarkers(image, target_.board->dictionary, marker_corners, marker_ids, parameters);
 
+  if (marker_ids.empty())
+  {
+    throw std::runtime_error("No ArUco markers were detected");
+  }
+
   // Detect the chessboard intersections given the observed ArUco markers
   std::vector<cv::Point2f> charuco_corners;
   std::vector<int> charuco_ids;
@@ -27,34 +34,35 @@ rct_image_tools::CharucoGridBoardObservationFinder::findObservations(const cv::M
                                                               charuco_corners, charuco_ids);
 
   // Create the map of observed features
-  std::map<int, Eigen::Vector2d> features;
-  for (int i = 0; i < detected_corners; i++)
+  TargetFeatures target_features;
+  for (unsigned i = 0; i < static_cast<unsigned>(detected_corners); i++)
   {
     const cv::Point2f& corner = charuco_corners.at(i);
-    Eigen::Vector2d obs_pts(corner.x, corner.y);
-    features.emplace(charuco_ids[i], obs_pts);
+    VectorEigenVector<2> v_obs;
+    v_obs.push_back(Eigen::Vector2d (corner.x, corner.y));
+    target_features.emplace(static_cast<unsigned>(charuco_ids[i]), v_obs);
   }
 
-  return features;
+  return target_features;
 }
 
-cv::Mat rct_image_tools::CharucoGridBoardObservationFinder::drawObservations(
-    const cv::Mat& image, const std::map<int, Eigen::Vector2d>& observations) const
+cv::Mat CharucoGridBoardTargetFinder::drawTargetFeatures(const cv::Mat& image,
+                                                         const TargetFeatures& target_features) const
 {
   std::vector<int> charuco_ids;
-  charuco_ids.reserve(observations.size());
+  charuco_ids.reserve(target_features.size());
 
   std::vector<cv::Point2f> charuco_corners;
-  charuco_corners.reserve(observations.size());
+  charuco_corners.reserve(target_features.size());
 
-  for(auto it = observations.begin(); it != observations.end(); ++it)
+  for(auto it = target_features.begin(); it != target_features.end(); ++it)
   {
     // Add the ID
-    charuco_ids.push_back(it->first);
+    charuco_ids.push_back(static_cast<int>(it->first));
 
     // Add the image coordinates
-    cv::Point2f cv_obs(it->second.x(), it->second.y());
-    charuco_corners.push_back(cv_obs);
+    const Eigen::Vector2f& pt = it->second.at(0).cast<float>();
+    charuco_corners.push_back(cv::Point2f(pt.x(), pt.y()));
   }
 
   // Draw the detected corners
@@ -62,3 +70,6 @@ cv::Mat rct_image_tools::CharucoGridBoardObservationFinder::drawObservations(
 
   return image;
 }
+
+} // namespace rct_image_tools
+

@@ -3,7 +3,7 @@
 #include <opencv2/imgproc.hpp>
 #include <Eigen/Dense>
 #include <rct_optimizations/ceres_math_utilities.h>
-#include <rct_image_tools/image_observation_finder.h>
+#include <rct_image_tools/modified_circle_grid_finder.h>
 #include <vector>
 
 namespace rct_image_tools
@@ -54,48 +54,27 @@ void drawReprojections(const std::vector<cv::Point2d> &reprojections,
 }
 
 /**
- * @brief Get the correspondence set given observations in the image and 3d target points
- * @param observations Observation in the image frame
+ * @brief Get the correspondence set given target features in the image and 3d target points
+ * @param observed features - Observed target features in the image frame
  * @param target_points The 3d target points
  * @return The correspondence set
  */
-inline
-rct_optimizations::Correspondence2D3D::Set getCorrespondenceSet(const std::vector<Eigen::Vector2d> &observations, const std::vector<Eigen::Vector3d> &target_points)
+inline rct_optimizations::Correspondence2D3D::Set getCorrespondenceSet(
+    const std::vector<Eigen::Vector2d>& observed_features, const std::vector<Eigen::Vector3d>& target_points)
 {
   rct_optimizations::Correspondence2D3D::Set obs_set;
 
   //// Create the correspondence pairs
-  assert(observations.size() == target_points.size());
+  assert(observed_features.size() == target_points.size());
 
   // So for each dot:
-  for (std::size_t j = 0; j < observations.size(); ++j)
+  for (std::size_t j = 0; j < observed_features.size(); ++j)
   {
     rct_optimizations::Correspondence2D3D pair;
-    pair.in_image = observations.at(j); // The obs finder and target define their points in the same order!
+    pair.in_image = observed_features.at(j); // The obs finder and target define their points in the same order!
     pair.in_target = target_points.at(j);
 
     obs_set.push_back(pair);
-  }
-
-  return obs_set;
-}
-
-/**
- * @brief Get a correspondence set given the observation finder and an image
- * @param obs_finder The observation finder
- * @param image The image to search for observation
- * @return A correspondence set
- */
-inline
-rct_optimizations::Correspondence2D3D::Set getCorrespondenceSet(const rct_image_tools::ModifiedCircleGridObservationFinder &obs_finder, const cv::Mat& image)
-{
-  const rct_image_tools::ModifiedCircleGridTarget& target = obs_finder.target();
-  auto maybe_obs = obs_finder.findObservations(image);
-
-  rct_optimizations::Correspondence2D3D::Set obs_set;
-  if (maybe_obs)
-  {
-    obs_set = getCorrespondenceSet(*maybe_obs, target.createPoints());
   }
 
   return obs_set;
