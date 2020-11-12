@@ -36,13 +36,13 @@ target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
   ${Boost_INCLUDE_DIRS}
 )
 target_link_libraries(${PROJECT_NAME} PUBLIC
+  ${Boost_LIBRARIES}
   opencv_core
   opencv_aruco
   opencv_features2d
   opencv_imgproc
   opencv_highgui
   yaml-cpp
-  ${Boost_LIBRARIES}
   Eigen3::Eigen
   rct::rct_optimizations
 )
