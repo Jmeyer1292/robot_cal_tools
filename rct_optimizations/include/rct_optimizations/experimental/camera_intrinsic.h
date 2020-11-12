@@ -3,6 +3,7 @@
 
 #include <rct_optimizations/covariance_types.h>
 #include "rct_optimizations/types.h"
+#include "boost/optional.hpp"
 
 namespace rct_optimizations
 {
