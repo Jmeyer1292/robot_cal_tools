@@ -16,6 +16,7 @@
 
   <license>Apache 2.0</license>
 
+  <depend>boost</depend>
   <depend>libceres-dev</depend>
   <depend>rct_common</depend>
 
