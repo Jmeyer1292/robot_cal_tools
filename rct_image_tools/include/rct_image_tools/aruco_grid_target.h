@@ -22,6 +22,12 @@ struct ArucoGridTarget : Target
   ArucoGridTarget(const int rows, const int cols, const float aruco_marker_dim, const float marker_gap,
                   const int dictionary_id = cv::aruco::DICT_6X6_250);
 
+  /**
+   * @brief Constructor
+   * @param board_in - OpenCV ArUco GridBoard object defining rows, columns, marker size, and marker spacing
+   */
+  ArucoGridTarget(const cv::Ptr<cv::aruco::GridBoard>& board_in);
+
   bool operator==(const ArucoGridTarget& other) const;
 
   /**
@@ -37,5 +43,4 @@ struct ArucoGridTarget : Target
   /** @brief Map of 3D ArUco tag corners with corresponding IDs */
   std::map<int, std::vector<Eigen::Vector3d>> points;
 };
-
 } // namespace rct_image_tools
