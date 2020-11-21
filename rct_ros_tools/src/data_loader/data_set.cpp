@@ -1,13 +1,11 @@
-#include "rct_ros_tools/data_set.h"
-#include "rct_ros_tools/parameter_loaders.h"
-#include "rct_image_tools/image_utils.h"
-
-#include <yaml-cpp/yaml.h>
-#include <ros/console.h>
-
-#include <opencv2/highgui.hpp>
+#include <rct_ros_tools/data_set.h>
+#include <rct_ros_tools/parameter_loaders.h>
+#include <rct_image_tools/image_utils.h>
+#include <rct_optimizations/serialization/eigen.h>
 
 #include <fstream>
+#include <opencv2/highgui.hpp>
+#include <ros/console.h>
 #include <sys/stat.h>
 
 static std::string rootPath(const std::string& filename)
@@ -52,7 +50,6 @@ rct_ros_tools::ExtrinsicDataSet parse(const YAML::Node& root, const std::string&
   return data;
 }
 
-
 boost::optional<rct_ros_tools::ExtrinsicDataSet> rct_ros_tools::parseFromFile(const std::string &path)
 {
   try
@@ -70,17 +67,7 @@ boost::optional<rct_ros_tools::ExtrinsicDataSet> rct_ros_tools::parseFromFile(co
 
 void writePose(const std::string& path, const Eigen::Isometry3d& pose)
 {
-  YAML::Node root;
-  root["x"] = pose.translation().x();
-  root["y"] = pose.translation().y();
-  root["z"] = pose.translation().z();
-
-  Eigen::Quaterniond q (pose.linear());
-  root["qx"] = q.x();
-  root["qy"] = q.y();
-  root["qz"] = q.z();
-  root["qw"] = q.w();
-
+  YAML::Node root(pose);
   std::ofstream ofh (path);
   ofh << root;
 }
