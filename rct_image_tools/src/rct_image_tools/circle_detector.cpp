@@ -82,6 +82,12 @@ DetectionResult findCircles(const cv::Mat& image, const double threshold,
   std::vector<std::vector<cv::Point>> contours;
   cv::findContours(binarized_image, contours, cv::RETR_LIST, cv::CHAIN_APPROX_NONE);
 
+  // Remove all contours with less than 5 points (OpenCV requirement for ellipse fitting)
+  contours.erase(
+    std::remove_if(contours.begin(), contours.end(), [](const std::vector<cv::Point> &contour) {
+      return contour.size() < 5;
+    }), contours.end());
+
   // Debug
   cv::Mat debug_img;
   cv::cvtColor(binarized_image, debug_img, cv::COLOR_GRAY2RGB);
