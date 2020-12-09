@@ -87,7 +87,35 @@ public:
 class CharucoFinderTest : public TargetFinderTestFixture
 {
 public:
-  CharucoFinderTest() : TargetFinderTestFixture(), target(7, 5, 0.02f, 0.01f, 10)
+  CharucoFinderTest() : TargetFinderTestFixture(), target(7, 5, 0.02f, 0.01f, cv::aruco::DICT_6X6_250)
+  {
+    finder = std::make_shared<CharucoGridBoardTargetFinder>(target);
+  }
+
+  virtual void SetUp() override
+  {
+    filename = std::string(TEST_SUPPORT_DIR) + "charuco_unobscured.jpg";
+
+    // Expect all corners to be detected
+    expected_ids.resize(target.board->chessboardCorners.size());
+    std::iota(expected_ids.begin(), expected_ids.end(), 0);
+
+    // Set up the homography check correspondence sampler
+    auto grid_size = target.board->getChessboardSize();
+    corr_sampler =
+        std::make_shared<rct_optimizations::GridCorrespondenceSampler>(grid_size.height - 1, grid_size.width - 1, 1);
+    homography_error_threshold = 1.0;
+  }
+
+  const CharucoGridTarget target;
+};
+
+class CharucoFinderPredefinedBoardTest : public TargetFinderTestFixture
+{
+public:
+  CharucoFinderPredefinedBoardTest()
+    : TargetFinderTestFixture()
+    , target(cv::aruco::CharucoBoard::create(5, 7, 0.02f, 0.01f, cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250)))
   {
     finder = std::make_shared<CharucoGridBoardTargetFinder>(target);
   }
@@ -206,6 +234,11 @@ TEST_F(ModifiedCircleGridFinderTest, findTargetFeatures)
 }
 
 TEST_F(CharucoFinderTest, findTargetFeatures)
+{
+  this->runTest();
+}
+
+TEST_F(CharucoFinderPredefinedBoardTest, findTargetFeatures)
 {
   this->runTest();
 }

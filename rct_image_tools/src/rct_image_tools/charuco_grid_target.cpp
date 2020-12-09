@@ -1,22 +1,37 @@
 #include <rct_image_tools/charuco_grid_target.h>
 
-namespace rct_image_tools
+namespace
 {
-CharucoGridTarget::CharucoGridTarget(const int rows, const int cols, const float chessboard_dim,
-                                     const float aruco_marker_dim, const int dictionary_id)
+/**
+ * @brief For a given ChArUco board, create a map of chessboard intersection coordinates keyed to marker IDs.
+ * @param board - ChArUco board to use when generating the map
+ * @return Resulting map. Keys are the indices of chessboard intersections in the board. Values are board-relative coordinates for each intersection.
+ */
+std::map<unsigned, Eigen::Vector3d> mapCharucoIdsToObjPts(const cv::Ptr<cv::aruco::CharucoBoard> &board)
 {
-  cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(dictionary_id);
-
-  // Create charuco board object
-  board = cv::aruco::CharucoBoard::create(cols, rows, chessboard_dim, aruco_marker_dim, dictionary);
-
-  // Create a map of chessboard intersection IDs and their location on the board
+  std::map<unsigned, Eigen::Vector3d> points;
   for (std::size_t i = 0; i < board->chessboardCorners.size(); i++)
   {
     const auto& corner = board->chessboardCorners.at(i);
     Eigen::Vector3f pt(corner.x, corner.y, corner.z);
     points.emplace(i, pt.cast<double>());
   }
+  return points;
+}
+}
+
+namespace rct_image_tools
+{
+CharucoGridTarget::CharucoGridTarget(const int rows, const int cols, const float chessboard_dim,
+                                     const float aruco_marker_dim, const int dictionary_id)
+  : CharucoGridTarget::CharucoGridTarget(cv::aruco::CharucoBoard::create(cols, rows, chessboard_dim, aruco_marker_dim, cv::aruco::getPredefinedDictionary(dictionary_id)))
+{
+}
+
+CharucoGridTarget::CharucoGridTarget(const cv::Ptr<cv::aruco::CharucoBoard>& board_in)
+  : board(board_in)
+  , points(mapCharucoIdsToObjPts(board))
+{
 }
 
 bool CharucoGridTarget::operator==(const CharucoGridTarget& other) const
