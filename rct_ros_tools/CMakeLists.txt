@@ -87,7 +87,7 @@ target_link_libraries(${PROJECT_NAME}_cmd
 ## Testing ##
 #############
 
-if(CATKIN_ENABLE_TESTING)
+if(CATKIN_ENABLE_TESTING AND RCT_BUILD_TESTS)
   find_package(rostest REQUIRED)
   find_package(GTest REQUIRED)
   add_rostest_gtest(${PROJECT_NAME}_target_loader_utest test/target_loader.test test/target_loader_utest.cpp)
