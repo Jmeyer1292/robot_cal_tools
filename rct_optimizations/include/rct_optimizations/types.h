@@ -23,6 +23,8 @@ struct CameraIntrinsics
   const double& fy() const { return values[1]; }
   const double& cx() const { return values[2]; }
   const double& cy() const { return values[3]; }
+
+  inline bool operator==(const CameraIntrinsics& rhs) const { return values == rhs.values; }
 };
 
 /**
@@ -69,6 +71,13 @@ struct Correspondence
   {
   }
 
+  Correspondence& operator=(const Correspondence& rhs) = default;
+
+  inline bool operator==(const Correspondence& rhs) const
+  {
+    return in_image.isApprox(rhs.in_image) && in_target.isApprox(rhs.in_target);
+  }
+
   /** @brief N-dimensional location of the feature relative to the sensor */
   Eigen::Matrix<double, IMAGE_DIM, 1> in_image;
 
@@ -112,6 +121,14 @@ struct Observation
   {
   }
 
+  Observation& operator=(const Observation& rhs) = default;
+
+  inline bool operator==(const Observation& rhs) const
+  {
+    return to_camera_mount.isApprox(rhs.to_camera_mount) && to_target_mount.isApprox(rhs.to_target_mount) &&
+           correspondence_set == rhs.correspondence_set;
+  }
+
   /** @brief A set of feature correspondences between the sensor output and target */
   typename Correspondence<IMAGE_DIM, WORLD_DIM>::Set correspondence_set;
   /** @brief The transform to the frame to which the camera is mounted. */
@@ -131,6 +148,12 @@ template<Eigen::Index IMAGE_DIM, Eigen::Index WORLD_DIM>
 struct KinematicObservation
 {
   using Set = std::vector<KinematicObservation>;
+
+  inline bool operator==(const KinematicObservation& rhs) const
+  {
+    return camera_chain_joints.isApprox(rhs.camera_chain_joints) && target_chain_joints.isApprox(rhs.target_chain_joints) &&
+        correspondence_set == correspondence_set;
+  }
 
   /** @brief A set of feature correspondences between the sensor output and target */
   typename Correspondence<IMAGE_DIM, WORLD_DIM>::Set correspondence_set;
@@ -158,6 +181,12 @@ using KinObservation3D3D = KinematicObservation<3, 3>;
 struct KinematicMeasurement
 {
   using Set = std::vector<KinematicMeasurement>;
+
+  inline bool operator==(const KinematicMeasurement& rhs) const
+  {
+    return camera_to_target.isApprox(rhs.camera_to_target) && camera_chain_joints.isApprox(rhs.camera_chain_joints) &&
+           target_chain_joints.isApprox(rhs.target_chain_joints);
+  }
 
   /** @brief A measurement of the full 6-DoF target pose as observed by the camera */
   Eigen::Isometry3d camera_to_target;
