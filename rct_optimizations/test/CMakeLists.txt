@@ -109,6 +109,13 @@ rct_gtest_discover_tests(${PROJECT_NAME}_dh_chain_kinematic_measurement_tests)
 add_dependencies(${PROJECT_NAME}_dh_chain_kinematic_measurement_tests ${PROJECT_NAME})
 add_dependencies(run_tests ${PROJECT_NAME}_dh_chain_kinematic_measurement_tests)
 
+# DH Chain Kinematic Measurement Calibration
+add_executable(${PROJECT_NAME}_serialization_tests serialization_utest.cpp)
+target_link_libraries(${PROJECT_NAME}_serialization_tests PRIVATE ${PROJECT_NAME}_test_support GTest::GTest GTest::Main)
+rct_gtest_discover_tests(${PROJECT_NAME}_serialization_tests)
+add_dependencies(${PROJECT_NAME}_serialization_tests ${PROJECT_NAME})
+add_dependencies(run_tests ${PROJECT_NAME}_serialization_tests)
+
 # Install the test executables so they can be run independently later if needed
 install(
   TARGETS
@@ -126,6 +133,7 @@ install(
     ${PROJECT_NAME}_dh_chain_kinematic_calibration_tests
     ${PROJECT_NAME}_local_parameterization_tests
     ${PROJECT_NAME}_dh_chain_kinematic_measurement_tests
+    ${PROJECT_NAME}_serialization_tests
   RUNTIME DESTINATION bin/tests
   LIBRARY DESTINATION lib/tests
   ARCHIVE DESTINATION lib/tests
