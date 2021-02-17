@@ -75,7 +75,7 @@ struct convert<rct_optimizations::Observation<SENSOR_DIM, WORLD_DIM>>
 
   static bool decode(const YAML::Node &node, T &obs)
   {
-    if (node.size() != 2)
+    if (node.size() != 3)
       return false;
 
     obs.correspondence_set = node["correspondences"].as<decltype(obs.correspondence_set)>();

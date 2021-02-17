@@ -79,8 +79,8 @@ struct convert<rct_optimizations::ExtrinsicHandEyeResult>
     node["camera_mount_to_camera_pos"] = rhs.camera_mount_to_camera;
 
     // Serialize transform orientation in RPY for convenience
-    node["target_mount_to_target_rpy"] = rhs.target_mount_to_target.rotation().eulerAngles(2, 1, 0);
-    node["camera_mount_to_camera_rpy"] = rhs.camera_mount_to_camera.rotation().eulerAngles(2, 1, 0);
+    node["target_mount_to_target_rpy"] = Eigen::Vector3d (rhs.target_mount_to_target.rotation().eulerAngles(2, 1, 0).reverse());
+    node["camera_mount_to_camera_rpy"] = Eigen::Vector3d(rhs.camera_mount_to_camera.rotation().eulerAngles(2, 1, 0).reverse());
     return node;
   }
 };
