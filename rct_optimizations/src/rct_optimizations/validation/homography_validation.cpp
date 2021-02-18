@@ -51,10 +51,10 @@ RandomCorrespondenceSampler::RandomCorrespondenceSampler(const std::size_t n_cor
     ss << "Not enough samples specified: " << n_samples << " vs. " << min_samples << " required";
     throw std::runtime_error(ss.str());
   }
-  if (n_samples < n_correspondences)
+  if (n_samples > n_correspondences)
   {
     std::stringstream ss;
-    ss << "Not enough correspondences provided: " << n_correspondences << " vs. " << n_samples << " required";
+    ss << "Number of correspondences (" << n_correspondences << ") must exceed number of samples (" << n_samples << ")";
     throw std::runtime_error(ss.str());
   }
 }
