@@ -3,6 +3,17 @@
 #include <rct_optimizations/extrinsic_hand_eye.h>
 #include <rct_optimizations/serialization/types.h>
 
+namespace
+{
+template <typename FloatT>
+Eigen::Transform<FloatT, 3, Eigen::Isometry> toIsometry(const Eigen::Vector3d& trans, const Eigen::Vector3d& euler_zyx)
+{
+  return Eigen::Translation3d(trans) * Eigen::AngleAxisd(euler_zyx(2), Eigen::Vector3d::UnitZ()) *
+         Eigen::AngleAxisd(euler_zyx(1), Eigen::Vector3d::UnitY()) *
+         Eigen::AngleAxisd(euler_zyx(0), Eigen::Vector3d::UnitX());
+}
+} // namespace anonymous
+
 namespace YAML
 {
 template<>
@@ -75,13 +86,33 @@ struct convert<rct_optimizations::ExtrinsicHandEyeResult>
     node["converged"] = rhs.converged;
     node["initial_cost_per_obs"] = rhs.initial_cost_per_obs;
     node["final_cost_per_obs"] = rhs.final_cost_per_obs;
-    node["target_mount_to_target_pos"] = rhs.target_mount_to_target;
-    node["camera_mount_to_camera_pos"] = rhs.camera_mount_to_camera;
+    node["target_mount_to_target_pos"] = Eigen::Vector3d(rhs.target_mount_to_target.translation());
+    node["camera_mount_to_camera_pos"] = Eigen::Vector3d(rhs.camera_mount_to_camera.translation());
 
     // Serialize transform orientation in RPY for convenience
     node["target_mount_to_target_rpy"] = Eigen::Vector3d (rhs.target_mount_to_target.rotation().eulerAngles(2, 1, 0).reverse());
     node["camera_mount_to_camera_rpy"] = Eigen::Vector3d(rhs.camera_mount_to_camera.rotation().eulerAngles(2, 1, 0).reverse());
     return node;
+  }
+
+  static bool decode(const YAML::Node& node, T& rhs)
+  {
+    if (node.size() != 7)
+      return false;
+
+    rhs.converged = node["converged"].as<decltype(rhs.converged)>();
+    rhs.initial_cost_per_obs = node["initial_cost_per_obs"].as<decltype(rhs.initial_cost_per_obs)>();
+    rhs.final_cost_per_obs = node["final_cost_per_obs"].as<decltype(rhs.final_cost_per_obs)>();
+
+    Eigen::Vector3d target_mount_to_target_pos = node["target_mount_to_target_pos"].as<Eigen::Vector3d>();
+    Eigen::Vector3d target_mount_to_target_rpy = node["target_mount_to_target_rpy"].as<Eigen::Vector3d>().reverse();
+    rhs.target_mount_to_target = toIsometry<double>(target_mount_to_target_pos, target_mount_to_target_rpy);
+
+    Eigen::Vector3d camera_mount_to_camera_pos = node["camera_mount_to_camera_pos"].as<Eigen::Vector3d>();
+    Eigen::Vector3d camera_mount_to_camera_rpy = node["camera_mount_to_camera_rpy"].as<Eigen::Vector3d>().reverse();
+    rhs.camera_mount_to_camera = toIsometry<double>(camera_mount_to_camera_pos, camera_mount_to_camera_rpy);
+
+    return true;
   }
 };
 
