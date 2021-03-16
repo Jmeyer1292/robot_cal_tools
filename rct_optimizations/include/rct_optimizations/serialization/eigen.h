@@ -5,10 +5,10 @@
 
 namespace YAML
 {
-template<typename V>
-struct convert<Eigen::Matrix<V, 2, 1>>
+template<typename FloatT>
+struct convert<Eigen::Matrix<FloatT, 2, 1>>
 {
-  using T = Eigen::Matrix<V, 2, 1>;
+  using T = Eigen::Matrix<FloatT, 2, 1>;
 
   static Node encode(const T &val)
   {
@@ -23,17 +23,17 @@ struct convert<Eigen::Matrix<V, 2, 1>>
     if (node.size() != 2)
       return false;
 
-    val.x() = node["x"].as<V>();
-    val.y() = node["y"].as<V>();
+    val.x() = node["x"].as<FloatT>();
+    val.y() = node["y"].as<FloatT>();
 
     return true;
   }
 };
 
-template<typename V>
-struct convert<Eigen::Matrix<V, 3, 1>>
+template<typename FloatT>
+struct convert<Eigen::Matrix<FloatT, 3, 1>>
 {
-  using T = Eigen::Matrix<V, 3, 1>;
+  using T = Eigen::Matrix<FloatT, 3, 1>;
 
   static Node encode(const T &val)
   {
@@ -49,18 +49,18 @@ struct convert<Eigen::Matrix<V, 3, 1>>
     if (node.size() != 3)
       return false;
 
-    val.x() = node["x"].as<V>();
-    val.y() = node["y"].as<V>();
-    val.z() = node["z"].as<V>();
+    val.x() = node["x"].as<FloatT>();
+    val.y() = node["y"].as<FloatT>();
+    val.z() = node["z"].as<FloatT>();
 
     return true;
   }
 };
 
-template<typename V>
-struct convert<Eigen::Transform<V, 3, Eigen::Isometry>>
+template<typename FloatT>
+struct convert<Eigen::Transform<FloatT, 3, Eigen::Isometry>>
 {
-  using T = Eigen::Transform<V, 3, Eigen::Isometry>;
+  using T = Eigen::Transform<FloatT, 3, Eigen::Isometry>;
 
   static Node encode(const T &val)
   {
@@ -69,7 +69,7 @@ struct convert<Eigen::Transform<V, 3, Eigen::Isometry>>
     node["y"] = val.translation().y();
     node["z"] = val.translation().z();
 
-    Eigen::Quaternion<V> quat(val.linear());
+    Eigen::Quaternion<FloatT> quat(val.linear());
     node["qw"] = quat.w();
     node["qx"] = quat.x();
     node["qy"] = quat.y();
@@ -83,18 +83,18 @@ struct convert<Eigen::Transform<V, 3, Eigen::Isometry>>
     if (node.size() != 7)
       return false;
 
-    Eigen::Matrix<V, 3, 1> trans;
-    trans.x() = node["x"].as<V>();
-    trans.y() = node["y"].as<V>();
-    trans.z() = node["z"].as<V>();
+    Eigen::Matrix<FloatT, 3, 1> trans;
+    trans.x() = node["x"].as<FloatT>();
+    trans.y() = node["y"].as<FloatT>();
+    trans.z() = node["z"].as<FloatT>();
 
-    Eigen::Quaternion<V> quat;
-    quat.w() = node["qw"].as<V>();
-    quat.x() = node["qx"].as<V>();
-    quat.y() = node["qy"].as<V>();
-    quat.z() = node["qz"].as<V>();
+    Eigen::Quaternion<FloatT> quat;
+    quat.w() = node["qw"].as<FloatT>();
+    quat.x() = node["qx"].as<FloatT>();
+    quat.y() = node["qy"].as<FloatT>();
+    quat.z() = node["qz"].as<FloatT>();
 
-    val = Eigen::Translation<V, 3>(trans) * quat;
+    val = Eigen::Translation<FloatT, 3>(trans) * quat;
 
     return true;
   }
