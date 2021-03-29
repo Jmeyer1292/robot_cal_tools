@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.5.0)
 project(rct_examples)
+set (CMAKE_CXX_STANDARD 14)
 
-add_compile_options(-std=c++11 -Wall -Wextra)
+add_compile_options(-Wall -Wextra)
 
 find_package(rct_optimizations REQUIRED)
 find_package(rct_image_tools REQUIRED)
