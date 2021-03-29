@@ -19,5 +19,7 @@
   <depend>std_srvs</depend>
   <depend>tf2_ros</depend>
   <depend>yaml-cpp</depend>
+  <test_depend>rosunit</test_depend>
+
 
 </package>
