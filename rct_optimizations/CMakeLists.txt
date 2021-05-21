@@ -4,6 +4,7 @@ project(rct_optimizations VERSION 0.1.0 LANGUAGES CXX)
 find_package(rct_common REQUIRED)
 find_package(Boost REQUIRED)
 find_package(Ceres REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 add_library(${PROJECT_NAME} SHARED
   # Utilities
@@ -45,6 +46,7 @@ target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
 target_link_libraries(${PROJECT_NAME} PUBLIC
   ${Boost_LIBRARIES}
   ${CERES_LIBRARIES}
+  yaml-cpp
 )
 
 if(RCT_BUILD_TESTS)

@@ -1,6 +1,8 @@
-#include "rct_ros_tools/parameter_loaders.h"
+#include <rct_ros_tools/parameter_loaders.h>
 #include <rct_ros_tools/loader_utils.h>
 #include <rct_ros_tools/exceptions.h>
+#include <rct_optimizations/serialization/eigen.h>
+#include <rct_optimizations/serialization/types.h>
 
 namespace rct_ros_tools
 {
@@ -38,13 +40,7 @@ rct_optimizations::CameraIntrinsics loadIntrinsics(const std::string& path)
   try
   {
     YAML::Node n = YAML::LoadFile(path);
-
-    rct_optimizations::CameraIntrinsics intrinsics;
-    intrinsics.cx() = n["cx"].as<double>();
-    intrinsics.cy() = n["cy"].as<double>();
-    intrinsics.fx() = n["fx"].as<double>();
-    intrinsics.fy() = n["fy"].as<double>();
-    return intrinsics;
+    return n.as<rct_optimizations::CameraIntrinsics>();
   }
   catch (YAML::Exception &ex)
   {
@@ -105,20 +101,7 @@ Eigen::Isometry3d loadPose(const std::string& path)
   try
   {
     YAML::Node n = YAML::LoadFile(path);
-
-    Eigen::Vector3d position;
-    position(0) = n["x"].as<double>();
-    position(1) = n["y"].as<double>();
-    position(2) = n["z"].as<double>();
-
-    Eigen::Quaterniond quat;
-    quat.w() = n["qw"].as<double>();
-    quat.x() = n["qx"].as<double>();
-    quat.y() = n["qy"].as<double>();
-    quat.z() = n["qz"].as<double>();
-
-    Eigen::Isometry3d pose = Eigen::Translation3d(position) * Eigen::AngleAxisd(quat);
-    return pose;
+    return n.as<Eigen::Isometry3d>();
   }
   catch (YAML::Exception &ex)
   {

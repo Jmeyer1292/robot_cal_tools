@@ -19,6 +19,7 @@
   <depend>boost</depend>
   <depend>libceres-dev</depend>
   <depend>rct_common</depend>
+  <depend>yaml-cpp</depend>
 
   <export>
     <build_type>cmake</build_type>
