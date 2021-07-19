@@ -113,7 +113,7 @@ bool rct_ros_tools::saveToDirectory(const std::string& path, const rct_ros_tools
 }
 
 rct_ros_tools::ExtrinsicCorrespondenceDataSet::ExtrinsicCorrespondenceDataSet(const std::vector<rct_ros_tools::ExtrinsicDataSet> &extrinsic_data_set,
-                                                                              const rct_image_tools::ModifiedCircleGridTargetFinder &target_finder,
+                                                                              const rct_image_tools::TargetFinder &target_finder,
                                                                               bool debug)
 {
   correspondences_.resize(extrinsic_data_set.size(), extrinsic_data_set[0].images.size());

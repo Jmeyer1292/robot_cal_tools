@@ -1,11 +1,11 @@
-#ifndef RCT_DATA_SET_H
-#define RCT_DATA_SET_H
+#pragma once
+
+#include <rct_optimizations/types.h>
+#include <rct_image_tools/target_finder.h>
 
 #include <boost/optional.hpp>
 #include <Eigen/Dense>
 #include <opencv2/core.hpp>
-#include <rct_optimizations/types.h>
-#include <rct_image_tools/modified_circle_grid_finder.h>
 
 namespace rct_ros_tools
 {
@@ -30,7 +30,7 @@ class ExtrinsicCorrespondenceDataSet
 {
 public:
   ExtrinsicCorrespondenceDataSet(const std::vector<rct_ros_tools::ExtrinsicDataSet> &extrinsic_data_set,
-                                 const rct_image_tools::ModifiedCircleGridTargetFinder &target_finder,
+                                 const rct_image_tools::TargetFinder &target_finder,
                                  bool debug = false);
 
   /** @brief Get the number of cameras */
@@ -60,6 +60,4 @@ private:
 
 };
 
-}
-
-#endif
+} // namespace rct_ros_tools
