@@ -30,6 +30,7 @@ find_package(catkin REQUIRED COMPONENTS
   image_transport
   eigen_conversions
   std_srvs
+  pluginlib
 )
 
 # This package only provides examples. It does not export any tools.
@@ -45,6 +46,7 @@ catkin_package(
     image_transport
     eigen_conversions
     std_srvs
+    pluginlib
 )
 
 ###########
@@ -61,8 +63,6 @@ include_directories(
 add_library(${PROJECT_NAME}_data_loader
   src/data_loader/data_set.cpp
   src/data_loader/parameter_loaders.cpp
-  src/data_loader/modified_circle_grid_target_loader.cpp
-  src/data_loader/charuco_grid_target_loader.cpp
 )
 add_dependencies(${PROJECT_NAME}_data_loader ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(${PROJECT_NAME}_data_loader
@@ -70,6 +70,18 @@ target_link_libraries(${PROJECT_NAME}_data_loader
  ${OpenCV_LIBRARIES}
  rct::rct_optimizations
  rct::rct_image_tools
+)
+
+add_library(${PROJECT_NAME}_target_loader_plugins
+  src/data_loader/modified_circle_grid_target_loader.cpp
+  src/data_loader/charuco_grid_target_loader.cpp
+)
+target_link_libraries(${PROJECT_NAME}_target_loader_plugins
+  ${catkin_LIBRARIES}
+  yaml-cpp
+#  ${OpenCV_LIBRARIES}
+#  rct::rct_optimizations
+  rct::rct_image_tools
 )
 
 # Executable for collecting data sets via subscribers and triggered with services

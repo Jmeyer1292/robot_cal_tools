@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<library path="lib/librct_ros_tools_target_loader_plugins">
+  <class type="rct_ros_tools::ModifiedCircleGridTargetFinderPlugin" base_class_type="rct_ros_tools::TargetFinderPlugin">
+    <description>
+    </description>
+  </class>
+  <class type="rct_ros_tools::CharucoGridTargetFinderPlugin" base_class_type="rct_ros_tools::TargetFinderPlugin">
+    <description>
+    </description>
+  </class>
+</library>
