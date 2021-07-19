@@ -1,4 +1,5 @@
-target_definition:
+target_finder:
+  type: rct_ros_tools::ModifiedCircleGridTargetFinderPlugin
   rows: 10
   cols: 10
   spacing: 0.0254 # (meters between dot centers)
