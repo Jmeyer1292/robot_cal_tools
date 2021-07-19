@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <launch>
   <!-- Path to your target file (so observer can show you if it sees target) -->
   <arg name="target_file"/>
@@ -12,7 +13,7 @@
   <!--The save directory-->
   <arg name="save_dir" default="cmd_line_cal_data_set"/>
 
-  <node pkg="rct_ros_tools" type="command_line_data_collection" name="$(anon cmd_line_data)" output="screen">
+  <node pkg="rct_ros_tools" type="command_line_data_collection" name="rct_examples" output="screen">
     <rosparam command="load" file="$(arg target_file)"/>
     <param name="base_frame" value="$(arg base_frame)"/>
     <param name="tool_frame" value="$(arg tool_frame)"/>
