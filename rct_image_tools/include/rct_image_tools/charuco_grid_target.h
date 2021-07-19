@@ -19,7 +19,8 @@ struct CharucoGridTarget : public Target
    * @param cols - number of columns in the target
    * @param chessboard_dim - The length of the side of one chessboard square (m)
    * @param aruco_marker_dim - The length of the side of one ArUco marker (m)
-   * @param dictionary_id - The dictionary of ArUco markers to use
+   * @param dictionary_id - The enumeration ID of the dictionary of ArUco markers to use.
+   * <a href="https://github.com/opencv/opencv_contrib/blob/6a18431421087aaf5c2a579269c72da4de54d5bf/modules/aruco/include/opencv2/aruco/dictionary.hpp#L141-L163">ArUco dictionary enumerations</a>
    */
   CharucoGridTarget(const int rows, const int cols, const float chessboard_dim, const float aruco_marker_dim,
                     const int dictionary_id = cv::aruco::DICT_6X6_250);
