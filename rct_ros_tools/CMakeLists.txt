@@ -73,14 +73,11 @@ target_link_libraries(${PROJECT_NAME}_data_loader
 )
 
 add_library(${PROJECT_NAME}_target_loader_plugins
-  src/data_loader/modified_circle_grid_target_loader.cpp
-  src/data_loader/charuco_grid_target_loader.cpp
+  src/data_loader/target_loader_plugins.cpp
 )
 target_link_libraries(${PROJECT_NAME}_target_loader_plugins
   ${catkin_LIBRARIES}
   yaml-cpp
-#  ${OpenCV_LIBRARIES}
-#  rct::rct_optimizations
   rct::rct_image_tools
 )
 

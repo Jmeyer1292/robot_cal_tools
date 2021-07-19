@@ -7,6 +7,9 @@
 
 namespace rct_ros_tools
 {
+/**
+ * @brief Target finder plugin that can be initialized by file or XmlRpcValue (i.e. from a ROS parameter)
+ */
 class TargetFinderPlugin : public rct_image_tools::TargetFinder
 {
 public:
@@ -33,24 +36,6 @@ public:
 
 protected:
   std::shared_ptr<const rct_image_tools::TargetFinder> finder_;
-};
-
-class ModifiedCircleGridTargetFinderPlugin : public TargetFinderPlugin
-{
-public:
-  using TargetFinderPlugin::TargetFinderPlugin;
-
-  void init(const XmlRpc::XmlRpcValue& config) override;
-  void init(const std::string& file) override;
-};
-
-class CharucoGridTargetFinderPlugin : public TargetFinderPlugin
-{
-public:
-  using TargetFinderPlugin::TargetFinderPlugin;
-
-  void init(const XmlRpc::XmlRpcValue& config) override;
-  void init(const std::string& file) override;
 };
 
 } // namespace rct_ros_tools
