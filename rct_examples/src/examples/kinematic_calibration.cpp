@@ -251,6 +251,7 @@ int main(int argc, char** argv)
   options.use_nonmonotonic_steps = true;
 
   // Run the calibration
+  std::cout << "Starting kinematic calibration optimization..." << std::endl;
   Stats cal_stats_optimal_dh;
   {
     KinematicCalibrationResult result = optimize(problem, 100.0, options);

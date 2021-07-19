@@ -1,10 +1,11 @@
+#include <rct_optimizations/validation/noise_qualification.h>
+#include <rct_ros_tools/data_set.h>
+#include <rct_ros_tools/parameter_loaders.h>
+#include <rct_ros_tools/target_finder_plugin.h>
+
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
-#include <rct_image_tools/modified_circle_grid_finder.h>
-#include <rct_optimizations/validation/noise_qualification.h>
-#include "rct_ros_tools/data_set.h"
-#include "rct_ros_tools/parameter_loaders.h"
-#include "rct_ros_tools/target_loaders.h"
+#include <pluginlib/class_loader.h>
 #include <ros/ros.h>
 #include <yaml-cpp/yaml.h>
 
@@ -12,15 +13,15 @@ using namespace rct_optimizations;
 using namespace rct_image_tools;
 using namespace rct_ros_tools;
 
+std::string WINDOW = "window";
+
 template<typename T>
-bool get(const ros::NodeHandle &nh, const std::string &key, T &val)
+T get(const ros::NodeHandle &nh, const std::string &key)
 {
+  T val;
   if (!nh.getParam(key, val))
-  {
-    ROS_ERROR_STREAM("Failed to get '" << key << "' parameter");
-    return false;
-  }
-  return true;
+    throw std::runtime_error("Failed to get '" + key + "' parameter");
+  return val;
 }
 
 int main(int argc, char** argv)
@@ -28,20 +29,18 @@ int main(int argc, char** argv)
   ros::init(argc, argv, "noise_qualification_2d");
   ros::NodeHandle pnh("~");
 
-  // Parse parameters
-  std::string data_path;
-  if (!get(pnh, "data_path", data_path))
-    return -1;
-
-  std::string data_file;
-  if (!get(pnh, "data_file", data_file))
-    return -1;
-
   try
   {
-    // Load the target definition and observation finder
-    auto target = TargetLoader<ModifiedCircleGridTarget>::load(pnh, "target_definition");
-    ModifiedCircleGridTargetFinder target_finder(target);
+    // Parse parameters
+    std::string data_path = get<std::string>(pnh, "data_path");
+    std::string data_file = get<std::string>(pnh, "data_file");
+
+    // Load the target finder
+    auto target_finder_config = get<XmlRpc::XmlRpcValue>(pnh, "target_finder");
+    const std::string target_finder_type = static_cast<std::string>(target_finder_config["type"]);
+    pluginlib::ClassLoader<TargetFinderPlugin> loader("rct_ros_tools", "rct_ros_tools::TargetFinderPlugin");
+    boost::shared_ptr<TargetFinderPlugin> target_finder = loader.createInstance(target_finder_type);
+    target_finder->init(target_finder_config);
 
     // Load camera intrinsics
     CameraIntrinsics camera = loadIntrinsics(pnh, "intrinsics");
@@ -51,6 +50,8 @@ int main(int argc, char** argv)
 
     // Load the data file which specifies the location of the images on which to perform the noise qualification
     YAML::Node root = YAML::LoadFile(data_file);
+
+    cv::namedWindow(WINDOW, cv::WINDOW_NORMAL);
 
     // Set up the noise qualification inputs
     std::vector<PnPProblem> problem_set;
@@ -66,18 +67,19 @@ int main(int argc, char** argv)
       rct_image_tools::TargetFeatures target_features;
       try
       {
-        target_features = target_finder.findTargetFeatures(image);
+        target_features = target_finder->findTargetFeatures(image);
+        if (target_features.empty())
+          throw std::runtime_error("Failed to find any target features");
+        ROS_INFO_STREAM("Found " << target_features.size() << " target features");
 
         // Show the points we detected
-        ROS_INFO_STREAM("Hit enter in the OpenCV window to continue");
-        cv::imshow("points", target_finder.drawTargetFeatures(image, target_features));
+        cv::imshow(WINDOW, target_finder->drawTargetFeatures(image, target_features));
         cv::waitKey();
       }
       catch (const std::runtime_error& ex)
       {
-        ROS_WARN_STREAM("Failed to find observations in image " << i << ": '" << ex.what() << "'");
-        ROS_INFO_STREAM("Hit enter in the OpenCV window to continue");
-        cv::imshow("points", image);
+        ROS_WARN_STREAM("Image " << i << ": '" << ex.what() << "'");
+        cv::imshow(WINDOW, image);
         cv::waitKey();
         continue;
       }
@@ -88,7 +90,7 @@ int main(int argc, char** argv)
       problem.camera_to_target_guess = camera_to_target_guess;
 
       // Add the detected correspondences
-      problem.correspondences = target.createCorrespondences(target_features);
+      problem.correspondences = target_finder->target().createCorrespondences(target_features);
 
       problem_set.push_back(problem);
     }

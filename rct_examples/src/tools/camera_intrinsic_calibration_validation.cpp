@@ -1,21 +1,23 @@
 #include <rct_optimizations/validation/camera_intrinsic_calibration_validation.h>
 #include <rct_ros_tools/parameter_loaders.h>
-#include <rct_ros_tools/target_loaders.h>
+#include <rct_ros_tools/target_finder_plugin.h>
 #include <rct_ros_tools/print_utils.h>
 #include <rct_ros_tools/data_set.h>
 
 // To find 2D  observations from images
-#include <rct_image_tools/modified_circle_grid_finder.h>
 #include <rct_image_tools/image_utils.h>
 
 // For display of found targets
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc.hpp>
+#include <pluginlib/class_loader.h>
 #include <ros/ros.h>
 
 using namespace rct_optimizations;
 using namespace rct_image_tools;
 using namespace rct_ros_tools;
+
+std::string WINDOW = "window";
 
 void analyzeResults(const IntrinsicCalibrationAccuracyResult &result,
                     const double pos_tol, const double ang_tol)
@@ -38,32 +40,38 @@ void analyzeResults(const IntrinsicCalibrationAccuracyResult &result,
   }
 }
 
+template <typename T>
+T get(const ros::NodeHandle& nh, const std::string& key)
+{
+  T val;
+  if (!nh.getParam(key, val))
+    throw std::runtime_error("Failed to get '" + key + "' parameter");
+  return val;
+}
+
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "camera_on_wrist_extrinsic");
   ros::NodeHandle pnh("~");
 
-  // Load the data set path from ROS param
-  std::string data_path;
-  if (!pnh.getParam("data_path", data_path))
-  {
-    ROS_ERROR("Must set 'data_path' parameter");
-    return 1;
-  }
-
   try
   {
-    auto target = TargetLoader<ModifiedCircleGridTarget>::load(pnh, "target_definition");
-    CameraIntrinsics intr = loadIntrinsics(pnh, "intrinsics");
-
+    // Load the data set path from ROS param
+    std::string data_path = get<std::string>(pnh, "data_path");
     // Attempt to load the data set via the data record yaml file:
-    boost::optional<ExtrinsicDataSet> maybe_data_set = parseFromFile(
-      data_path);
+    boost::optional<ExtrinsicDataSet> maybe_data_set = parseFromFile(data_path);
     if (!maybe_data_set)
-    {
-      ROS_ERROR_STREAM("Failed to parse data set from path = " << data_path);
-      return 2;
-    }
+      throw std::runtime_error("Failed to parse data set from path = " + data_path);
+
+    // Load the target finder
+    auto target_finder_config = get<XmlRpc::XmlRpcValue>(pnh, "target_finder");
+    const std::string target_finder_type = static_cast<std::string>(target_finder_config["type"]);
+    pluginlib::ClassLoader<TargetFinderPlugin> loader("rct_ros_tools", "rct_ros_tools::TargetFinderPlugin");
+    boost::shared_ptr<TargetFinderPlugin> target_finder = loader.createInstance(target_finder_type);
+    target_finder->init(target_finder_config);
+
+    // Load the camera intrinsic parameters
+    CameraIntrinsics intr = loadIntrinsics(pnh, "intrinsics");
 
     // We know it exists, so define a helpful alias
     const ExtrinsicDataSet& data_set = *maybe_data_set;
@@ -72,30 +80,31 @@ int main(int argc, char **argv)
     Eigen::Isometry3d target_mount_to_target = loadPose(pnh, "base_to_target_guess");
     Eigen::Isometry3d camera_mount_to_camera = loadPose(pnh, "wrist_to_camera_guess");
 
-    // Lets create a class that will search for the target in our raw images.
-    ModifiedCircleGridTargetFinder target_finder(target);
-
     // Finally, we need to process our images into correspondence sets: for each dot in the
     // target this will be where that dot is in the target and where it was seen in the image.
     // Repeat for each image. We also tell where the wrist was when the image was taken.
+    cv::namedWindow(WINDOW, cv::WINDOW_NORMAL);
     Observation2D3D::Set observations;
     observations.reserve(data_set.images.size());
     for (std::size_t i = 0; i < data_set.images.size(); ++i)
     {
-      // Try to find the circle grid in this image:
+      // Try to find the target features in this image:
       rct_image_tools::TargetFeatures target_features;
       try
       {
-        target_features = target_finder.findTargetFeatures(data_set.images[i]);
+        target_features = target_finder->findTargetFeatures(data_set.images[i]);
+        if (target_features.empty())
+          throw std::runtime_error("Failed to find any target features");
+        ROS_INFO_STREAM("Found " << target_features.size() << " target features");
 
         // Show the points we detected
-        cv::imshow("points", target_finder.drawTargetFeatures(data_set.images[i], target_features));
+        cv::imshow(WINDOW, target_finder->drawTargetFeatures(data_set.images[i], target_features));
         cv::waitKey();
       }
       catch(const std::runtime_error& ex)
       {
-        ROS_WARN_STREAM("Unable to find the circle grid in image " << i << ": '" << ex.what() << "'");
-        cv::imshow("points", data_set.images[i]);
+        ROS_WARN_STREAM("Image " << i << ": '" << ex.what() << "'");
+        cv::imshow(WINDOW, data_set.images[i]);
         cv::waitKey();
         continue;
       }
@@ -109,7 +118,7 @@ int main(int argc, char **argv)
       obs.to_target_mount = Eigen::Isometry3d::Identity();
 
       //// And finally add that to the problem
-      obs.correspondence_set = target.createCorrespondences(target_features);
+      obs.correspondence_set = target_finder->target().createCorrespondences(target_features);
 
       observations.push_back(obs);
     }
