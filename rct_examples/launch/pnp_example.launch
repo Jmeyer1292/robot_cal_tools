@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <launch>
   <arg name="camera_file" default="$(find rct_examples)/config/kinect_camera_intr.yaml"/>
   <arg name="target_file" default="$(find rct_examples)/config/target_10x10.yaml"/>
