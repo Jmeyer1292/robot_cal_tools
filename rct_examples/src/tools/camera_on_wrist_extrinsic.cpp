@@ -3,61 +3,24 @@
 #include <rct_ros_tools/parameter_loaders.h>
 #include <rct_ros_tools/target_finder_plugin.h>
 #include <rct_ros_tools/print_utils.h>
-// To find 2D  observations from images
-#include <rct_image_tools/image_utils.h>
 // The calibration function for 'moving camera' on robot wrist
 #include <rct_optimizations/extrinsic_hand_eye.h>
-#include <rct_optimizations/pnp.h>
 #include <rct_optimizations/serialization/problems.h>
 #include <rct_optimizations/validation/homography_validation.h>
+// Calibration analysis
+#include "hand_eye_calibration_analysis.h"
 
 // For display of found targets
 #include <opencv2/highgui/highgui.hpp>
 #include <pluginlib/class_loader.h>
 #include <ros/ros.h>
 #include <opencv2/imgproc.hpp>
-#include <rct_optimizations/ceres_math_utilities.h>
 
 using namespace rct_optimizations;
 using namespace rct_image_tools;
 using namespace rct_ros_tools;
 
 const std::string WINDOW = "window";
-
-static void reproject(const Eigen::Isometry3d& wrist_to_camera, const Eigen::Isometry3d& base_to_target,
-                      const Observation2D3D& obs, const CameraIntrinsics& intr, const cv::Mat& image)
-{
-  // We want to compute the "positional error" as well
-  // So first we compute the "camera to target" transform based on the calibration...
-  Eigen::Isometry3d camera_to_target = (obs.to_camera_mount * wrist_to_camera).inverse() * base_to_target;
-
-  std::vector<Eigen::Vector3d> target_points;
-  target_points.reserve(obs.correspondence_set.size());
-  std::transform(obs.correspondence_set.begin(), obs.correspondence_set.end(), std::back_inserter(target_points),
-                 [](const rct_optimizations::Correspondence2D3D& corr) { return corr.in_target; });
-  std::vector<cv::Point2d> reprojections = getReprojections(camera_to_target, intr, target_points);
-
-  cv::Mat frame = image.clone();
-  drawReprojections(reprojections, 3, cv::Scalar(0, 0, 255), frame);
-
-  PnPProblem pb;
-  pb.camera_to_target_guess = camera_to_target;
-  pb.correspondences = obs.correspondence_set;
-  pb.intr = intr;
-  PnPResult r = optimize(pb);
-
-  printOptResults(r.converged, r.initial_cost_per_obs, r.final_cost_per_obs);
-  printNewLine();
-
-  printTransform(r.camera_to_target, "Camera", "Target", "PNP");
-  printNewLine();
-
-  printTransformDiff(camera_to_target, r.camera_to_target, "Camera", "Target", "PNP DIFF");
-  printNewLine();
-
-  cv::imshow(WINDOW, frame);
-  cv::waitKey();
-}
 
 template <typename T>
 T get(const ros::NodeHandle& nh, const std::string& key)
@@ -114,8 +77,8 @@ int main(int argc, char** argv)
 
     // The target may not be identified in all images, so let's keep track the indices of the images for which the
     // target was identified
-    std::vector<std::size_t> valid_image_indices;
-    valid_image_indices.reserve(data_set.images.size());
+    std::vector<cv::Mat> found_images;
+    found_images.reserve(data_set.images.size());
 
     for (std::size_t i = 0; i < data_set.images.size(); ++i)
     {
@@ -129,6 +92,26 @@ int main(int argc, char** argv)
           throw std::runtime_error("Failed to find any target features");
         ROS_INFO_STREAM("Found " << target_features.size() << " target features");
 
+        Observation2D3D obs;
+        obs.correspondence_set.reserve(target_features.size());
+
+        //// 2. Record the wrist position and target features
+        obs.to_camera_mount = data_set.tool_poses[i];
+        obs.to_target_mount = Eigen::Isometry3d::Identity();
+        obs.correspondence_set = target_finder->target().createCorrespondences(target_features);
+
+        //// 3. Check that a homography matrix can accurately reproject the observed points onto the expected target points within a defined threshold
+        rct_optimizations::RandomCorrespondenceSampler random_sampler(obs.correspondence_set.size(),
+                                                                      obs.correspondence_set.size() / 3);
+        Eigen::VectorXd homography_error =
+            rct_optimizations::calculateHomographyError(obs.correspondence_set, random_sampler);
+        if (homography_error.array().mean() > homography_threshold)
+          throw std::runtime_error("Homography error exceeds threshold (" + std::to_string(homography_error.array().mean()) + ")");
+
+        //// 3. And finally add that to the problem
+        problem.observations.push_back(obs);
+        found_images.push_back(data_set.images[i]);
+
         // Show the points we detected
         cv::imshow(WINDOW, target_finder->drawTargetFeatures(data_set.images[i], target_features));
         cv::waitKey();
@@ -140,29 +123,6 @@ int main(int argc, char** argv)
         cv::waitKey();
         continue;
       }
-
-      Observation2D3D obs;
-      obs.correspondence_set.reserve(target_features.size());
-
-      //// 2. Record the wrist position and target features
-      obs.to_camera_mount = data_set.tool_poses[i];
-      obs.to_target_mount = Eigen::Isometry3d::Identity();
-      obs.correspondence_set = target_finder->target().createCorrespondences(target_features);
-
-      //// 3. Check that a homography matrix can accurately reproject the observed points onto the expected target points within a defined threshold
-      rct_optimizations::RandomCorrespondenceSampler random_sampler(obs.correspondence_set.size(),
-                                                                    obs.correspondence_set.size() / 3);
-      Eigen::VectorXd homography_error =
-          rct_optimizations::calculateHomographyError(obs.correspondence_set, random_sampler);
-      if (homography_error.array().mean() > homography_threshold)
-      {
-        ROS_ERROR_STREAM("Homography error exceeds threshold (" << homography_error.array().mean() << ")");
-        continue;
-      }
-
-      //// 3. And finally add that to the problem
-      problem.observations.push_back(obs);
-      valid_image_indices.push_back(i);
     }
 
     // Now we have a defined problem, run optimization:
@@ -180,16 +140,13 @@ int main(int argc, char** argv)
     printTransform(t, "Base", "Target", "BASE TO TARGET");
     printNewLine();
 
-    std::cout << opt_result.covariance.toString() << std::endl;
+    std::cout << opt_result.covariance.printCorrelationCoeffAboveThreshold(0.5) << std::endl;
 
-    printTitle("REPROJECTION ERROR");
-    for (std::size_t i = 0; i < problem.observations.size(); ++i)
-    {
-      printTitle("REPROJECT OBSERVATION " + std::to_string(i));
-      std::size_t image_idx = valid_image_indices[i];
-      reproject(opt_result.camera_mount_to_camera, opt_result.target_mount_to_target, problem.observations[i], intr,
-                data_set.images[image_idx]);
-    }
+    // Now let's compare the results of our extrinsic calibration with a PnP optimization for every observation.
+    // The PnP optimization will give us an estimate of the camera to target transform using our input camera intrinsic
+    // parameters We will then see how much this transform differs from the same transform calculated using the results
+    // of the extrinsic calibration
+    analyzeResults(problem, opt_result, found_images, WINDOW);
   }
   catch (const std::exception& ex)
   {
