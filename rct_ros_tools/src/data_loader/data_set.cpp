@@ -116,6 +116,10 @@ rct_ros_tools::ExtrinsicCorrespondenceDataSet::ExtrinsicCorrespondenceDataSet(co
                                                                               const rct_image_tools::TargetFinder &target_finder,
                                                                               bool debug)
 {
+  static const std::string WINDOW = "window";
+  if (debug)
+    cv::namedWindow(WINDOW, cv::WINDOW_NORMAL);
+
   correspondences_.resize(extrinsic_data_set.size(), extrinsic_data_set[0].images.size());
   mask_.resize(extrinsic_data_set.size(), extrinsic_data_set[0].images.size());
   for (std::size_t c = 0; c < extrinsic_data_set.size(); ++c)
@@ -128,30 +132,39 @@ rct_ros_tools::ExtrinsicCorrespondenceDataSet::ExtrinsicCorrespondenceDataSet(co
     // Repeat for each image. We also tell where the wrist was when the image was taken.
     for (std::size_t i = 0; i < data_set.images.size(); ++i)
     {
-      mask_(c, i) = 1;
       // Try to find the circle grid in this image:
-      rct_image_tools::TargetFeatures image_observations = target_finder.findTargetFeatures(data_set.images[i]);
-      rct_optimizations::Correspondence2D3D::Set obs_set = target_finder.target().createCorrespondences(image_observations);
-      if (obs_set.empty())
+      try
       {
-        ROS_WARN_STREAM("Unable to find the circle grid in image: " << i);
+        mask_(c, i) = 1;
+
+        rct_image_tools::TargetFeatures target_features = target_finder.findTargetFeatures(data_set.images[i]);
+        if (target_features.empty())
+          throw std::runtime_error("Failed to find any target features in image " + std::to_string(i));
+        ROS_INFO_STREAM("Found " << target_features.size() << " target features");
+
+        correspondences_(c, i) = target_finder.target().createCorrespondences(target_features);
+
+        if (debug)
+        {
+          // Show the points we detected
+          std::vector<Eigen::Vector2d> observations(correspondences_(c, i).size());
+          std::transform(correspondences_(c, i).begin(), correspondences_(c, i).end(), observations.begin(),
+                         [](const rct_optimizations::Correspondence2D3D& o) { return o.in_image; });
+
+          cv::imshow(WINDOW, target_finder.drawTargetFeatures(data_set.images[i], target_features));
+          cv::waitKey();
+        }
+      }
+      catch (const std::exception& ex)
+      {
         mask_(c, i) = 0;
+        ROS_ERROR_STREAM(ex.what());
       }
-
-      if (debug)
-      {
-        // Show the points we detected
-        std::vector<Eigen::Vector2d> observations(obs_set.size());
-        std::transform(obs_set.begin(), obs_set.end(), observations.begin(),
-                       [](const rct_optimizations::Correspondence2D3D& o) { return o.in_image; });
-
-        cv::imshow("points", target_finder.drawTargetFeatures(data_set.images[i], image_observations));
-        cv::waitKey();
-      }
-
-      correspondences_(c, i) = obs_set;
     }
   }
+
+  if (debug)
+    cv::destroyWindow(WINDOW);
 }
 
 std::size_t rct_ros_tools::ExtrinsicCorrespondenceDataSet::getCameraCount() const
