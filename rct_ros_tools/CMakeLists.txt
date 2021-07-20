@@ -38,7 +38,7 @@ catkin_package(
   INCLUDE_DIRS
     include
   LIBRARIES
-    ${PROJECT_NAME}_data_loader
+    ${PROJECT_NAME}
   CATKIN_DEPENDS
     roscpp
     tf2_ros
@@ -60,12 +60,12 @@ include_directories(
 # Create a library for loading and saving "data sets": directory based
 # archives of poses and images that can be reloaded for testing and
 # development purposes.
-add_library(${PROJECT_NAME}_data_loader
+add_library(${PROJECT_NAME}
   src/data_loader/data_set.cpp
   src/data_loader/parameter_loaders.cpp
 )
-add_dependencies(${PROJECT_NAME}_data_loader ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(${PROJECT_NAME}_data_loader
+add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(${PROJECT_NAME}
  yaml-cpp
  ${OpenCV_LIBRARIES}
  rct::rct_optimizations
@@ -88,7 +88,7 @@ set_target_properties(${PROJECT_NAME}_cmd PROPERTIES OUTPUT_NAME command_line_da
 add_dependencies(${PROJECT_NAME}_cmd ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(${PROJECT_NAME}_cmd
  ${catkin_LIBRARIES}
- ${PROJECT_NAME}_data_loader
+ ${PROJECT_NAME}
  rct::rct_image_tools
 )
 
@@ -99,9 +99,9 @@ target_link_libraries(${PROJECT_NAME}_cmd
 if(CATKIN_ENABLE_TESTING AND RCT_BUILD_TESTS)
   find_package(rostest REQUIRED)
   find_package(GTest REQUIRED)
-  add_rostest_gtest(${PROJECT_NAME}_target_loader_utest test/target_loader.test test/target_loader_utest.cpp)
-  target_link_libraries(${PROJECT_NAME}_target_loader_utest
-    ${PROJECT_NAME}_data_loader
+  add_rostest_gtest(${PROJECT_NAME}_target_finder_plugin_utest test/target_finder_plugin.test test/target_finder_plugin_utest.cpp)
+  target_link_libraries(${PROJECT_NAME}_target_finder_plugin_utest
+    ${PROJECT_NAME}
     GTest::GTest
     GTest::Main
     ${catkin_LIBRARIES}
@@ -113,7 +113,7 @@ endif()
 #############
 
 install(TARGETS
-    ${PROJECT_NAME}_data_loader
+    ${PROJECT_NAME}
     ${PROJECT_NAME}_cmd
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
