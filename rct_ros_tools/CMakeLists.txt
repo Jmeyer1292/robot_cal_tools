@@ -26,9 +26,9 @@ find_package(catkin REQUIRED COMPONENTS
 
   # TODO: Export these to a different package dedicated to 'ros tools'
   tf2_ros
+  tf2_eigen
   cv_bridge
   image_transport
-  eigen_conversions
   std_srvs
   pluginlib
 )
@@ -42,9 +42,9 @@ catkin_package(
   CATKIN_DEPENDS
     roscpp
     tf2_ros
+    tf2_eigen
     cv_bridge
     image_transport
-    eigen_conversions
     std_srvs
     pluginlib
 )
