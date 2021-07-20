@@ -149,7 +149,7 @@ int main(int argc, char** argv)
     printCameraDistortion(new_dist, "RCT Distortion");
     printNewLine();
 
-    std::cout << opt_result.covariance.toString() << std::endl;
+    std::cout << opt_result.covariance.printCorrelationCoeffAboveThreshold(0.5) << std::endl;
 
     // Also try the OpenCV cameraCalibrate function
     printTitle("OpenCV Calibration");
