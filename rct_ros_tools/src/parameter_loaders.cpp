@@ -1,8 +1,26 @@
 #include <rct_ros_tools/parameter_loaders.h>
-#include <rct_ros_tools/loader_utils.h>
 #include <rct_ros_tools/exceptions.h>
 #include <rct_optimizations/serialization/eigen.h>
 #include <rct_optimizations/serialization/types.h>
+
+#include <xmlrpcpp/XmlRpcException.h>
+
+template <typename T>
+static bool read(XmlRpc::XmlRpcValue& xml, const std::string& key, T& value)
+{
+  if (!xml.hasMember(key))
+    return false;
+  try
+  {
+    value = static_cast<T>(xml[key]);
+  }
+  catch (const XmlRpc::XmlRpcException& ex)
+  {
+    ROS_ERROR_STREAM(ex.getMessage());
+    return false;
+  }
+  return true;
+}
 
 namespace rct_ros_tools
 {
