@@ -1,9 +1,10 @@
 #pragma once
 
-#include <ros/node_handle.h>
-#include <string>
 #include <rct_image_tools/target.h>
 #include <rct_image_tools/target_finder.h>
+
+#include <string>
+#include <yaml-cpp/node/node.h>
 
 namespace rct_ros_tools
 {
@@ -31,8 +32,7 @@ public:
     return finder_->target();
   }
 
-  virtual void init(const XmlRpc::XmlRpcValue& config) = 0;
-  virtual void init(const std::string& file) = 0;
+  virtual void init(const YAML::Node& config) = 0;
 
 protected:
   std::shared_ptr<const rct_image_tools::TargetFinder> finder_;
