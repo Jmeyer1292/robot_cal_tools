@@ -61,8 +61,8 @@ include_directories(
 # archives of poses and images that can be reloaded for testing and
 # development purposes.
 add_library(${PROJECT_NAME}
-  src/data_loader/data_set.cpp
-  src/data_loader/parameter_loaders.cpp
+  src/data_set.cpp
+  src/parameter_loaders.cpp
 )
 add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(${PROJECT_NAME}
@@ -73,7 +73,7 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 add_library(${PROJECT_NAME}_target_loader_plugins
-  src/data_loader/target_loader_plugins.cpp
+  src/target_loader_plugins.cpp
 )
 target_link_libraries(${PROJECT_NAME}_target_loader_plugins
   ${catkin_LIBRARIES}
