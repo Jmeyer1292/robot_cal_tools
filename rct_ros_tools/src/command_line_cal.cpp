@@ -1,6 +1,7 @@
 #include <rct_ros_tools/data_set.h>
 #include <rct_ros_tools/parameter_loaders.h>
 #include <rct_ros_tools/target_finder_plugin.h>
+#include <rct_ros_tools/loader_utils.h>
 
 #include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.h>
@@ -231,7 +232,7 @@ int main(int argc, char** argv)
 
     pluginlib::ClassLoader<TargetFinderPlugin> loader("rct_ros_tools", "rct_ros_tools::TargetFinderPlugin");
     config.target_finder = loader.createInstance(target_finder_type);
-    config.target_finder->init(target_finder_config);
+    config.target_finder->init(toYAML(target_finder_config));
 
     DataCollection dc(config);
     ros::spin();

@@ -3,6 +3,7 @@
 #include <rct_ros_tools/parameter_loaders.h>
 #include <rct_ros_tools/target_finder_plugin.h>
 #include <rct_ros_tools/print_utils.h>
+#include <rct_ros_tools/loader_utils.h>
 // The calibration function for 'moving camera' on robot wrist
 #include <rct_optimizations/extrinsic_hand_eye.h>
 #include <rct_optimizations/serialization/problems.h>
@@ -57,7 +58,7 @@ int main(int argc, char** argv)
     const std::string target_finder_type = static_cast<std::string>(target_finder_config["type"]);
     pluginlib::ClassLoader<TargetFinderPlugin> loader("rct_ros_tools", "rct_ros_tools::TargetFinderPlugin");
     boost::shared_ptr<TargetFinderPlugin> target_finder = loader.createInstance(target_finder_type);
-    target_finder->init(target_finder_config);
+    target_finder->init(toYAML(target_finder_config));
 
     // Now we create our calibration problem
     ExtrinsicHandEyeProblem2D3D problem;
