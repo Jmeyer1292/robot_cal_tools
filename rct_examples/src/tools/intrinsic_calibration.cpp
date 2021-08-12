@@ -1,20 +1,22 @@
-#include <rct_image_tools/modified_circle_grid_finder.h>
 #include <rct_image_tools/image_utils.h>
 #include <rct_optimizations/eigen_conversions.h>
 #include <rct_optimizations/experimental/camera_intrinsic.h>
-#include "rct_ros_tools/data_set.h"
-#include "rct_ros_tools/parameter_loaders.h"
-#include "rct_ros_tools/target_loaders.h"
-#include "rct_ros_tools/print_utils.h"
-
-#include <opencv2/highgui.hpp>
-#include <ros/ros.h>
+#include <rct_ros_tools/data_set.h>
+#include <rct_ros_tools/parameter_loaders.h>
+#include <rct_ros_tools/target_finder_plugin.h>
+#include <rct_ros_tools/print_utils.h>
+#include <rct_ros_tools/loader_utils.h>
 
 #include <opencv2/calib3d.hpp>
+#include <opencv2/highgui.hpp>
+#include <pluginlib/class_loader.h>
+#include <ros/ros.h>
 
 using namespace rct_optimizations;
 using namespace rct_image_tools;
 using namespace rct_ros_tools;
+
+const std::string WINDOW = "window";
 
 void opencvCameraCalibration(const std::vector<Correspondence2D3D::Set>& obs,
                              const cv::Size& image_size,
@@ -67,61 +69,67 @@ void opencvCameraCalibration(const std::vector<Correspondence2D3D::Set>& obs,
   printNewLine();
 }
 
+template <typename T>
+T get(const ros::NodeHandle& nh, const std::string& key)
+{
+  T val;
+  if (!nh.getParam(key, val))
+    throw std::runtime_error("Failed to get '" + key + "' parameter");
+  return val;
+}
+
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "camera_on_wrist_extrinsic");
   ros::NodeHandle pnh("~");
 
-  // Load Image Set
-  std::string data_path;
-  if (!pnh.getParam("data_path", data_path))
-  {
-    ROS_ERROR("Must set 'data_path' parameter");
-    return 1;
-  }
-
-  boost::optional<ExtrinsicDataSet> maybe_data_set = parseFromFile(data_path);
-  if (!maybe_data_set)
-  {
-    ROS_ERROR_STREAM("Failed to parse data set from path = " << data_path);
-    return 2;
-  }
-  auto& data_set = *maybe_data_set;
-
   try
   {
-    // Load target definition from parameter server
-    ModifiedCircleGridTarget target = TargetLoader<ModifiedCircleGridTarget>::load(pnh, "target_definition");
+    // Load Image Set
+    std::string data_path = get<std::string>(pnh, "data_path");
+
+    boost::optional<ExtrinsicDataSet> maybe_data_set = parseFromFile(data_path);
+    if (!maybe_data_set)
+      throw std::runtime_error("Failed to parse data set from path = " + data_path);
+    auto& data_set = *maybe_data_set;
+
+    // Load the target finder
+    auto target_finder_config = get<XmlRpc::XmlRpcValue>(pnh, "target_finder");
+    const std::string target_finder_type = static_cast<std::string>(target_finder_config["type"]);
+    pluginlib::ClassLoader<TargetFinderPlugin> loader("rct_ros_tools", "rct_ros_tools::TargetFinderPlugin");
+    boost::shared_ptr<TargetFinderPlugin> target_finder = loader.createInstance(target_finder_type);
+    target_finder->init(toYAML(target_finder_config));
 
     // Load the camera intrinsics from the parameter server
     CameraIntrinsics intr = loadIntrinsics(pnh, "intrinsics");
-
-    // Create obs finder
-    ModifiedCircleGridTargetFinder target_finder (target);
 
     // Construct problem
     IntrinsicEstimationProblem problem_def;
     problem_def.intrinsics_guess = intr;
 
+    cv::namedWindow(WINDOW, cv::WINDOW_NORMAL);
     for (std::size_t i = 0; i < data_set.images.size(); ++i)
     {
       // Extract observations
       rct_image_tools::TargetFeatures target_features;
       try
       {
-        target_features = target_finder.findTargetFeatures(data_set.images[i]);
+        target_features = target_finder->findTargetFeatures(data_set.images[i]);
+        if (target_features.empty())
+          throw std::runtime_error("Failed to find any target features");
+        ROS_INFO_STREAM("Found " << target_features.size() << " target features");
+
+        problem_def.image_observations.push_back(target_finder->target().createCorrespondences(target_features));
       }
       catch (const std::runtime_error& ex)
       {
-        ROS_WARN_STREAM("Failed to find observations in image " << i << ": '" << ex.what() << "'");
+        ROS_WARN_STREAM("Image " << i << ": '" << ex.what() << "'");
         continue;
       }
 
       // Show drawing
-      cv::imshow("points", target_finder.drawTargetFeatures(data_set.images[i], target_features));
+      cv::imshow(WINDOW, target_finder->drawTargetFeatures(data_set.images[i], target_features));
       cv::waitKey();
-
-      problem_def.image_observations.push_back(target.createCorrespondences(target_features));
     }
 
     // Run optimization
@@ -142,7 +150,7 @@ int main(int argc, char** argv)
     printCameraDistortion(new_dist, "RCT Distortion");
     printNewLine();
 
-    std::cout << opt_result.covariance.toString() << std::endl;
+    std::cout << opt_result.covariance.printCorrelationCoeffAboveThreshold(0.5) << std::endl;
 
     // Also try the OpenCV cameraCalibrate function
     printTitle("OpenCV Calibration");

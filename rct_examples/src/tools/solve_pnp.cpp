@@ -3,21 +3,23 @@
  * cost functions. This is a handy utility to have for doing stuff like quantifying the error of the system
  * after calibration
  */
-
-#include <ros/ros.h>
-#include <opencv2/highgui.hpp>
-#include <opencv2/calib3d/calib3d.hpp>
-
-#include <rct_image_tools/modified_circle_grid_finder.h>
 #include <rct_image_tools/image_utils.h>
 #include <rct_optimizations/pnp.h>
 #include <rct_ros_tools/parameter_loaders.h>
-#include <rct_ros_tools/target_loaders.h>
+#include <rct_ros_tools/target_finder_plugin.h>
 #include <rct_ros_tools/print_utils.h>
+#include <rct_ros_tools/loader_utils.h>
+
+#include <opencv2/highgui.hpp>
+#include <opencv2/calib3d/calib3d.hpp>
+#include <pluginlib/class_loader.h>
+#include <ros/ros.h>
 
 using namespace rct_optimizations;
 using namespace rct_image_tools;
 using namespace rct_ros_tools;
+
+std::string WINDOW = "window";
 
 static Eigen::Isometry3d solveCVPnP(const CameraIntrinsics& intr,
                                     const Correspondence2D3D::Set& correspondences)
@@ -57,6 +59,15 @@ static Eigen::Isometry3d solveCVPnP(const CameraIntrinsics& intr,
   return result;
 }
 
+template <typename T>
+T get(const ros::NodeHandle& nh, const std::string& key)
+{
+  T val;
+  if (!nh.getParam(key, val))
+    throw std::runtime_error("Failed to get '" + key + "' parameter");
+  return val;
+}
+
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "solve_pnp_ex", ros::init_options::AnonymousName);
@@ -65,29 +76,31 @@ int main(int argc, char** argv)
   try
   {
     // Load the image
-    std::string image_path;
-    if (!pnh.getParam("image_path", image_path))
-    {
-      ROS_ERROR_STREAM("Must set the 'image_path' private parameter");
-      return 1;
-    }
+    std::string image_path = get<std::string>(pnh, "image_path");
     cv::Mat mat = cv::imread(image_path);
-
-    // Load target definition from parameter server
-    ModifiedCircleGridTarget target = TargetLoader<ModifiedCircleGridTarget>::load(pnh, "target_definition");
 
     // Load the camera intrinsics from the parameter server
     CameraIntrinsics intr = loadIntrinsics(pnh, "intrinsics");
 
-    ModifiedCircleGridTargetFinder finder(target);
-    rct_image_tools::TargetFeatures target_features = finder.findTargetFeatures(mat);
+    // Load the target finder
+    auto target_finder_config = get<XmlRpc::XmlRpcValue>(pnh, "target_finder");
+    const std::string target_finder_type = static_cast<std::string>(target_finder_config["type"]);
+    pluginlib::ClassLoader<TargetFinderPlugin> loader("rct_ros_tools", "rct_ros_tools::TargetFinderPlugin");
+    boost::shared_ptr<TargetFinderPlugin> target_finder = loader.createInstance(target_finder_type);
+    target_finder->init(toYAML(target_finder_config));
 
-    cv::Mat show = finder.drawTargetFeatures(mat, target_features);
-    cv::imshow("win", show);
+    rct_image_tools::TargetFeatures target_features = target_finder->findTargetFeatures(mat);
+    if (target_features.empty())
+      throw std::runtime_error("Failed to find any target features");
+    ROS_INFO_STREAM("Found " << target_features.size() << " target features");
+
+    cv::Mat show = target_finder->drawTargetFeatures(mat, target_features);
+    cv::namedWindow(WINDOW, cv::WINDOW_NORMAL);
+    cv::imshow(WINDOW, show);
     cv::waitKey();
 
     // Solve with OpenCV
-    solveCVPnP(intr, target.createCorrespondences(target_features));
+    solveCVPnP(intr, target_finder->target().createCorrespondences(target_features));
 
     // Solve with some native RCT function (for learning)
     Eigen::Isometry3d guess = Eigen::Isometry3d::Identity();
@@ -96,7 +109,7 @@ int main(int argc, char** argv)
     PnPProblem params;
     params.intr = intr;
     params.camera_to_target_guess = guess;
-    params.correspondences = target.createCorrespondences(target_features);
+    params.correspondences = target_finder->target().createCorrespondences(target_features);
 
     PnPResult pnp_result = optimize(params);
 

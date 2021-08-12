@@ -12,12 +12,16 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <depend>cv_bridge</depend>
-  <depend>eigen_conversions</depend>
   <depend>image_transport</depend>
+  <depend>pluginlib</depend>
   <depend>rct_image_tools</depend>
   <depend>roscpp</depend>
   <depend>std_srvs</depend>
   <depend>tf2_ros</depend>
+  <depend>tf2_eigen</depend>
   <depend>yaml-cpp</depend>
 
+  <export>
+    <rct_ros_tools plugin="${prefix}/plugin_description.xml"/>
+  </export>
 </package>

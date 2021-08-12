@@ -34,7 +34,7 @@ inline
 std::string getStringIntrinsics(const std::array<double, 4> &values)
 {
   std::stringstream s;
-  s << "New Intr:\nfx = " << values[0]
+  s << "Intr:\nfx = " << values[0]
     << "\tfy = " << values[1]
     << "\ncx = " << values[2]
     << "\tcy = " << values[3];

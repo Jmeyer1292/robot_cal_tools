@@ -390,6 +390,11 @@ TargetFeatures ModifiedCircleGridTargetFinder::findTargetFeatures(const cv::Mat&
 cv::Mat ModifiedCircleGridTargetFinder::drawTargetFeatures(const cv::Mat& image,
                                                            const TargetFeatures& target_features) const
 {
+  // Draw all detected circles
+  rct_image_tools::CircleDetector circle_detector_(params_);
+  cv::Mat out_image = circle_detector_.drawDetectedCircles(image);
+
+  // Draw the detected circle centers
   std::vector<cv::Point2d> cv_obs;
   cv_obs.reserve(target_features.size());
   for (auto it = target_features.begin(); it != target_features.end(); ++it)
@@ -398,7 +403,7 @@ cv::Mat ModifiedCircleGridTargetFinder::drawTargetFeatures(const cv::Mat& image,
     cv_obs.push_back(cv::Point2d(pt.x(), pt.y()));
   }
 
-  return renderObservations(image, cv_obs, target_);
+  return renderObservations(out_image, cv_obs, target_);
 }
 
 } // namespace rct_image_tools

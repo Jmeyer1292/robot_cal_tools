@@ -1,17 +1,16 @@
-#include <ros/ros.h>
 #include <rct_ros_tools/data_set.h>
 #include <rct_ros_tools/parameter_loaders.h>
-#include <rct_ros_tools/target_loaders.h>
+#include <rct_ros_tools/target_finder_plugin.h>
+#include <rct_ros_tools/loader_utils.h>
 
-#include <tf2_ros/transform_listener.h>
-#include <opencv2/highgui.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.h>
-#include <eigen_conversions/eigen_msg.h>
-
+#include <opencv2/highgui.hpp>
+#include <pluginlib/class_loader.h>
+#include <ros/ros.h>
 #include <std_srvs/Empty.h>
-
-#include <rct_image_tools/modified_circle_grid_finder.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_eigen/tf2_eigen.h>
 
 class TransformMonitor
 {
@@ -56,7 +55,7 @@ private:
 class ImageMonitor
 {
 public:
-  ImageMonitor(const rct_image_tools::ModifiedCircleGridTargetFinder& finder,
+  ImageMonitor(boost::shared_ptr<const rct_image_tools::TargetFinder> finder,
                const std::string& nominal_image_topic)
     : finder_(finder)
     , it_(ros::NodeHandle())
@@ -84,14 +83,14 @@ public:
       {
         cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
       }
+      last_frame_ = cv_ptr;
 
-      rct_image_tools::TargetFeatures image_observations;
       try
       {
-        image_observations = finder_.findTargetFeatures(cv_ptr->image);
-
-        auto modified = finder_.drawTargetFeatures(cv_ptr->image, image_observations);
-        cv_bridge::CvImagePtr ptr(new cv_bridge::CvImage(cv_ptr->header, cv_ptr->encoding, modified));
+        cv::Mat tmp_image = cv_ptr->image.clone();
+        rct_image_tools::TargetFeatures image_observations = finder_->findTargetFeatures(tmp_image);
+        cv::Mat modified_image = finder_->drawTargetFeatures(tmp_image, image_observations);
+        cv_bridge::CvImagePtr ptr(new cv_bridge::CvImage(cv_ptr->header, cv_ptr->encoding, modified_image));
         im_pub_.publish(ptr->toImageMsg());
       }
       catch (const std::runtime_error& ex)
@@ -99,8 +98,6 @@ public:
         ROS_ERROR_STREAM(ex.what());
         im_pub_.publish(cv_ptr->toImageMsg());
       }
-
-      last_frame_ = cv_ptr;
     }
     catch (cv_bridge::Exception& e)
     {
@@ -120,7 +117,7 @@ public:
   }
 
 private:
-  rct_image_tools::ModifiedCircleGridTargetFinder finder_;
+  boost::shared_ptr<const rct_image_tools::TargetFinder> finder_;
   image_transport::ImageTransport it_;
   image_transport::Subscriber im_sub_;
   image_transport::Publisher im_pub_;
@@ -133,7 +130,7 @@ struct DataCollectionConfig
   std::string tool_frame;
 
   std::string image_topic;
-  std::shared_ptr<rct_image_tools::ModifiedCircleGridTarget> target;
+  boost::shared_ptr<rct_ros_tools::TargetFinderPlugin> target_finder;
 
   std::string save_dir;
 };
@@ -143,7 +140,7 @@ struct DataCollection
 
   DataCollection(const DataCollectionConfig& config)
     : tf_monitor(config.base_frame, config.tool_frame)
-    , image_monitor(*config.target, config.image_topic)
+    , image_monitor(config.target_finder, config.image_topic)
     , save_dir_(config.save_dir)
   {
     ros::NodeHandle nh;
@@ -181,8 +178,7 @@ struct DataCollection
     {
       cv::Mat image = images[i];
       auto msg = poses[i];
-      Eigen::Isometry3d pose;
-      tf::transformMsgToEigen(msg.transform, pose);
+      Eigen::Isometry3d pose = tf2::transformToEigen(msg.transform);
 
       data.images.push_back(image);
       data.tool_poses.push_back(pose);
@@ -206,37 +202,38 @@ struct DataCollection
 };
 
 template <typename T>
-bool get(const ros::NodeHandle& nh, const std::string& key, T& value)
+T get(const ros::NodeHandle& nh, const std::string& key)
 {
+  T value;
   if (!nh.getParam(key, value))
-  {
-    ROS_ERROR_STREAM("Must set parameter, " << key << "!");
-    return false;
-  }
+      throw std::runtime_error("Must set parameter, " + key + "!");
   ROS_INFO_STREAM("Parameter " << key << " set to: " << value);
-  return true;
+  return value;
 }
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "rct_examples");
-  ros::NodeHandle pnh ("~");
-
-  // Load data collection parameters
-  DataCollectionConfig config;
-
-  if (!get(pnh, "base_frame", config.base_frame)) return 1;
-  if (!get(pnh, "tool_frame", config.tool_frame)) return 1;
-  if (!get(pnh, "image_topic", config.image_topic)) return 1;
-  if (!get(pnh, "save_dir", config.save_dir))
-    return 1;
-
-  using namespace rct_ros_tools;
-  using namespace rct_image_tools;
-
   try
   {
-    config.target = std::make_shared<ModifiedCircleGridTarget>(TargetLoader<ModifiedCircleGridTarget>::load(pnh, "target_definition"));
+    ros::init(argc, argv, "rct_examples");
+    ros::NodeHandle pnh("~");
+
+    // Load data collection parameters
+    DataCollectionConfig config;
+    config.base_frame = get<std::string>(pnh, "base_frame");
+    config.tool_frame = get<std::string>(pnh, "tool_frame");
+    config.image_topic = get<std::string>(pnh, "image_topic");
+    config.save_dir = get<std::string>(pnh, "save_dir");
+    auto target_finder_config = get<XmlRpc::XmlRpcValue>(pnh, "target_finder");
+    const std::string target_finder_type = static_cast<std::string>(target_finder_config["type"]);
+
+    using namespace rct_ros_tools;
+    using namespace rct_image_tools;
+
+    pluginlib::ClassLoader<TargetFinderPlugin> loader("rct_ros_tools", "rct_ros_tools::TargetFinderPlugin");
+    config.target_finder = loader.createInstance(target_finder_type);
+    config.target_finder->init(toYAML(target_finder_config));
+
     DataCollection dc(config);
     ros::spin();
   }

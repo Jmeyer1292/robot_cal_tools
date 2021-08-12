@@ -98,16 +98,6 @@ public:
    */
   static cv::Ptr<CircleDetector> create(const CircleDetectorParams& params = CircleDetectorParams());
 
-  /**
-   * @brief loadParams Load CircleDetector parameters from a yaml file.  Only specified values will be modified.
-   * @param path The file to load
-   * @param params Params struct that will be modified
-   * @return True if the file existed and and no exceptions generated
-   * @throw std::runtime_error if a parameter in the file exists and fails to be parsed.  Putting a string instead of a
-   * float, etc.
-   */
-  static bool loadParams(const std::string& path, CircleDetectorParams& params);
-
 protected:
   const CircleDetectorParams params;
 };

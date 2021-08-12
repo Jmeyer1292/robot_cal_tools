@@ -1,9 +1,6 @@
-#ifndef RCT_PARAMETER_LOADERS_H
-#define RCT_PARAMETER_LOADERS_H
+#pragma once
 
 #include <Eigen/Geometry>
-
-#include <rct_image_tools/modified_circle_grid_target.h>
 #include <rct_optimizations/types.h>
 #include <ros/node_handle.h>
 
@@ -53,6 +50,4 @@ Eigen::Isometry3d loadPose(const std::string& path);
  */
 bool loadPose(const std::string& path, Eigen::Isometry3d& pose);
 
-}
-
-#endif
+} // namespace rct_ros_tools
