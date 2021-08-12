@@ -28,7 +28,7 @@ XmlRpc::XmlRpcValue::Type getArrayType(const XmlRpc::XmlRpcValue& xml)
 }
 
 template <typename T>
-std::vector<T> fromArray(const XmlRpc::XmlRpcValue& xml)
+std::vector<T> fromArray(XmlRpc::XmlRpcValue xml)
 {
   std::vector<T> vec;
   vec.reserve(xml.size());
@@ -43,7 +43,7 @@ std::vector<T> fromArray(const XmlRpc::XmlRpcValue& xml)
 
 namespace rct_ros_tools
 {
-YAML::Node toYAML(const XmlRpc::XmlRpcValue& value)
+YAML::Node toYAML(XmlRpc::XmlRpcValue value)
 {
   YAML::Node node;
 

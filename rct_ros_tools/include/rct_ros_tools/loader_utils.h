@@ -10,6 +10,6 @@ namespace rct_ros_tools
  * @param value
  * @return
  */
-YAML::Node toYAML(const XmlRpc::XmlRpcValue& value);
+YAML::Node toYAML(XmlRpc::XmlRpcValue value);
 
 } // namespace rct_ros_tools
