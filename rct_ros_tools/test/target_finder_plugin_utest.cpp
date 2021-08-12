@@ -1,4 +1,5 @@
 #include <rct_ros_tools/target_finder_plugin.h>
+#include <rct_ros_tools/loader_utils.h>
 
 #include <gtest/gtest.h>
 #include <pluginlib/class_loader.h>
@@ -37,17 +38,10 @@ TEST(Tools, TargetFinderPluginTest)
     ASSERT_NO_THROW(finder = loader.createInstance(plugin));
 
     // Initialize the plugin
-    // Method 1 (From ROS parameter, throwing)
     const std::string target_definition_param = ns + "/" + TARGET_DEFINITION_PARAM;
     XmlRpc::XmlRpcValue config;
     ASSERT_TRUE(pnh.getParam(target_definition_param, config));
-    ASSERT_NO_THROW(finder->init(config));
-
-    // Method 2 (From file, throwing)
-    const std::string filename_param = ns + "/" + TARGET_FILENAME_PARAM;
-    std::string filename;
-    ASSERT_TRUE(pnh.getParam(filename_param, filename));
-    ASSERT_NO_THROW(finder->init(filename));
+    ASSERT_NO_THROW(finder->init(rct_ros_tools::toYAML(config)));
   }
 }
 
