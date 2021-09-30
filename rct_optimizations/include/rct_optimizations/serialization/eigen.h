@@ -20,9 +20,6 @@ struct convert<Eigen::Matrix<FloatT, 2, 1>>
 
   static bool decode(const YAML::Node &node, T &val)
   {
-    if (node.size() != 2)
-      return false;
-
     val.x() = node["x"].as<FloatT>();
     val.y() = node["y"].as<FloatT>();
 
@@ -46,9 +43,6 @@ struct convert<Eigen::Matrix<FloatT, 3, 1>>
 
   static bool decode(const YAML::Node &node, T &val)
   {
-    if (node.size() != 3)
-      return false;
-
     val.x() = node["x"].as<FloatT>();
     val.y() = node["y"].as<FloatT>();
     val.z() = node["z"].as<FloatT>();
@@ -80,9 +74,6 @@ struct convert<Eigen::Transform<FloatT, 3, Eigen::Isometry>>
 
   static bool decode(const YAML::Node &node, T &val)
   {
-    if (node.size() != 7)
-      return false;
-
     Eigen::Matrix<FloatT, 3, 1> trans;
     trans.x() = node["x"].as<FloatT>();
     trans.y() = node["y"].as<FloatT>();
