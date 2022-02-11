@@ -231,10 +231,10 @@ rct_optimizations::optimize(const rct_optimizations::IntrinsicEstimationProblem&
   }
 
   std::vector<const double*> param_blocks;
-  std::vector<std::vector<std::string>> param_labels;
+  std::map<const double*, std::vector<std::string>> param_labels;
 
   param_blocks.emplace_back(internal_intrinsics_data.data());
-  param_labels.emplace_back(params.labels_intrinsic_params.begin(), params.labels_intrinsic_params.end());
+  param_labels[internal_intrinsics_data.data()] = std::vector<std::string>(params.labels_intrinsic_params.begin(), params.labels_intrinsic_params.end());
 
   for (std::size_t i = 0; i < internal_poses.size(); i++)
   {
@@ -245,7 +245,7 @@ rct_optimizations::optimize(const rct_optimizations::IntrinsicEstimationProblem&
     {
       labels.push_back(params.label_extr + std::to_string(i) + "_" + label_extr);
     }
-    param_labels.push_back(labels);
+    param_labels[internal_poses[i].values.data()] = labels;
   }
 
   // Solve
