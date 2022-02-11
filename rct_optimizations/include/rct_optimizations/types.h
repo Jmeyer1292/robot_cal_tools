@@ -12,7 +12,7 @@ namespace rct_optimizations
  */
 struct CameraIntrinsics
 {
-  std::array<double, 4> values;
+  std::array<double, 4> values {0,0,0,0};
 
   double& fx() { return values[0]; }
   double& fy() { return values[1]; }
@@ -35,7 +35,7 @@ struct Pose6d
   Pose6d() = default;
   Pose6d(std::array<double, 6> l) : values(l) {}
 
-  std::array<double, 6> values;
+  std::array<double, 6> values{0,0,0,0,0,0};
 
   double& rx() { return values[0]; }
   double& ry() { return values[1]; }

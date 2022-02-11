@@ -40,13 +40,16 @@ rct_optimizations::optimize(const rct_optimizations::CircleFitProblem& params)
 
   std::cout << summary.BriefReport() << std::endl;
 
+  std::map<const double*, std::vector<std::string>> param_block_labels;
+  param_block_labels[circle_params.data()] = params.labels;
+
   result.converged = summary.termination_type == ceres::TerminationType::CONVERGENCE;
   result.x_center = circle_params[0];
   result.y_center = circle_params[1];
   result.radius = pow(circle_params[2], 2);
   result.initial_cost_per_obs = summary.initial_cost / summary.num_residuals;
   result.final_cost_per_obs = summary.final_cost / summary.num_residuals;
-  result.covariance = rct_optimizations::computeCovariance(problem, std::vector<std::vector<std::string>>({params.labels}));
+  result.covariance = rct_optimizations::computeCovariance(problem, param_block_labels);
 
   return result;
 }
