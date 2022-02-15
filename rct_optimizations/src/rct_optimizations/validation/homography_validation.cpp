@@ -40,9 +40,10 @@ std::vector<std::size_t> GridCorrespondenceSampler::getSampleCorrespondenceIndic
   return correspondence_indices;
 }
 
-RandomCorrespondenceSampler::RandomCorrespondenceSampler(const std::size_t n_correspondences_, const std::size_t n_samples_)
+RandomCorrespondenceSampler::RandomCorrespondenceSampler(const std::size_t n_correspondences_, const std::size_t n_samples_, const unsigned seed_)
   : n_correspondences(n_correspondences_)
   , n_samples(n_samples_)
+  , seed(seed_)
 {
   const unsigned min_samples = 4;
   if (n_samples < min_samples)
@@ -62,7 +63,7 @@ RandomCorrespondenceSampler::RandomCorrespondenceSampler(const std::size_t n_cor
 std::vector<std::size_t> RandomCorrespondenceSampler::getSampleCorrespondenceIndices() const
 {
   // Create a random number generator with a uniform distribution across all indices
-  std::mt19937 rand_gen(std::random_device{}());
+  std::mt19937 rand_gen(seed);
   std::uniform_int_distribution<std::size_t> dist(0, n_correspondences - 1);
   auto fn = [&rand_gen, &dist]() -> std::size_t { return dist(rand_gen); };
 
