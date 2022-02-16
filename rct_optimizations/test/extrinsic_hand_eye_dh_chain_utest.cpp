@@ -62,7 +62,7 @@ ExtrinsicHandEyeProblem2D3D ProblemCreator<ExtrinsicHandEyeProblem2D3D>::createP
   problem.camera_mount_to_camera_guess = createPose(true_camera, init);
 
   DHChain camera_chain = test::createABBIRB2400();
-  DHChain target_chain({});
+  DHChain target_chain(std::vector<DHTransform>{});
   problem.observations = test::createObservations(camera_chain,
                                                   target_chain,
                                                   true_camera,
@@ -89,7 +89,7 @@ ExtrinsicHandEyeProblem3D3D ProblemCreator<ExtrinsicHandEyeProblem3D3D>::createP
   problem.camera_mount_to_camera_guess = createPose(true_camera, init);
 
   DHChain camera_chain = test::createABBIRB2400();
-  DHChain target_chain({});
+  DHChain target_chain(std::vector<DHTransform>{});
   problem.observations = test::createObservations(camera_chain,
                                                   target_chain,
                                                   true_camera,

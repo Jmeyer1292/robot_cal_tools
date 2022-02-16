@@ -212,7 +212,7 @@ int main(int argc, char** argv)
   KinematicMeasurement::Set measurements = loadMeasurements(measurements_file);
 
   // Create the problem
-  KinematicCalibrationProblemPose6D problem(DHChain({}), createTwoAxisPositioner());
+  KinematicCalibrationProblemPose6D problem(DHChain(std::vector<DHTransform>{}), createTwoAxisPositioner());
 
   // Add the observations
   problem.observations = measurements;

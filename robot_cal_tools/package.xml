@@ -9,6 +9,10 @@
   <license>TODO</license>
 
   <buildtool_depend>catkin</buildtool_depend>
+  <exec_depend>rct_optimizations</exec_depend>
+  <exec_depend>rct_image_tools</exec_depend>
+  <exec_depend>rct_ros_tools</exec_depend>
+  <exec_depend>rct_examples</exec_depend>
 
   <export>
     <metapackage/>
