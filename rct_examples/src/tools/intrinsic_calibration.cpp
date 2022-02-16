@@ -51,12 +51,12 @@ void opencvCameraCalibration(const std::vector<Correspondence2D3D::Set>& obs,
   std::vector<cv::Mat> tvecs;
   cv::calibrateCamera(object_points, image_points, image_size, camera_matrix, dist_coeffs, rvecs, tvecs);
 
-  std::array<double, 4> intr_values;
-  intr_values[0] = camera_matrix.at<double>(0, 0);
-  intr_values[1] = camera_matrix.at<double>(1, 1);
-  intr_values[2] = camera_matrix.at<double>(0, 2);
-  intr_values[3] = camera_matrix.at<double>(2, 2);
-  printCameraIntrinsics(intr_values, "OpenCV Intrinsics");
+  CameraIntrinsics calibrated_intr;
+  calibrated_intr.fx() = camera_matrix.at<double>(0, 0);
+  calibrated_intr.fy() = camera_matrix.at<double>(1, 1);
+  calibrated_intr.cx() = camera_matrix.at<double>(0, 2);
+  calibrated_intr.cy() = camera_matrix.at<double>(1, 2);
+  printCameraIntrinsics(calibrated_intr.values, "OpenCV Intrinsics");
   printNewLine();
 
   std::array<double, 5> dist_values;
@@ -110,11 +110,13 @@ int main(int argc, char** argv)
     cv::namedWindow(WINDOW, cv::WINDOW_NORMAL);
     for (std::size_t i = 0; i < data_set.images.size(); ++i)
     {
+      const cv::Mat& image = data_set.images[i];
+
       // Extract observations
       rct_image_tools::TargetFeatures target_features;
       try
       {
-        target_features = target_finder->findTargetFeatures(data_set.images[i]);
+        target_features = target_finder->findTargetFeatures(image);
         if (target_features.empty())
           throw std::runtime_error("Failed to find any target features");
         ROS_INFO_STREAM("Found " << target_features.size() << " target features");
@@ -128,9 +130,15 @@ int main(int argc, char** argv)
       }
 
       // Show drawing
-      cv::imshow(WINDOW, target_finder->drawTargetFeatures(data_set.images[i], target_features));
+      cv::imshow(WINDOW, target_finder->drawTargetFeatures(image, target_features));
       cv::waitKey();
     }
+    cv::destroyWindow(WINDOW);
+
+    // Also try the OpenCV cameraCalibrate function
+    printTitle("OpenCV Calibration");
+    opencvCameraCalibration(problem_def.image_observations, data_set.images.front().size(),
+                            problem_def.intrinsics_guess);
 
     // Run optimization
     auto opt_result = optimize(problem_def);
@@ -151,11 +159,6 @@ int main(int argc, char** argv)
     printNewLine();
 
     std::cout << opt_result.covariance.printCorrelationCoeffAboveThreshold(0.5) << std::endl;
-
-    // Also try the OpenCV cameraCalibrate function
-    printTitle("OpenCV Calibration");
-    opencvCameraCalibration(problem_def.image_observations, data_set.images.front().size(),
-                            problem_def.intrinsics_guess);
   }
   catch (const std::exception& ex)
   {
