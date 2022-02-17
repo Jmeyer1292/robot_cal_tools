@@ -172,8 +172,7 @@ private:
 
 static rct_optimizations::Pose6d guessInitialPose()
 {
-  Eigen::Isometry3d guess = Eigen::Isometry3d::Identity();
-  guess = guess * Eigen::Translation3d(0,0,0.5) * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX());
+  Eigen::Isometry3d guess = Eigen::Translation3d(0, 0, 0.5) * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX());
   return rct_optimizations::poseEigenToCal(guess);
 }
 
@@ -191,18 +190,28 @@ rct_optimizations::optimize(const rct_optimizations::IntrinsicEstimationProblem&
   internal_intrinsics.cy() = params.intrinsics_guess.cy();
 
   // Prepare space for the target poses to estimate (1 for each observation set)
-  std::vector<Pose6d> internal_poses (params.image_observations.size());
+  std::vector<Pose6d> internal_poses(params.image_observations.size());
+  std::vector<std::size_t> valid_idx;
 
   // All of the target poses are seeded to be "in front of" and "looking at" the camera
   for (std::size_t i = 0; i < params.image_observations.size(); ++i)
   {
-    internal_poses[i] = solvePnP(params.intrinsics_guess, params.image_observations[i], guessInitialPose());
+    try
+    {
+      internal_poses[i] = solvePnP(params.intrinsics_guess, params.image_observations[i], guessInitialPose());
+      valid_idx.push_back(i);
+    }
+    catch (const std::exception&)
+    {
+      std::cout << "PnP failed for image " << i << std::endl;
+      continue;
+    }
   }
 
   ceres::Problem problem;
 
   // Create a set of cost functions for each observation set
-  for (std::size_t i = 0; i < params.image_observations.size(); ++i)
+  for (std::size_t i : valid_idx)
   {
     // Create a cost for each 2D -> 3D image correspondence
     for (std::size_t j = 0; j < params.image_observations[i].size(); ++j)

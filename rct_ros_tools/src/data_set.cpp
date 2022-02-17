@@ -40,8 +40,19 @@ rct_ros_tools::ExtrinsicDataSet parse(const YAML::Node& root, const std::string&
     const auto img_path = root[i]["image"].as<std::string>();
     const auto pose_path = root[i]["pose"].as<std::string>();
     cv::Mat image = rct_ros_tools::readImageOpenCV(combine(root_path, img_path));
+
+    if (image.empty())
+    {
+      ROS_WARN_STREAM("Failed to load image " << i << ". Skipping...");
+      continue;
+    }
+
     Eigen::Isometry3d p;
-    rct_ros_tools::loadPose(combine(root_path, pose_path), p);
+    if (!rct_ros_tools::loadPose(combine(root_path, pose_path), p))
+    {
+      ROS_WARN_STREAM("Failed to load pose " << i << ". Skipping...");
+      continue;
+    }
 
     data.images.push_back(image);
     data.tool_poses.push_back(p);
