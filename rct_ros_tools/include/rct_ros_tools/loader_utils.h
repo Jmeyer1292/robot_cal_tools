@@ -1,6 +1,6 @@
 #pragma once
 
-#include <yaml-cpp/node/node.h>
+#include <yaml-cpp/yaml.h>
 #include <xmlrpcpp/XmlRpcValue.h>
 
 namespace rct_ros_tools
