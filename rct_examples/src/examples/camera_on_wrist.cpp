@@ -14,7 +14,7 @@
 // of this package. It's my only concession to the "self-contained rule".
 #include <rct_ros_tools/data_set.h>
 // This include provide useful print functions for outputing results to terminal
-#include <rct_ros_tools/print_utils.h>
+#include <rct_common/print_utils.h>
 // This header brings in a tool for finding the target in a given image
 #include <rct_image_tools/modified_circle_grid_finder.h>
 // This header brings in he calibration function for 'moving camera' on robot wrist - what we
@@ -25,6 +25,8 @@
 #include <ros/package.h>
 // For std::cout
 #include <iostream>
+
+using namespace rct_common;
 
 int extrinsicWristCameraCalibration()
 {
@@ -134,18 +136,18 @@ int extrinsicWristCameraCalibration()
   // Step 5: Do something with your results. Here I just print the results, but you might want to
   // update a data structure, save to a file, push to a mutable joint or mutable state publisher in
   // ROS. The options are many, and it's up to you. We just try to help solve the problem.
-  rct_ros_tools::printOptResults(opt_result.converged, opt_result.initial_cost_per_obs, opt_result.final_cost_per_obs);
-  rct_ros_tools::printNewLine();
+  printOptResults(opt_result.converged, opt_result.initial_cost_per_obs, opt_result.final_cost_per_obs);
+  printNewLine();
 
   // Note: Convergence and low cost does not mean a good calibration. See the calibration primer
   // readme on the main page of this repo.
   Eigen::Isometry3d c = opt_result.camera_mount_to_camera;
-  rct_ros_tools::printTransform(c, "Wrist", "Camera", "WRIST TO CAMERA");
-  rct_ros_tools::printNewLine();
+  printTransform(c, "Wrist", "Camera", "WRIST TO CAMERA");
+  printNewLine();
 
   Eigen::Isometry3d t = opt_result.target_mount_to_target;
-  rct_ros_tools::printTransform(t, "Base", "Target", "BASE TO TARGET");
-  rct_ros_tools::printNewLine();
+  printTransform(t, "Base", "Target", "BASE TO TARGET");
+  printNewLine();
 
   return 0;
 }

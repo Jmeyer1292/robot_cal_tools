@@ -6,10 +6,10 @@
 #include <rct_image_tools/image_utils.h>
 #include <rct_optimizations/experimental/multi_camera_pnp.h>
 #include <rct_optimizations/ceres_math_utilities.h>
+#include <rct_common/print_utils.h>
 #include <rct_ros_tools/parameter_loaders.h>
 #include <rct_ros_tools/target_finder_plugin.h>
 #include <rct_ros_tools/data_set.h>
-#include <rct_ros_tools/print_utils.h>
 #include <rct_ros_tools/loader_utils.h>
 
 #include <opencv2/highgui.hpp>
@@ -21,6 +21,7 @@
 using namespace rct_optimizations;
 using namespace rct_image_tools;
 using namespace rct_ros_tools;
+using namespace rct_common;
 
 static void reproject(const Eigen::Isometry3d& base_to_target,
                       const std::vector<Eigen::Isometry3d>& base_to_camera,
