@@ -14,7 +14,9 @@
   <depend>cv_bridge</depend>
   <depend>image_transport</depend>
   <depend>pluginlib</depend>
+  <depend>rct_common</depend>
   <depend>rct_image_tools</depend>
+  <depend>rct_optimizations</depend>
   <depend>roscpp</depend>
   <depend>std_srvs</depend>
   <depend>tf2_ros</depend>

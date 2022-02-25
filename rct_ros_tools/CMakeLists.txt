@@ -3,6 +3,7 @@ project(rct_ros_tools)
 
 add_compile_options(-std=c++11 -Wall -Wextra)
 
+find_package(rct_common REQUIRED)
 find_package(rct_optimizations REQUIRED)
 find_package(rct_image_tools REQUIRED)
 
@@ -47,6 +48,13 @@ catkin_package(
     image_transport
     std_srvs
     pluginlib
+  DEPENDS
+    rct_common
+    rct_optimizations
+    rct_image_tools
+    OpenCV
+    Eigen3
+    yaml-cpp
 )
 
 ###########
@@ -71,6 +79,7 @@ target_link_libraries(${PROJECT_NAME}
  ${OpenCV_LIBRARIES}
  rct::rct_optimizations
  rct::rct_image_tools
+ rct::rct_common
 )
 
 add_library(${PROJECT_NAME}_target_loader_plugins

@@ -1,11 +1,11 @@
-#ifndef RCT_PRINT_UTILS_H
-#define RCT_PRINT_UTILS_H
+#ifndef RCT_COMMON_PRINT_UTILS_H
+#define RCT_COMMON_PRINT_UTILS_H
+
 #include <Eigen/Dense>
 #include <iostream>
 
-namespace rct_ros_tools
+namespace rct_common
 {
-
 inline
 std::string getStringRPY(const Eigen::Vector3d& rpy)
 {
@@ -139,6 +139,5 @@ void printCameraDistortion(const std::array<double, 5> &values, const std::strin
   std::cout << description << ":" << std::endl;
   std::cout << getStringDistortion(values) << std::endl;
 }
-
 }
-#endif // RCT_PRINT_UTILS_H
+#endif // PRINT_UTILS_H

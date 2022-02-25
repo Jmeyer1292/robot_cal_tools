@@ -1,10 +1,10 @@
 #include <rct_image_tools/image_utils.h>
 #include <rct_optimizations/eigen_conversions.h>
 #include <rct_optimizations/experimental/camera_intrinsic.h>
+#include <rct_common/print_utils.h>
 #include <rct_ros_tools/data_set.h>
 #include <rct_ros_tools/parameter_loaders.h>
 #include <rct_ros_tools/target_finder_plugin.h>
-#include <rct_ros_tools/print_utils.h>
 #include <rct_ros_tools/loader_utils.h>
 
 #include <opencv2/calib3d.hpp>
@@ -15,6 +15,7 @@
 using namespace rct_optimizations;
 using namespace rct_image_tools;
 using namespace rct_ros_tools;
+using namespace rct_common;
 
 const std::string WINDOW = "window";
 

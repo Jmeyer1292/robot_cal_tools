@@ -1,7 +1,7 @@
 #include <rct_optimizations/validation/camera_intrinsic_calibration_validation.h>
+#include <rct_common/print_utils.h>
 #include <rct_ros_tools/parameter_loaders.h>
 #include <rct_ros_tools/target_finder_plugin.h>
-#include <rct_ros_tools/print_utils.h>
 #include <rct_ros_tools/data_set.h>
 #include <rct_ros_tools/loader_utils.h>
 
@@ -17,6 +17,7 @@
 using namespace rct_optimizations;
 using namespace rct_image_tools;
 using namespace rct_ros_tools;
+using namespace rct_common;
 
 std::string WINDOW = "window";
 

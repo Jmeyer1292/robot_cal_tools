@@ -1,8 +1,8 @@
 // Utilities for loading data sets and calib parameters from YAML files via ROS
+#include <rct_common/print_utils.h>
 #include <rct_ros_tools/data_set.h>
 #include <rct_ros_tools/parameter_loaders.h>
 #include <rct_ros_tools/target_finder_plugin.h>
-#include <rct_ros_tools/print_utils.h>
 #include <rct_ros_tools/loader_utils.h>
 // The calibration function for 'moving camera' on robot wrist
 #include <rct_optimizations/extrinsic_hand_eye.h>
@@ -20,6 +20,7 @@
 using namespace rct_optimizations;
 using namespace rct_image_tools;
 using namespace rct_ros_tools;
+using namespace rct_common;
 
 const std::string WINDOW = "window";
 
