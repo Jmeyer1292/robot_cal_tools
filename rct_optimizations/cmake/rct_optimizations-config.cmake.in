@@ -5,6 +5,9 @@ set_and_check(@PROJECT_NAME@_INCLUDE_DIRS "${PACKAGE_PREFIX_DIR}/include")
 set_and_check(@PROJECT_NAME@_LIBRARY_DIRS "${PACKAGE_PREFIX_DIR}/lib")
 
 include(CMakeFindDependencyMacro)
+find_dependency(rct_common)
+find_dependency(Boost)
 find_dependency(Ceres)
+find_dependency(yaml-cpp)
 
 include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@-targets.cmake")

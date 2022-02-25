@@ -114,7 +114,7 @@ KinObservation2D3D::Set createKinematicObservations(const DHChain &to_camera_cha
         continue;
       }
 
-      if (obs.correspondence_set.size() > 0)
+      if (!obs.correspondence_set.empty())
       {
         observations.push_back(obs);
         correspondences += obs.correspondence_set.size();

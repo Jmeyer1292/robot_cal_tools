@@ -1,8 +1,8 @@
 // Utilities for loading data sets and calib parameters from YAML files via ROS
+#include <rct_common/print_utils.h>
 #include <rct_ros_tools/data_set.h>
 #include <rct_ros_tools/parameter_loaders.h>
 #include <rct_ros_tools/target_finder_plugin.h>
-#include <rct_ros_tools/print_utils.h>
 #include <rct_ros_tools/loader_utils.h>
 // To find 2D  observations from images
 #include <rct_image_tools/image_utils.h>
@@ -19,6 +19,7 @@
 using namespace rct_optimizations;
 using namespace rct_image_tools;
 using namespace rct_ros_tools;
+using namespace rct_common;
 
 static void reproject(const Eigen::Isometry3d& base_to_target, const std::vector<Eigen::Isometry3d>& base_to_camera,
                       const std::vector<CameraIntrinsics>& intr, const cv::Mat& image,
