@@ -158,21 +158,18 @@ CovarianceResult computeCovariance(ceres::Problem &problem,
     }
 
     // Extract tangent space
-    if (!problem.IsParameterBlockConstant(const_cast<double*>(b)))
-    {
-      std::vector<int> masks;
-      auto it = param_masks.find(b);
-      if (it != param_masks.end())
-        masks = it->second;
+    std::vector<int> masks;
+    auto it = param_masks.find(b);
+    if (it != param_masks.end())
+      masks = it->second;
 
-      const std::vector<std::string>& label = param_names.at(b);
-      for (std::size_t i = 0; i < static_cast<std::size_t>(block_size); ++i)
+    const std::vector<std::string>& label = param_names.at(b);
+    for (std::size_t i = 0; i < static_cast<std::size_t>(block_size); ++i)
+    {
+      if (std::find(masks.begin(), masks.end(), i) == masks.end())
       {
-        if (std::find(masks.begin(), masks.end(), i) == masks.end())
-        {
-          tangent_space_indices.push_back(n_params_in_selected + static_cast<Eigen::Index>(i));
-          tangent_space_labels.push_back(label.at(i));
-        }
+        tangent_space_indices.push_back(n_params_in_selected + static_cast<Eigen::Index>(i));
+        tangent_space_labels.push_back(label.at(i));
       }
     }
 

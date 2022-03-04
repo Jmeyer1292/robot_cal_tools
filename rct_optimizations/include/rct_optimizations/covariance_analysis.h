@@ -38,7 +38,6 @@ Eigen::MatrixXd computeCorrelationsFromCovariance(const Eigen::MatrixXd& covaria
 
 /**
  * @brief Compute all covariance results for a Ceres optimization problem. Labels results with generic names.
- * @details This excludes all parameters set to be constant during the solve
  * @param problem The Ceres problem (after optimization).
  * @param param_masks Map of the parameter block pointer and the indices of the parameters within that block to be excluded from the covariance calculation
  * @param options ceres::Covariance::Options to use when calculating covariance.
@@ -50,7 +49,6 @@ CovarianceResult computeCovariance(ceres::Problem &problem,
 
 /**
  * @brief Compute covariance results for the specified parameter blocks in a Ceres optimization problem. Labels results with generic names.
- * @details This excludes all parameters set to be constant during the solve
  * @param problem The Ceres problem (after optimization).
  * @param parameter_blocks Specific parameter blocks to compute covariance between.
  * @param param_masks Map of the parameter block pointer and the indices of the parameters within that block to be excluded from the covariance calculation
@@ -64,7 +62,6 @@ CovarianceResult computeCovariance(ceres::Problem &problem,
 
 /**
  * @brief Compute all covariance results for a Ceres optimization problem and label them with the provided names.
- * @details This excludes all parameters set to be constant during the solve
  * @param problem The Ceres problem (after optimization).
  * @param parameter_names Labels for all optimization parameters in the problem.
  * @param param_masks Map of the parameter block pointer and the indices of the parameters within that block to be excluded from the covariance calculation
@@ -78,7 +75,6 @@ CovarianceResult computeCovariance(ceres::Problem &problem,
 
 /**
  * @brief Compute covariance results for specified parameter blocks in a Ceres optimization problem and label them with the provided names.
- * @details This excludes all parameters set to be constant during the solve
  * @param problem The Ceres problem (after optimization).
  * @param parameter_blocks Specific parameter blocks for which covariance will be calculated.
  * @param parameter_names Labels for optimization parameters in the specified blocks.
