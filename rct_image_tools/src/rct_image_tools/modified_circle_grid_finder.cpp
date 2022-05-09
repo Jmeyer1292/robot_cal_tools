@@ -60,11 +60,6 @@ static std::vector<cv::Point2d> extractKeyPoints(const cv::Mat& image, const std
   std::vector<cv::KeyPoint> keypoints;
   cv::Point large_point;
 
-  std::size_t start_first_row = 0;
-  std::size_t end_first_row = cols - 1;
-  std::size_t start_last_row = rows * cols - cols;
-  std::size_t end_last_row = rows * cols - 1;
-
   for (double alpha = 1.0; alpha <= 3.0; alpha += 0.01)
   {
     bool found = false;
@@ -106,16 +101,30 @@ static std::vector<cv::Point2d> extractKeyPoints(const cv::Mat& image, const std
   std::size_t temp_rows = flipped ? cols : rows;
   std::size_t temp_cols = flipped ? rows : cols;
 
+  std::size_t start_first_row = 0;
+  std::size_t end_first_row = cols - 1;
+  std::size_t start_last_row = rows * cols - cols;
+  std::size_t end_last_row = rows * cols - 1;
+
   // Determine which circle is the largest
   double start_first_row_size = -1.0;
   double start_last_row_size = -1.0;
   double end_first_row_size = -1.0;
   double end_last_row_size = -1.0;
 
+  // Determine size of corners relative to their adjacent circles
+  double start_first_row_avg_rel_size = 0;
+  double start_last_row_avg_rel_size = 0;
+  double end_first_row_avg_rel_size = 0;
+  double end_last_row_avg_rel_size = 0;
+
   cv::Point2d start_last_row_pt = centers[start_last_row];
   cv::Point2d end_last_row_pt = centers[end_last_row];
   cv::Point2d start_first_row_pt = centers[start_first_row];
   cv::Point2d end_first_row_pt = centers[end_first_row];
+
+  // Get the size of every circle
+  std::vector<double> center_sizes(centers.size(), 1.0);
 
   for (std::size_t i = 0; i < keypoints.size(); i++)
   {
@@ -123,21 +132,63 @@ static std::vector<cv::Point2d> extractKeyPoints(const cv::Mat& image, const std
     double y = keypoints[i].pt.y;
     double ksize = keypoints[i].size;
 
+    for (std::size_t j = 0; j < centers.size(); j++)
+    {
+      auto center = centers[j];
+      if (center.x == x && center.y == y)
+      {
+        center_sizes[j] = ksize;
+        break;
+      }
+    }
+  }
+
+  // Iterate over every center, when it is a corner then compare its size to adjacent circles
+  for (std::size_t i = 0; i < centers.size(); i++)
+  {
+    double x = centers[i].x;
+    double y = centers[i].y;
+    double ksize = center_sizes[i];
+
     if (x == start_last_row_pt.x && y == start_last_row_pt.y)
     {
       start_last_row_size = ksize;
+      if (i + 1 < center_sizes.size() && i - cols < center_sizes.size())
+      {
+        double start_last_row_rel_row_size = start_last_row_size / center_sizes[i+1];
+        double start_last_row_rel_col_size = start_last_row_size / center_sizes[i-cols];
+        start_last_row_avg_rel_size = (start_last_row_rel_row_size + start_last_row_rel_col_size)/2.0;
+      }
     }
     if (x == end_last_row_pt.x && y == end_last_row_pt.y)
     {
       end_last_row_size = ksize;
+      if (i - 1 < center_sizes.size() && i - cols < center_sizes.size())
+      {
+        double end_last_row_rel_row_size = end_last_row_size / center_sizes[i-1];
+        double end_last_row_rel_col_size = end_last_row_size / center_sizes[i-cols];
+        end_last_row_avg_rel_size = (end_last_row_rel_row_size + end_last_row_rel_col_size)/2.0;
+      }
     }
     if (x == start_first_row_pt.x && y == start_first_row_pt.y)
     {
       start_first_row_size = ksize;
+      if (i + 1 < center_sizes.size() && i + cols < center_sizes.size())
+      {
+        double start_first_row_rel_row_size = start_first_row_size / center_sizes[i+1];
+        double start_first_row_rel_col_size = start_first_row_size / center_sizes[i+cols];
+        start_first_row_avg_rel_size = (start_first_row_rel_row_size + start_first_row_rel_col_size)/2.0;
+      }
     }
     if (x == end_first_row_pt.x && y == end_first_row_pt.y)
     {
       end_first_row_size = ksize;
+      if (i - 1 < center_sizes.size() && i + cols < center_sizes.size())
+      {
+        double end_first_row_rel_row_size = end_first_row_size / center_sizes[i-1];
+        double end_first_row_rel_col_size = end_first_row_size / center_sizes[i+cols];
+        end_first_row_avg_rel_size = (end_first_row_rel_row_size + end_first_row_rel_col_size)/2.0;
+      }
     }
   }
 
@@ -178,8 +229,8 @@ static std::vector<cv::Point2d> extractKeyPoints(const cv::Mat& image, const std
     ......
     o.....
   */
-  if (start_last_row_size > start_first_row_size && start_last_row_size > end_first_row_size &&
-      start_last_row_size > end_last_row_size)
+  if (start_last_row_avg_rel_size > start_first_row_avg_rel_size && start_last_row_avg_rel_size > end_first_row_avg_rel_size &&
+      start_last_row_avg_rel_size > end_last_row_avg_rel_size)
   {
     large_point.x = start_last_row_pt.x;
     large_point.y = start_last_row_pt.y;
@@ -209,8 +260,8 @@ static std::vector<cv::Point2d> extractKeyPoints(const cv::Mat& image, const std
     ......
     ......
   */
-  else if (end_first_row_size > end_last_row_size && end_first_row_size > start_last_row_size &&
-           end_first_row_size > start_first_row_size)
+  else if (end_first_row_avg_rel_size > end_last_row_avg_rel_size && end_first_row_avg_rel_size > start_last_row_avg_rel_size &&
+           end_first_row_avg_rel_size > start_first_row_avg_rel_size)
   {
     large_point.x = end_first_row_pt.x;
     large_point.y = end_first_row_pt.y;
@@ -240,8 +291,8 @@ static std::vector<cv::Point2d> extractKeyPoints(const cv::Mat& image, const std
     ......
     .....o
   */
-  else if (end_last_row_size > start_last_row_size && end_last_row_size > end_first_row_size &&
-           end_last_row_size > start_first_row_size)
+  else if (end_last_row_avg_rel_size > start_last_row_avg_rel_size && end_last_row_avg_rel_size > end_first_row_avg_rel_size &&
+           end_last_row_avg_rel_size > start_first_row_avg_rel_size)
   {
     large_point.x = end_last_row_pt.x;
     large_point.y = end_last_row_pt.y;
@@ -275,8 +326,8 @@ static std::vector<cv::Point2d> extractKeyPoints(const cv::Mat& image, const std
     ......
     ......
   */
-  else if (start_first_row_size > end_last_row_size && start_first_row_size > end_first_row_size &&
-           start_first_row_size > start_last_row_size)
+  else if (start_first_row_avg_rel_size > end_last_row_avg_rel_size && start_first_row_avg_rel_size > end_first_row_avg_rel_size &&
+           start_first_row_avg_rel_size > start_last_row_avg_rel_size)
   {
     large_point.x = start_first_row_pt.x;
     large_point.y = start_first_row_pt.y;
