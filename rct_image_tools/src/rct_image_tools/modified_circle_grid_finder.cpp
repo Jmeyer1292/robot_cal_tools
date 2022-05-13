@@ -4,9 +4,9 @@
 #include <memory>
 
 template <typename T>
-bool isEqual(const T& a, const T& b)
+bool isEqual(const T& a, const T& b, const T& tol = std::numeric_limits<T>::epsilon())
 {
-    return abs(a - b) < std::numeric_limits<T>::epsilon();
+    return abs(a - b) < tol;
 }
 
 static void drawPointLabel(const std::string& label, const cv::Point2d& position, const cv::Scalar& color, cv::Mat& image)
