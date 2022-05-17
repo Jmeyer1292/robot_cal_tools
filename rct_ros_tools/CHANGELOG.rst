@@ -2,8 +2,8 @@
 Changelog for package rct_ros_tools
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.1 (2022-05-17)
+------------------
 * remove changelogs
 * Add changelogs
 * Fix issue `#102 <https://github.com/Jmeyer1292/robot_cal_tools/issues/102>`_ using private yamlcpp header

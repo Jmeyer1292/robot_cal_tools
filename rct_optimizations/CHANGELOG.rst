@@ -2,8 +2,8 @@
 Changelog for package rct_optimizations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.1 (2022-05-17)
+------------------
 * remove changelogs
 * Add changelogs
 * Use mask only to determine tangent space in covariance calculation

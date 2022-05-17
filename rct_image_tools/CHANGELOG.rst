@@ -2,8 +2,8 @@
 Changelog for package rct_image_tools
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.1 (2022-05-17)
+------------------
 * remove changelogs
 * Add changelogs
 * Improve finding the origin of a modified circle grid (`#104 <https://github.com/Jmeyer1292/robot_cal_tools/issues/104>`_)

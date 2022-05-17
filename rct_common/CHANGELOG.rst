@@ -2,8 +2,8 @@
 Changelog for package rct_common
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.1 (2022-05-17)
+------------------
 * remove changelogs
 * Add changelogs
 * Move utilities from ros pkg to common pkg and add missing dependencies cmake config

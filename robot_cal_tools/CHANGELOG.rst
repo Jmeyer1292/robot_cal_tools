@@ -2,8 +2,8 @@
 Changelog for package robot_cal_tools
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.1 (2022-05-17)
+------------------
 * remove changelogs
 * Fix robot_cal_tools version
 * Add changelogs

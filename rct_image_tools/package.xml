@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>rct_image_tools</name>
-  <version>0.1.0</version>
+  <version>0.1.1</version>
   <description>The rct_image_tools package</description>
 
   <maintainer email="jmeyer1292@gmail.com">Jonathan Meyer</maintainer>
