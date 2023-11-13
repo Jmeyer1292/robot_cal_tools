@@ -15,10 +15,7 @@ static std::string rootPath(const std::string& filename)
   return filename.substr(0, last_idx);
 }
 
-static std::string combine(const std::string& dir, const std::string& rel_path)
-{
-  return dir + "/" + rel_path;
-}
+static std::string combine(const std::string& dir, const std::string& rel_path) { return dir + "/" + rel_path; }
 
 cv::Mat rct_ros_tools::readImageOpenCV(const std::string& path)
 {
@@ -61,7 +58,7 @@ rct_ros_tools::ExtrinsicDataSet parse(const YAML::Node& root, const std::string&
   return data;
 }
 
-boost::optional<rct_ros_tools::ExtrinsicDataSet> rct_ros_tools::parseFromFile(const std::string &path)
+boost::optional<rct_ros_tools::ExtrinsicDataSet> rct_ros_tools::parseFromFile(const std::string& path)
 {
   try
   {
@@ -79,7 +76,7 @@ boost::optional<rct_ros_tools::ExtrinsicDataSet> rct_ros_tools::parseFromFile(co
 void writePose(const std::string& path, const Eigen::Isometry3d& pose)
 {
   YAML::Node root(pose);
-  std::ofstream ofh (path);
+  std::ofstream ofh(path);
   ofh << root;
 }
 
@@ -96,7 +93,7 @@ void writeDirectory(const std::string& path, const rct_ros_tools::ExtrinsicDataS
     root.push_back(n);
   }
 
-  std::ofstream ofh (path);
+  std::ofstream ofh(path);
   ofh << root;
 }
 
@@ -123,9 +120,10 @@ bool rct_ros_tools::saveToDirectory(const std::string& path, const rct_ros_tools
   return true;
 }
 
-rct_ros_tools::ExtrinsicCorrespondenceDataSet::ExtrinsicCorrespondenceDataSet(const std::vector<rct_ros_tools::ExtrinsicDataSet> &extrinsic_data_set,
-                                                                              const rct_image_tools::TargetFinder &target_finder,
-                                                                              bool debug)
+rct_ros_tools::ExtrinsicCorrespondenceDataSet::ExtrinsicCorrespondenceDataSet(
+    const std::vector<rct_ros_tools::ExtrinsicDataSet>& extrinsic_data_set,
+    const rct_image_tools::TargetFinder& target_finder,
+    bool debug)
 {
   static const std::string WINDOW = "window";
   if (debug)
@@ -159,7 +157,9 @@ rct_ros_tools::ExtrinsicCorrespondenceDataSet::ExtrinsicCorrespondenceDataSet(co
         {
           // Show the points we detected
           std::vector<Eigen::Vector2d> observations(correspondences_(c, i).size());
-          std::transform(correspondences_(c, i).begin(), correspondences_(c, i).end(), observations.begin(),
+          std::transform(correspondences_(c, i).begin(),
+                         correspondences_(c, i).end(),
+                         observations.begin(),
                          [](const rct_optimizations::Correspondence2D3D& o) { return o.in_image; });
 
           cv::imshow(WINDOW, target_finder.drawTargetFeatures(data_set.images[i], target_features));
@@ -178,15 +178,9 @@ rct_ros_tools::ExtrinsicCorrespondenceDataSet::ExtrinsicCorrespondenceDataSet(co
     cv::destroyWindow(WINDOW);
 }
 
-std::size_t rct_ros_tools::ExtrinsicCorrespondenceDataSet::getCameraCount() const
-{
-  return correspondences_.rows();
-}
+std::size_t rct_ros_tools::ExtrinsicCorrespondenceDataSet::getCameraCount() const { return correspondences_.rows(); }
 
-std::size_t rct_ros_tools::ExtrinsicCorrespondenceDataSet::getImageCount() const
-{
-  return correspondences_.cols();
-}
+std::size_t rct_ros_tools::ExtrinsicCorrespondenceDataSet::getImageCount() const { return correspondences_.cols(); }
 
 std::size_t rct_ros_tools::ExtrinsicCorrespondenceDataSet::getImageCameraCount(std::size_t image_index) const
 {
@@ -198,13 +192,15 @@ std::size_t rct_ros_tools::ExtrinsicCorrespondenceDataSet::getCameraImageCount(s
   return mask_.row(camera_index).sum();
 }
 
-bool rct_ros_tools::ExtrinsicCorrespondenceDataSet::foundCorrespondence(std::size_t camera_index, std::size_t image_index) const
+bool rct_ros_tools::ExtrinsicCorrespondenceDataSet::foundCorrespondence(std::size_t camera_index,
+                                                                        std::size_t image_index) const
 {
   return static_cast<bool>(mask_(camera_index, image_index));
 }
 
 const rct_optimizations::Correspondence2D3D::Set&
-rct_ros_tools::ExtrinsicCorrespondenceDataSet::getCorrespondenceSet(std::size_t camera_index, std::size_t image_index) const
+rct_ros_tools::ExtrinsicCorrespondenceDataSet::getCorrespondenceSet(std::size_t camera_index,
+                                                                    std::size_t image_index) const
 {
   return correspondences_(camera_index, image_index);
 }

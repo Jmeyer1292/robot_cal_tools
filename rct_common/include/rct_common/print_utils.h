@@ -6,62 +6,47 @@
 
 namespace rct_common
 {
-inline
-std::string getStringRPY(const Eigen::Vector3d& rpy)
+inline std::string getStringRPY(const Eigen::Vector3d& rpy)
 {
   std::stringstream s;
-  s << "rpy=\"" << rpy(2) << "(" << rpy(2) * 180/M_PI << " deg) " << rpy(1) << "(" << rpy(1) * 180/M_PI << " deg) " << rpy(0) << "(" << rpy(0) * 180/M_PI << " deg)\"";
+  s << "rpy=\"" << rpy(2) << "(" << rpy(2) * 180 / M_PI << " deg) " << rpy(1) << "(" << rpy(1) * 180 / M_PI << " deg) "
+    << rpy(0) << "(" << rpy(0) * 180 / M_PI << " deg)\"";
   return s.str();
 }
 
-inline
-std::string getStringXYZ(const Eigen::Vector3d& xyz)
+inline std::string getStringXYZ(const Eigen::Vector3d& xyz)
 {
   std::stringstream s;
   s << "xyz=\"" << xyz(0) << " " << xyz(1) << " " << xyz(2) << "\"";
   return s.str();
 }
 
-inline
-std::string getStringQuaternion(const Eigen::Quaterniond& q)
+inline std::string getStringQuaternion(const Eigen::Quaterniond& q)
 {
   std::stringstream s;
   s << "qxyzw=\"" << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << "\"";
   return s.str();
 }
 
-inline
-std::string getStringIntrinsics(const std::array<double, 4> &values)
+inline std::string getStringIntrinsics(const std::array<double, 4>& values)
 {
   std::stringstream s;
-  s << "Intr:\nfx = " << values[0]
-    << "\tfy = " << values[1]
-    << "\ncx = " << values[2]
-    << "\tcy = " << values[3];
+  s << "Intr:\nfx = " << values[0] << "\tfy = " << values[1] << "\ncx = " << values[2] << "\tcy = " << values[3];
   return s.str();
 }
 
-inline
-std::string getStringDistortion(const std::array<double, 5> &values)
+inline std::string getStringDistortion(const std::array<double, 5>& values)
 {
   std::stringstream s;
   s << "Distortions:\n"
-    << "k1 = " << values[0]
-    << "\tk2 = " << values[1]
-    << "\tp1 = " << values[2]
-    << "\tp2 = " << values[3]
+    << "k1 = " << values[0] << "\tk2 = " << values[1] << "\tp1 = " << values[2] << "\tp2 = " << values[3]
     << "\tk3 = " << values[4];
   return s.str();
 }
 
-inline
-void printNewLine()
-{
-  std::cout << std::endl;
-}
+inline void printNewLine() { std::cout << std::endl; }
 
-inline
-void printTitle(const std::string& title, int width = 80)
+inline void printTitle(const std::string& title, int width = 80)
 {
   int length = title.length() + 8;
   if (length < width)
@@ -85,8 +70,10 @@ void printTitle(const std::string& title, int width = 80)
   std::cout << full << std::endl;
 }
 
-inline
-void printTransform(const Eigen::Isometry3d &transform, const std::string &parent_frame, const std::string &child_frame, const std::string &description)
+inline void printTransform(const Eigen::Isometry3d& transform,
+                           const std::string& parent_frame,
+                           const std::string& child_frame,
+                           const std::string& description)
 {
   std::cout << description << ":" << std::endl << transform.matrix() << std::endl << std::endl;
   std::cout << "--- URDF Format " << parent_frame << " to " << child_frame << " ---" << std::endl;
@@ -97,11 +84,14 @@ void printTransform(const Eigen::Isometry3d &transform, const std::string &paren
   std::cout << getStringQuaternion(q) << std::endl;
 }
 
-inline
-void printTransformDiff(const Eigen::Isometry3d &transform1, const Eigen::Isometry3d &transform2, const std::string &parent_frame, const std::string &child_frame, const std::string &description)
+inline void printTransformDiff(const Eigen::Isometry3d& transform1,
+                               const Eigen::Isometry3d& transform2,
+                               const std::string& parent_frame,
+                               const std::string& child_frame,
+                               const std::string& description)
 {
   Eigen::Isometry3d delta = transform1.inverse() * transform2;
-  Eigen::AngleAxisd aa (delta.linear());
+  Eigen::AngleAxisd aa(delta.linear());
   Eigen::Vector3d rpy = delta.rotation().eulerAngles(2, 1, 0);
 
   std::cout << description << ":" << std::endl;
@@ -118,26 +108,23 @@ void printTransformDiff(const Eigen::Isometry3d &transform1, const Eigen::Isomet
   std::cout << "DELTA A: " << (180.0 * aa.angle() / M_PI) << " and " << getStringRPY(rpy) << std::endl;
 }
 
-inline
-void printOptResults(bool converged, double initial_cost_per_obs, double final_cost_per_obs)
+inline void printOptResults(bool converged, double initial_cost_per_obs, double final_cost_per_obs)
 {
   std::cout << "Did converge?: " << converged << std::endl;
   std::cout << "Initial cost?: " << std::sqrt(initial_cost_per_obs) << " (pixels per dot)" << std::endl;
   std::cout << "Final cost?: " << std::sqrt(final_cost_per_obs) << " (pixels per dot)" << std::endl;
 }
 
-inline
-void printCameraIntrinsics(const std::array<double, 4> &values, const std::string &description)
+inline void printCameraIntrinsics(const std::array<double, 4>& values, const std::string& description)
 {
   std::cout << description << ":" << std::endl;
   std::cout << getStringIntrinsics(values) << std::endl;
 }
 
-inline
-void printCameraDistortion(const std::array<double, 5> &values, const std::string &description)
+inline void printCameraDistortion(const std::array<double, 5>& values, const std::string& description)
 {
   std::cout << description << ":" << std::endl;
   std::cout << getStringDistortion(values) << std::endl;
 }
-}
-#endif // PRINT_UTILS_H
+}  // namespace rct_common
+#endif  // PRINT_UTILS_H

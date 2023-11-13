@@ -8,7 +8,7 @@
  *
  * This is only supposed to be a sample to ease understanding. See the equivalent tool for a
  * configurable offline processor of your data
-*/
+ */
 
 // This include is used to load images and the associated wrist poses from the data/ directory
 // of this package. It's my only concession to the "self-contained rule".
@@ -49,19 +49,15 @@ int extrinsicWristCameraCalibration()
 
   // Step 2: Let's add the guesses next. See the rct_examples/README.md for a discussion about the
   // reference frames for the camera and target!
-  Eigen::Vector3d wrist_to_camera_tx (0.015, 0, 0.15); // Guess for wrist-to-camera
+  Eigen::Vector3d wrist_to_camera_tx(0.015, 0, 0.15);  // Guess for wrist-to-camera
   Eigen::Matrix3d wrist_to_camera_rot;
-  wrist_to_camera_rot << 0, 1, 0,
-                        -1, 0, 0,
-                         0, 0, 1;
+  wrist_to_camera_rot << 0, 1, 0, -1, 0, 0, 0, 0, 1;
   problem_def.camera_mount_to_camera_guess.translation() = wrist_to_camera_tx;
   problem_def.camera_mount_to_camera_guess.linear() = wrist_to_camera_rot;
 
-  Eigen::Vector3d base_to_target_tx (1, 0, 0); // Guess for base-to-target
+  Eigen::Vector3d base_to_target_tx(1, 0, 0);  // Guess for base-to-target
   Eigen::Matrix3d base_to_target_rot;
-  base_to_target_rot << 0, 1, 0,
-                       -1, 0, 0,
-                        0, 0, 1;
+  base_to_target_rot << 0, 1, 0, -1, 0, 0, 0, 0, 1;
   problem_def.target_mount_to_target_guess.translation() = base_to_target_tx;
   problem_def.target_mount_to_target_guess.linear() = base_to_target_rot;
 
@@ -89,7 +85,7 @@ int extrinsicWristCameraCalibration()
 
   // The 'rct_image_tools' package provides a class for describing the target (it's 3D points) and
   // a class for finding that target in an image. So let's create a target...
-  rct_image_tools::ModifiedCircleGridTarget target(10, 10, 0.0254); // rows, cols, spacing between dots
+  rct_image_tools::ModifiedCircleGridTarget target(10, 10, 0.0254);  // rows, cols, spacing between dots
 
   // The Observation Finder class uses the target definition to search images
   rct_image_tools::ModifiedCircleGridTargetFinder target_finder(target);
@@ -107,7 +103,7 @@ int extrinsicWristCameraCalibration()
     {
       target_features = target_finder.findTargetFeatures(image_set[i]);
     }
-    catch(const std::exception& ex)
+    catch (const std::exception& ex)
     {
       std::cerr << "Unable to find the circle grid in image: " << i << "\n";
       continue;
@@ -154,19 +150,13 @@ int extrinsicWristCameraCalibration()
 
 #ifndef RCT_ENABLE_TESTING
 
-int main()
-{
-  return extrinsicWristCameraCalibration();
-}
+int main() { return extrinsicWristCameraCalibration(); }
 
 #else
 
 #include <gtest/gtest.h>
 
-TEST(ExtrinsicCamera, ExtrinsicCamera)
-{
-  EXPECT_EQ(extrinsicWristCameraCalibration(), 0);
-}
+TEST(ExtrinsicCamera, ExtrinsicCamera) { EXPECT_EQ(extrinsicWristCameraCalibration(), 0); }
 
 int main(int argc, char** argv)
 {

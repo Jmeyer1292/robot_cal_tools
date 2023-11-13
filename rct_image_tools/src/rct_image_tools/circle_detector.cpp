@@ -65,13 +65,15 @@ struct DetectionResult
 
 /**
  * @brief Helper function for finding circles within an image
- * This function thresholds the input image at the input intensity, applies filtering, and attempts to find circles from contours in the image
+ * This function thresholds the input image at the input intensity, applies filtering, and attempts to find circles from
+ * contours in the image
  * @param image - grayscale image
  * @param threshold - threshold intensity
  * @param params - circle detection parameters
  * @return
  */
-DetectionResult findCircles(const cv::Mat& image, const double threshold,
+DetectionResult findCircles(const cv::Mat& image,
+                            const double threshold,
                             const rct_image_tools::CircleDetectorParams& params)
 {
   // Threshold the image
@@ -83,10 +85,10 @@ DetectionResult findCircles(const cv::Mat& image, const double threshold,
   cv::findContours(binarized_image, contours, cv::RETR_LIST, cv::CHAIN_APPROX_NONE);
 
   // Remove all contours with less than 5 points (OpenCV requirement for ellipse fitting)
-  contours.erase(
-    std::remove_if(contours.begin(), contours.end(), [](const std::vector<cv::Point> &contour) {
-      return contour.size() < 5;
-    }), contours.end());
+  contours.erase(std::remove_if(contours.begin(),
+                                contours.end(),
+                                [](const std::vector<cv::Point>& contour) { return contour.size() < 5; }),
+                 contours.end());
 
   // Debug
   cv::Mat debug_img;
@@ -262,14 +264,16 @@ std::vector<DetectionResult> applyThresholds(const cv::Mat& image, const rct_ima
 }
 
 /**
- * @brief Given a list of potential circle centers acquired from differently threshold-ed images, this function matches circle centers that are close in position
- * and radius, and performs a weighted average of their position and radius to create keypoints
+ * @brief Given a list of potential circle centers acquired from differently threshold-ed images, this function matches
+ * circle centers that are close in position and radius, and performs a weighted average of their position and radius to
+ * create keypoints
  * @param all_centers - a vector of vector of circle centers acquired from images with different threshold values
  * @param params - circle detection parameters
  * @return
  */
-std::vector<cv::KeyPoint> detectKeyPoints(const std::vector<std::vector<rct_image_tools::CircleDetector::Center>>& all_centers,
-                                          const rct_image_tools::CircleDetectorParams& params)
+std::vector<cv::KeyPoint>
+detectKeyPoints(const std::vector<std::vector<rct_image_tools::CircleDetector::Center>>& all_centers,
+                const rct_image_tools::CircleDetectorParams& params)
 {
   using namespace rct_image_tools;
 
@@ -301,7 +305,8 @@ std::vector<cv::KeyPoint> detectKeyPoints(const std::vector<std::vector<rct_imag
   // Create a container for the grouped circle centers
   std::vector<std::vector<CircleDetector::Center>> grouped_centers;
 
-  // Loop over all of the circle centers detected at the various threshold levels and try to group circle centers that are close together
+  // Loop over all of the circle centers detected at the various threshold levels and try to group circle centers that
+  // are close together
   for (const std::vector<CircleDetector::Center>& centers : all_centers)
   {
     // Loop over all of the circle centers for the current threshold level
@@ -354,14 +359,11 @@ std::vector<cv::KeyPoint> detectKeyPoints(const std::vector<std::vector<rct_imag
   return keypoints;
 }
 
-} // namespace anonymous
+}  // namespace
 
 namespace rct_image_tools
 {
-CircleDetector::CircleDetector(const CircleDetectorParams& parameters)
-  : params(parameters)
-{
-}
+CircleDetector::CircleDetector(const CircleDetectorParams& parameters) : params(parameters) {}
 
 void CircleDetector::detect(cv::InputArray input, std::vector<cv::KeyPoint>& keypoints, cv::InputArray)
 {
@@ -432,4 +434,4 @@ cv::Ptr<CircleDetector> CircleDetector::create(const CircleDetectorParams& param
   return cv::makePtr<CircleDetector>(params);
 }
 
-} // namespace cv
+}  // namespace rct_image_tools

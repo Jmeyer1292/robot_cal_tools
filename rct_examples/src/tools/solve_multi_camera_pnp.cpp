@@ -29,7 +29,6 @@ static void reproject(const Eigen::Isometry3d& base_to_target,
                       const cv::Mat& image,
                       const std::vector<Correspondence2D3D::Set>& correspondence_sets)
 {
-
   Eigen::Isometry3d camera_to_target = base_to_camera[0].inverse() * base_to_target;
 
   std::vector<Eigen::Vector3d> target_points;

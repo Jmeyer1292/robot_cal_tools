@@ -2,7 +2,7 @@
 #include <rct_optimizations/validation/noise_qualification.h>
 #include <rct_optimizations/pnp.h>
 
-//accumulators
+// accumulators
 #include <boost/accumulators/accumulators.hpp>
 #include <boost/accumulators/statistics/stats.hpp>
 #include <boost/accumulators/statistics/mean.hpp>
@@ -11,25 +11,24 @@
 
 namespace rct_optimizations
 {
-
 Eigen::Quaterniond computeQuaternionMean(const std::vector<Eigen::Quaterniond>& quaterns)
 {
- /* Mean quaternion is found using method described by Markley et al: Quaternion Averaging
-  * https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20070017872.pdf
-  *
-  * M = sum(w_i * q_i * q_i^T)    Eq. 12
-  * q_bar = argmax(q^T * M * q)   Eq. 13
-  *
-  * "The solution of this maximization problem is well known. The average quaternion is
-  * the eigenvector of M corresponding to the maximum eigenvalue."
-  *
-  * In the above equations, w_i is the weight of the ith quaternion.
-  * In this case, all quaternions are equally weighted (i.e. w_i = 1)
-  */
+  /* Mean quaternion is found using method described by Markley et al: Quaternion Averaging
+   * https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20070017872.pdf
+   *
+   * M = sum(w_i * q_i * q_i^T)    Eq. 12
+   * q_bar = argmax(q^T * M * q)   Eq. 13
+   *
+   * "The solution of this maximization problem is well known. The average quaternion is
+   * the eigenvector of M corresponding to the maximum eigenvalue."
+   *
+   * In the above equations, w_i is the weight of the ith quaternion.
+   * In this case, all quaternions are equally weighted (i.e. w_i = 1)
+   */
 
   Eigen::Matrix4d M = Eigen::Matrix4d::Zero();
 
-  for(const Eigen::Quaterniond& q : quaterns)
+  for (const Eigen::Quaterniond& q : quaterns)
   {
     M += q.coeffs() * q.coeffs().transpose();
   }
@@ -37,25 +36,24 @@ Eigen::Quaterniond computeQuaternionMean(const std::vector<Eigen::Quaterniond>& 
   // Calculate the SVD of the M matrix
   Eigen::JacobiSVD<Eigen::Matrix4d> svd(M, Eigen::ComputeFullU);
 
-  // The eigenvectors are represented by the columns of the U matrix; the eigenvector corresponding to the largest eigenvalue is in row 0
+  // The eigenvectors are represented by the columns of the U matrix; the eigenvector corresponding to the largest
+  // eigenvalue is in row 0
   Eigen::Quaterniond q;
   q.coeffs() << svd.matrixU().col(0);
 
-  assert(std::isnan(q.w()) == false &&
-         std::isnan(q.x()) == false &&
-         std::isnan(q.y()) == false &&
+  assert(std::isnan(q.w()) == false && std::isnan(q.x()) == false && std::isnan(q.y()) == false &&
          std::isnan(q.z()) == false);
 
   return q;
 };
 
-QuaternionStats computeQuaternionStats(const std::vector<Eigen::Quaterniond> &quaternions)
+QuaternionStats computeQuaternionStats(const std::vector<Eigen::Quaterniond>& quaternions)
 {
   QuaternionStats q_stats;
   q_stats.mean = computeQuaternionMean(quaternions);
 
   double q_var = 0.0;
-  for (const Eigen::Quaterniond &q : quaternions)
+  for (const Eigen::Quaterniond& q : quaternions)
   {
     q_var += std::pow(q_stats.mean.angularDistance(q), 2.0);
   }
@@ -92,7 +90,7 @@ PnPNoiseStat qualifyNoise2D(const std::vector<PnPProblem>& params)
 
     if (result.converged)
     {
-      //we will save the full result here for debugging purposes
+      // we will save the full result here for debugging purposes
       solution_transforms.push_back(result.camera_to_target);
       translations.push_back(solution_transforms.back().translation());
 
@@ -138,7 +136,7 @@ PnPNoiseStat qualifyNoise3D(const std::vector<PnPProblem3D>& params)
 
     if (result.converged)
     {
-      //we will save the full result here for debugging purposes
+      // we will save the full result here for debugging purposes
       solution_transforms.push_back(result.camera_to_target);
       translations.push_back(solution_transforms.back().translation());
 
@@ -157,4 +155,4 @@ PnPNoiseStat qualifyNoise3D(const std::vector<PnPProblem3D>& params)
   return output;
 }
 
-}//rct_optimizations
+}  // namespace rct_optimizations

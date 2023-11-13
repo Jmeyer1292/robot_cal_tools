@@ -20,7 +20,7 @@ int main(int argc, char** argv)
   cv::Mat m = cv::imread(path);
 
   // Define target - I hard-code the spacing parameter because it doesn't matter for this example
-  rct_image_tools::ModifiedCircleGridTarget target (rows, cols, 0.01);
+  rct_image_tools::ModifiedCircleGridTarget target(rows, cols, 0.01);
 
   // Create a finder that works with this target
   rct_image_tools::ModifiedCircleGridTargetFinder target_finder(target);

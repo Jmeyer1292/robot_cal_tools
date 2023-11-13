@@ -27,10 +27,7 @@ public:
     return finder_->drawTargetFeatures(image, target_features);
   }
 
-  const rct_image_tools::Target& target() const override
-  {
-    return finder_->target();
-  }
+  const rct_image_tools::Target& target() const override { return finder_->target(); }
 
   virtual void init(const YAML::Node& config) = 0;
 
@@ -38,4 +35,4 @@ protected:
   std::shared_ptr<const rct_image_tools::TargetFinder> finder_;
 };
 
-} // namespace rct_ros_tools
+}  // namespace rct_ros_tools

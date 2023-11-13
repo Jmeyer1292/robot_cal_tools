@@ -20,7 +20,7 @@ struct ModifiedCircleGridTarget : Target
   bool operator==(const ModifiedCircleGridTarget& other) const;
 
   virtual rct_optimizations::Correspondence2D3D::Set
-    createCorrespondences(const TargetFeatures& target_features) const override;
+  createCorrespondences(const TargetFeatures& target_features) const override;
 
   std::vector<Eigen::Vector3d> createPoints() const;
 
@@ -29,4 +29,4 @@ struct ModifiedCircleGridTarget : Target
   double spacing;
 };
 
-} // namespace rct_image_tools
+}  // namespace rct_image_tools

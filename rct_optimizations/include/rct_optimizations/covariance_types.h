@@ -14,7 +14,8 @@ namespace rct_optimizations
 /** @brief A double value identified by one or two name strings. */
 struct NamedParam
 {
-  /** @brief Pair of names identifying this parameter. For types with just one name (e.g. standard deviation), only names.first is used. */
+  /** @brief Pair of names identifying this parameter. For types with just one name (e.g. standard deviation), only
+   * names.first is used. */
   std::pair<std::string, std::string> names;
   /** @brief Value of this parameter. */
   std::double_t value;
@@ -33,7 +34,8 @@ struct NamedParam
 
 /**
  * @brief Covariance results for optimization parameters.
- * Contains standard deviations, covariances, and correlation coefficients, as well as the original covariance and correlation matrices.
+ * Contains standard deviations, covariances, and correlation coefficients, as well as the original covariance and
+ * correlation matrices.
  */
 struct CovarianceResult
 {

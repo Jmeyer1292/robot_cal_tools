@@ -10,17 +10,24 @@ using namespace rct_optimizations;
 
 namespace
 {
-
 class ReprojectionCost
 {
 public:
-  ReprojectionCost(const Eigen::Vector2d& obs, const CameraIntrinsics& intr, const Eigen::Isometry3d& base_to_wrist,
-                   const Eigen::Isometry3d& base_to_camera, const Eigen::Vector3d& point_in_target)
-    : obs_(obs), intr_(intr), wrist_pose_(poseEigenToCal(base_to_wrist)), camera_to_base_orig_(poseEigenToCal(base_to_camera.inverse())), target_pt_(point_in_target)
-  {}
+  ReprojectionCost(const Eigen::Vector2d& obs,
+                   const CameraIntrinsics& intr,
+                   const Eigen::Isometry3d& base_to_wrist,
+                   const Eigen::Isometry3d& base_to_camera,
+                   const Eigen::Vector3d& point_in_target)
+    : obs_(obs)
+    , intr_(intr)
+    , wrist_pose_(poseEigenToCal(base_to_wrist))
+    , camera_to_base_orig_(poseEigenToCal(base_to_camera.inverse()))
+    , target_pt_(point_in_target)
+  {
+  }
 
   template <typename T>
-  bool operator() (const T* const pose_camera_to_base_correction, const T* pose_wrist_to_target, T* residual) const
+  bool operator()(const T* const pose_camera_to_base_correction, const T* pose_wrist_to_target, T* residual) const
   {
     const T* camera_angle_axis = pose_camera_to_base_correction + 0;
     const T* camera_position = pose_camera_to_base_correction + 3;
@@ -28,11 +35,10 @@ public:
     const T* target_angle_axis = pose_wrist_to_target + 0;
     const T* target_position = pose_wrist_to_target + 3;
 
-    T link_point[3]; // Point in wrist coordinates
-    T world_point[3]; // Point in world coordinates (base of robot)
-    T camera_point_orig[3]; // Point in camera coordinates before correction
-    T camera_point[3]; // Point in camera coordinates
-
+    T link_point[3];         // Point in wrist coordinates
+    T world_point[3];        // Point in world coordinates (base of robot)
+    T camera_point_orig[3];  // Point in camera coordinates before correction
+    T camera_point[3];       // Point in camera coordinates
 
     // Transform points into camera coordinates
     T target_pt[3];
@@ -63,7 +69,7 @@ private:
   Eigen::Vector3d target_pt_;
 };
 
-}
+}  // namespace
 
 rct_optimizations::ExtrinsicMultiStaticCameraMovingTargetWristOnlyResult
 rct_optimizations::optimize(const rct_optimizations::ExtrinsicMultiStaticCameraMovingTargetWristOnlyProblem& params)
@@ -74,12 +80,13 @@ rct_optimizations::optimize(const rct_optimizations::ExtrinsicMultiStaticCameraM
 
   ceres::Problem problem;
 
-  for (std::size_t c = 0; c < params.base_to_camera_guess.size(); ++c) // For each camera
+  for (std::size_t c = 0; c < params.base_to_camera_guess.size(); ++c)  // For each camera
   {
     assert(params.image_observations[c].size() == params.wrist_poses.size());
-    for (std::size_t i = 0; i < params.wrist_poses.size(); ++i) // For each wrist pose / image set
+    for (std::size_t i = 0; i < params.wrist_poses.size(); ++i)  // For each wrist pose / image set
     {
-      for (std::size_t j = 0; j < params.image_observations[c][i].size(); ++j) // For each 3D point seen in the 2D image
+      for (std::size_t j = 0; j < params.image_observations[c][i].size();
+           ++j)  // For each 3D point seen in the 2D image
       {
         // Define
         const auto& img_obs = params.image_observations[c][i][j].in_image;
@@ -94,11 +101,11 @@ rct_optimizations::optimize(const rct_optimizations::ExtrinsicMultiStaticCameraM
 
         auto* cost_block = new ceres::AutoDiffCostFunction<ReprojectionCost, 2, 6, 6>(cost_fn);
 
-        problem.AddResidualBlock(cost_block, NULL, internal_camera_to_base_correction.values.data(),
-                                 internal_wrist_to_target.values.data());
+        problem.AddResidualBlock(
+            cost_block, NULL, internal_camera_to_base_correction.values.data(), internal_wrist_to_target.values.data());
       }
-    } // for each wrist pose
-  } // end for each camera
+    }  // for each wrist pose
+  }    // end for each camera
 
   ceres::Solver::Options options;
   ceres::Solver::Summary summary;

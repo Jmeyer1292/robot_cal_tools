@@ -22,12 +22,12 @@ TEST(MaximumLikelihoodTests, NaiveTest)
   std::cout << "Mean\n" << mean.format(fmt) << std::endl;
   std::cout << "Random:\n" << rand.format(fmt) << std::endl;
 
-  auto *ml = new MaximumLikelihood(mean, stdev);
+  auto* ml = new MaximumLikelihood(mean, stdev);
 
   // Check the cost function
   {
     Eigen::ArrayXXd residual(Eigen::ArrayXXd::Zero(6, 4));
-    std::vector<double *> params = {rand.data()};
+    std::vector<double*> params = { rand.data() };
 
     bool success = ml->operator()(params.data(), residual.data());
     EXPECT_TRUE(success);
@@ -41,7 +41,7 @@ TEST(MaximumLikelihoodTests, NaiveTest)
 
   // Run an optimization to see if we can drive the random numbers to the mean
   ceres::Problem problem;
-  auto *cost_block = new ceres::DynamicAutoDiffCostFunction<MaximumLikelihood>(ml);
+  auto* cost_block = new ceres::DynamicAutoDiffCostFunction<MaximumLikelihood>(ml);
   cost_block->AddParameterBlock(rand.size());
   cost_block->SetNumResiduals(rand.size());
   problem.AddResidualBlock(cost_block, nullptr, rand.data());
@@ -67,7 +67,7 @@ TEST(MaximumLikelihoodTests, NaiveTest)
   }
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

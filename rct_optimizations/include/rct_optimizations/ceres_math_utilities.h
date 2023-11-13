@@ -6,7 +6,6 @@
 
 namespace rct_optimizations
 {
-
 template <typename T>
 inline void transformPoint(const T angle_axis[3], const T tx[3], const T point[3], T t_point[3])
 {
@@ -44,7 +43,7 @@ inline void projectPoint(const CameraIntrinsics& intr, const T point[3], T xy_im
   // Scale into the image plane by distance away from camera
   T xp, yp;
 
-  if (zp1 == T(0)) // Avoid divide by zero
+  if (zp1 == T(0))  // Avoid divide by zero
   {
     xp = xp1;
     yp = yp1;
@@ -61,8 +60,8 @@ inline void projectPoint(const CameraIntrinsics& intr, const T point[3], T xy_im
   xy_image[1] = intr.fy() * yp + intr.cy();
 }
 
-template<typename T>
-inline Eigen::Matrix<T, 2, 1> projectPoint(const rct_optimizations::CameraIntrinsics &intr,
+template <typename T>
+inline Eigen::Matrix<T, 2, 1> projectPoint(const rct_optimizations::CameraIntrinsics& intr,
                                            const Eigen::Matrix<T, 3, 1>& point)
 {
   // Scale the input point by its distance from the camera (i.e. z-coordinate)
@@ -91,6 +90,6 @@ inline Eigen::Matrix<T, 2, 1> projectPoint(const rct_optimizations::CameraIntrin
   return image_pt.template head<2>();
 }
 
-} // namespace rct_optimizations
+}  // namespace rct_optimizations
 
-#endif // RCT_CERES_MATH_UTILITIES_H
+#endif  // RCT_CERES_MATH_UTILITIES_H

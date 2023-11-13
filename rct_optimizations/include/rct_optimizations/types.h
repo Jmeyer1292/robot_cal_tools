@@ -12,7 +12,7 @@ namespace rct_optimizations
  */
 struct CameraIntrinsics
 {
-  std::array<double, 4> values {0,0,0,0};
+  std::array<double, 4> values{ 0, 0, 0, 0 };
 
   double& fx() { return values[0]; }
   double& fy() { return values[1]; }
@@ -35,7 +35,7 @@ struct Pose6d
   Pose6d() = default;
   Pose6d(std::array<double, 6> l) : values(l) {}
 
-  std::array<double, 6> values{0,0,0,0,0,0};
+  std::array<double, 6> values{ 0, 0, 0, 0, 0, 0 };
 
   double& rx() { return values[0]; }
   double& ry() { return values[1]; }
@@ -54,20 +54,18 @@ struct Pose6d
 /**
  * @brief A pair of corresponding features in a N-dimensional sensor "image" and 3D target
  */
-template<Eigen::Index IMAGE_DIM, Eigen::Index WORLD_DIM>
+template <Eigen::Index IMAGE_DIM, Eigen::Index WORLD_DIM>
 struct Correspondence
 {
   using Set = std::vector<Correspondence<IMAGE_DIM, WORLD_DIM>>;
   Correspondence()
-    : in_image(Eigen::Matrix<double, IMAGE_DIM, 1>::Zero())
-    , in_target(Eigen::Matrix<double, WORLD_DIM, 1>::Zero())
+    : in_image(Eigen::Matrix<double, IMAGE_DIM, 1>::Zero()), in_target(Eigen::Matrix<double, WORLD_DIM, 1>::Zero())
   {
   }
 
   Correspondence(const Eigen::Matrix<double, IMAGE_DIM, 1>& in_image_,
                  const Eigen::Matrix<double, WORLD_DIM, 1>& in_target_)
-    : in_target(in_target_)
-    , in_image(in_image_)
+    : in_target(in_target_), in_image(in_image_)
   {
   }
 
@@ -95,29 +93,25 @@ using Correspondence3DSet [[deprecated]] = Correspondence3D3D::Set;
 
 /**
  * @brief A set of data representing a single observation of a calibration target.
- * This consists of the feature correspondences as well as the transforms to the "mount" frames of the camera and target.
- * For a moving camera or target, the "mount" pose would likely be the transform from the robot base to the robot tool flange.
- * For a stationary camera or target, this "mount" pose would simply be identity.
+ * This consists of the feature correspondences as well as the transforms to the "mount" frames of the camera and
+ * target. For a moving camera or target, the "mount" pose would likely be the transform from the robot base to the
+ * robot tool flange. For a stationary camera or target, this "mount" pose would simply be identity.
  *
- * Note that @ref to_camera_mount and @ref to_target_mount do not necessarily need to be relative the the same coordinate system because
- * certain calibration problems might optimize a 6D transform in between the root frame of @ref to_camera mount and the root frame of @ref to_target_mount
+ * Note that @ref to_camera_mount and @ref to_target_mount do not necessarily need to be relative the the same
+ * coordinate system because certain calibration problems might optimize a 6D transform in between the root frame of
+ * @ref to_camera mount and the root frame of @ref to_target_mount
  *
- * Keep in mind that the optimization itself determines the final calibrated transforms from these "mount" frames to the camera and target.
+ * Keep in mind that the optimization itself determines the final calibrated transforms from these "mount" frames to the
+ * camera and target.
  */
-template<Eigen::Index IMAGE_DIM, Eigen::Index WORLD_DIM>
+template <Eigen::Index IMAGE_DIM, Eigen::Index WORLD_DIM>
 struct Observation
 {
   using Set = std::vector<Observation<IMAGE_DIM, WORLD_DIM>>;
-  Observation()
-    : to_camera_mount(Eigen::Isometry3d::Identity())
-    , to_target_mount(Eigen::Isometry3d::Identity())
-  {
-  }
+  Observation() : to_camera_mount(Eigen::Isometry3d::Identity()), to_target_mount(Eigen::Isometry3d::Identity()) {}
 
-  Observation(const Eigen::Isometry3d& to_camera_mount_,
-              const Eigen::Isometry3d& to_target_mount_)
-    : to_camera_mount(to_camera_mount_)
-    , to_target_mount(to_target_mount_)
+  Observation(const Eigen::Isometry3d& to_camera_mount_, const Eigen::Isometry3d& to_target_mount_)
+    : to_camera_mount(to_camera_mount_), to_target_mount(to_target_mount_)
   {
   }
 
@@ -144,15 +138,15 @@ using Observation3D3D = Observation<3, 3>;
 /**
  * @brief A set of data representing a single observation of a calibration target
  */
-template<Eigen::Index IMAGE_DIM, Eigen::Index WORLD_DIM>
+template <Eigen::Index IMAGE_DIM, Eigen::Index WORLD_DIM>
 struct KinematicObservation
 {
   using Set = std::vector<KinematicObservation>;
 
   inline bool operator==(const KinematicObservation& rhs) const
   {
-    return camera_chain_joints.isApprox(rhs.camera_chain_joints) && target_chain_joints.isApprox(rhs.target_chain_joints) &&
-        correspondence_set == correspondence_set;
+    return camera_chain_joints.isApprox(rhs.camera_chain_joints) &&
+           target_chain_joints.isApprox(rhs.target_chain_joints) && correspondence_set == correspondence_set;
   }
 
   /** @brief A set of feature correspondences between the sensor output and target */
@@ -208,6 +202,6 @@ public:
   CovarianceException(const std::string& what) : std::runtime_error(what) {}
 };
 
-} // namespace rct_optimizations
+}  // namespace rct_optimizations
 
 #endif

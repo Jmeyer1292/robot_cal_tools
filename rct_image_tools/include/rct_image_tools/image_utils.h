@@ -15,10 +15,9 @@ namespace rct_image_tools
  * @param target_points A vector of target points
  * @return A vector of uv values in the image frame
  */
-inline
-std::vector<cv::Point2d> getReprojections(const Eigen::Isometry3d &camera_to_target,
-                                          const rct_optimizations::CameraIntrinsics &intr,
-                                          const std::vector<Eigen::Vector3d> &target_points)
+inline std::vector<cv::Point2d> getReprojections(const Eigen::Isometry3d& camera_to_target,
+                                                 const rct_optimizations::CameraIntrinsics& intr,
+                                                 const std::vector<Eigen::Vector3d>& target_points)
 {
   std::vector<cv::Point2d> reprojections;
   for (const auto& point_in_target : target_points)
@@ -40,11 +39,7 @@ std::vector<cv::Point2d> getReprojections(const Eigen::Isometry3d &camera_to_tar
  * @param color The color of the circle drawn
  * @param image The image to draw the reprojections on
  */
-inline
-void drawReprojections(const std::vector<cv::Point2d> &reprojections,
-                       int size,
-                       cv::Scalar color,
-                       cv::Mat &image)
+inline void drawReprojections(const std::vector<cv::Point2d>& reprojections, int size, cv::Scalar color, cv::Mat& image)
 {
   for (const auto& pt : reprojections)
   {
@@ -52,5 +47,5 @@ void drawReprojections(const std::vector<cv::Point2d> &reprojections,
   }
 }
 
-}
-#endif // RCT_IMAGE_UTILS_H
+}  // namespace rct_image_tools
+#endif  // RCT_IMAGE_UTILS_H

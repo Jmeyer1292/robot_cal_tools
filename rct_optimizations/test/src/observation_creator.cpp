@@ -2,26 +2,27 @@
 #include "rct_optimizations/ceres_math_utilities.h"
 #include "rct_optimizations_tests/pose_generator.h"
 
-static bool projectAndTest(const Eigen::Vector3d& pt_in_camera, const rct_optimizations::test::Camera& camera,
+static bool projectAndTest(const Eigen::Vector3d& pt_in_camera,
+                           const rct_optimizations::test::Camera& camera,
                            Eigen::Vector2d& pt_in_image)
 {
   rct_optimizations::projectPoint(camera.intr, pt_in_camera.data(), pt_in_image.data());
-  if (pt_in_image(0) < 0 || pt_in_image(0) > camera.width ||
-      pt_in_image(1) < 0 || pt_in_image(1) > camera.height)
+  if (pt_in_image(0) < 0 || pt_in_image(0) > camera.width || pt_in_image(1) < 0 || pt_in_image(1) > camera.height)
   {
     return false;
   }
-  else return true;
+  else
+    return true;
 }
 
 namespace rct_optimizations
 {
 namespace test
 {
-Correspondence2D3D::Set getCorrespondences(const Eigen::Isometry3d &camera_pose,
-                                           const Eigen::Isometry3d &target_pose,
-                                           const Camera &camera,
-                                           const Target &target,
+Correspondence2D3D::Set getCorrespondences(const Eigen::Isometry3d& camera_pose,
+                                           const Eigen::Isometry3d& target_pose,
+                                           const Camera& camera,
+                                           const Target& target,
                                            const bool require_all)
 {
   Correspondence2D3D::Set correspondences;
@@ -30,7 +31,7 @@ Correspondence2D3D::Set getCorrespondences(const Eigen::Isometry3d &camera_pose,
   Eigen::Isometry3d camera_to_target = camera_pose.inverse() * target_pose;
 
   // Loop over points
-  for (const auto &point : target.points)
+  for (const auto& point : target.points)
   {
     Correspondence2D3D corr;
     corr.in_target = point;
@@ -52,17 +53,16 @@ Correspondence2D3D::Set getCorrespondences(const Eigen::Isometry3d &camera_pose,
   return correspondences;
 }
 
-
-Correspondence3D3D::Set getCorrespondences(const Eigen::Isometry3d &camera_pose,
-                                           const Eigen::Isometry3d &target_pose,
-                                           const Target &target) noexcept
+Correspondence3D3D::Set getCorrespondences(const Eigen::Isometry3d& camera_pose,
+                                           const Eigen::Isometry3d& target_pose,
+                                           const Target& target) noexcept
 {
   Correspondence3D3D::Set correspondences;
   correspondences.reserve(target.points.size());
 
   Eigen::Isometry3d camera_to_target = camera_pose.inverse() * target_pose;
 
-  for (const auto &pt : target.points)
+  for (const auto& pt : target.points)
   {
     Correspondence3D3D corr;
     corr.in_target = pt;
@@ -73,12 +73,12 @@ Correspondence3D3D::Set getCorrespondences(const Eigen::Isometry3d &camera_pose,
   return correspondences;
 }
 
-Observation2D3D::Set createObservations(const Camera &camera,
-                                        const Target &target,
-                                        const std::vector<std::shared_ptr<PoseGenerator>> &pose_generators,
-                                        const Eigen::Isometry3d &true_target_mount_to_target,
-                                        const Eigen::Isometry3d &true_camera_mount_to_camera,
-                                        const Eigen::Isometry3d &camera_base_to_target_base)
+Observation2D3D::Set createObservations(const Camera& camera,
+                                        const Target& target,
+                                        const std::vector<std::shared_ptr<PoseGenerator>>& pose_generators,
+                                        const Eigen::Isometry3d& true_target_mount_to_target,
+                                        const Eigen::Isometry3d& true_camera_mount_to_camera,
+                                        const Eigen::Isometry3d& camera_base_to_target_base)
 {
   // Generate camera poses relative to the target origin
   std::vector<Eigen::Isometry3d> camera_poses;
@@ -91,27 +91,22 @@ Observation2D3D::Set createObservations(const Camera &camera,
   Observation2D3D::Set observations;
   observations.reserve(camera_poses.size());
 
-  for (const auto &target_to_camera_pose : camera_poses)
+  for (const auto& target_to_camera_pose : camera_poses)
   {
     Observation2D3D obs;
     // Assumption: the transform to the target mount is identity
     obs.to_target_mount = Eigen::Isometry3d::Identity();
-    obs.to_camera_mount = camera_base_to_target_base * obs.to_target_mount
-                          * true_target_mount_to_target * target_to_camera_pose
-                          * true_camera_mount_to_camera.inverse();
+    obs.to_camera_mount = camera_base_to_target_base * obs.to_target_mount * true_target_mount_to_target *
+                          target_to_camera_pose * true_camera_mount_to_camera.inverse();
 
     // Get the location of the camera and target relative to the same frame (i.e. camera base)
     Eigen::Isometry3d camera_base_to_camera = obs.to_camera_mount * true_camera_mount_to_camera;
-    Eigen::Isometry3d camera_base_to_target = camera_base_to_target_base * obs.to_target_mount
-                                              * true_target_mount_to_target;
+    Eigen::Isometry3d camera_base_to_target =
+        camera_base_to_target_base * obs.to_target_mount * true_target_mount_to_target;
 
     // Get correspondences
     // All camera poses may not see all target points, so don't require all to be seen
-    obs.correspondence_set = getCorrespondences(camera_base_to_camera,
-                                                camera_base_to_target,
-                                                camera,
-                                                target,
-                                                false);
+    obs.correspondence_set = getCorrespondences(camera_base_to_camera, camera_base_to_target, camera, target, false);
 
     observations.push_back(std::move(obs));
   }
@@ -119,11 +114,11 @@ Observation2D3D::Set createObservations(const Camera &camera,
   return observations;
 }
 
-Observation3D3D::Set createObservations(const Target &target,
-                                        const std::vector<std::shared_ptr<PoseGenerator>> &pose_generators,
-                                        const Eigen::Isometry3d &true_target_mount_to_target,
-                                        const Eigen::Isometry3d &true_camera_mount_to_camera,
-                                        const Eigen::Isometry3d &camera_base_to_target_base)
+Observation3D3D::Set createObservations(const Target& target,
+                                        const std::vector<std::shared_ptr<PoseGenerator>>& pose_generators,
+                                        const Eigen::Isometry3d& true_target_mount_to_target,
+                                        const Eigen::Isometry3d& true_camera_mount_to_camera,
+                                        const Eigen::Isometry3d& camera_base_to_target_base)
 {
   // Generate camera poses relative to the target origin
   std::vector<Eigen::Isometry3d> camera_poses;
@@ -136,25 +131,22 @@ Observation3D3D::Set createObservations(const Target &target,
   Observation3D3D::Set observations;
   observations.reserve(camera_poses.size());
 
-  for (const auto &target_to_camera_pose : camera_poses)
+  for (const auto& target_to_camera_pose : camera_poses)
   {
     Observation3D3D obs;
     // Assumption: the transform to the target mount is identity
     obs.to_target_mount = Eigen::Isometry3d::Identity();
-    obs.to_camera_mount = camera_base_to_target_base * obs.to_target_mount
-                          * true_target_mount_to_target * target_to_camera_pose
-                          * true_camera_mount_to_camera.inverse();
+    obs.to_camera_mount = camera_base_to_target_base * obs.to_target_mount * true_target_mount_to_target *
+                          target_to_camera_pose * true_camera_mount_to_camera.inverse();
 
     // Get the location of the camera target relative to the same frame (i.e. in camera base)
     Eigen::Isometry3d camera_base_to_camera = obs.to_camera_mount * true_camera_mount_to_camera;
-    Eigen::Isometry3d camera_base_to_target = camera_base_to_target_base * obs.to_target_mount
-                                                    * true_target_mount_to_target;
+    Eigen::Isometry3d camera_base_to_target =
+        camera_base_to_target_base * obs.to_target_mount * true_target_mount_to_target;
 
     // Get correspondences
     // Each camera pose should "see" the entire target, so don't catch any exceptions that might be thrown
-    obs.correspondence_set = getCorrespondences(camera_base_to_camera,
-                                                camera_base_to_target,
-                                                target);
+    obs.correspondence_set = getCorrespondences(camera_base_to_camera, camera_base_to_target, target);
 
     observations.push_back(std::move(obs));
   }
@@ -162,6 +154,5 @@ Observation3D3D::Set createObservations(const Target &target,
   return observations;
 }
 
-} // namespace test
-} // namespace rct_optimizations
-
+}  // namespace test
+}  // namespace rct_optimizations

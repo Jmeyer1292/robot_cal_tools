@@ -6,7 +6,6 @@
 
 namespace rct_optimizations
 {
-
 struct PnPProblem
 {
   rct_optimizations::CameraIntrinsics intr;
@@ -15,9 +14,8 @@ struct PnPProblem
   Eigen::Isometry3d camera_to_target_guess;
 
   std::string label_camera_to_target_guess = "camera_to_target";
-  const std::array<std::string, 3> labels_translation = {{"x", "y", "z"}};
-  const std::array<std::string, 3> labels_rotation = {{"rx", "ry", "rz"}};
-
+  const std::array<std::string, 3> labels_translation = { { "x", "y", "z" } };
+  const std::array<std::string, 3> labels_rotation = { { "rx", "ry", "rz" } };
 };
 
 struct PnPProblem3D
@@ -27,8 +25,8 @@ struct PnPProblem3D
   Eigen::Isometry3d camera_to_target_guess;
 
   std::string label_camera_to_target_guess = "camera_to_target";
-  const std::array<std::string, 3> labels_translation = {{"x", "y", "z"}};
-  const std::array<std::string, 3> labels_rotation = {{"rx", "ry", "rz"}};
+  const std::array<std::string, 3> labels_translation = { { "x", "y", "z" } };
+  const std::array<std::string, 3> labels_rotation = { { "rx", "ry", "rz" } };
 };
 
 struct PnPResult
@@ -45,6 +43,6 @@ struct PnPResult
 PnPResult optimize(const PnPProblem& params);
 PnPResult optimize(const PnPProblem3D& params);
 
-}
+}  // namespace rct_optimizations
 
-#endif // RCT_PNP_H
+#endif  // RCT_PNP_H

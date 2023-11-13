@@ -20,7 +20,7 @@ void checkCorrelation(const Eigen::MatrixXd& cov)
     for (Eigen::Index col = 0; col < cov.cols(); ++col)
     {
       // Since the covariance matrix is symmetric, just check the values in the top triangle
-      if(row < col)
+      if (row < col)
         EXPECT_LT(std::abs(cov(row, col)), CORRELATION_COEFFICIENT_THRESHOLD);
     }
   }
@@ -34,7 +34,7 @@ void printMatrix(const Eigen::MatrixXd& mat, const std::string& title)
 
 class PnP2DTest : public ::testing::Test
 {
-  public:
+public:
   PnP2DTest()
     : camera(test::makeKinectCamera())
     , target(TARGET_ROWS, TARGET_COLS, SPACING)
@@ -57,7 +57,7 @@ TEST_F(PnP2DTest, PerfectInitialConditions)
   problem.camera_to_target_guess = target_to_camera.inverse();
   problem.intr = camera.intr;
   EXPECT_NO_THROW(problem.correspondences =
-                    test::getCorrespondences(target_to_camera, Eigen::Isometry3d::Identity(), camera, target, true));
+                      test::getCorrespondences(target_to_camera, Eigen::Isometry3d::Identity(), camera, target, true));
 
   PnPResult result = optimize(problem);
   EXPECT_TRUE(result.converged);
@@ -75,11 +75,8 @@ TEST_F(PnP2DTest, PerturbedInitialCondition)
 {
   PnPProblem problem;
   problem.intr = camera.intr;
-  problem.correspondences = test::getCorrespondences(target_to_camera,
-                                                     Eigen::Isometry3d::Identity(),
-                                                     camera,
-                                                     target,
-                                                     true);
+  problem.correspondences =
+      test::getCorrespondences(target_to_camera, Eigen::Isometry3d::Identity(), camera, target, true);
 
   namespace ba = boost::accumulators;
   ba::accumulator_set<double, ba::features<ba::stats<ba::tag::mean, ba::tag::variance>>> residual_acc;
@@ -108,18 +105,14 @@ TEST_F(PnP2DTest, PerturbedInitialCondition)
   EXPECT_LT(ba::mean(pos_acc) + 3 * std::sqrt(ba::variance(pos_acc)), 1.0e-7);
   EXPECT_LT(ba::mean(ori_acc) + 3 * std::sqrt(ba::variance(ori_acc)), 1.0e-6);
   EXPECT_LT(ba::mean(residual_acc) + 3 * std::sqrt(ba::variance(residual_acc)), 1.0e-10);
-
 }
 
 TEST_F(PnP2DTest, BadIntrinsicParameters)
 {
   PnPProblem problem;
   problem.camera_to_target_guess = target_to_camera.inverse();
-  problem.correspondences = test::getCorrespondences(target_to_camera,
-                                                     Eigen::Isometry3d::Identity(),
-                                                     camera,
-                                                     target,
-                                                     true);
+  problem.correspondences =
+      test::getCorrespondences(target_to_camera, Eigen::Isometry3d::Identity(), camera, target, true);
 
   // Tweak the camera intrinsics such that we are optimizing with different values (+/- 1%)
   // than were used to generate the observations
@@ -144,10 +137,8 @@ TEST_F(PnP2DTest, BadIntrinsicParameters)
 
 class PnP3DTest : public ::testing::Test
 {
-  public:
-  PnP3DTest()
-    : target(TARGET_ROWS, TARGET_COLS, SPACING)
-    , target_to_camera(Eigen::Isometry3d::Identity())
+public:
+  PnP3DTest() : target(TARGET_ROWS, TARGET_COLS, SPACING), target_to_camera(Eigen::Isometry3d::Identity())
   {
     double x = static_cast<double>(TARGET_ROWS - 1) * SPACING / 2.0;
     double y = static_cast<double>(TARGET_COLS - 1) * SPACING / 2.0;
@@ -164,7 +155,7 @@ TEST_F(PnP3DTest, PerfectInitialConditions)
   PnPProblem3D problem;
   problem.camera_to_target_guess = target_to_camera.inverse();
   EXPECT_NO_THROW(problem.correspondences =
-                    test::getCorrespondences(target_to_camera, Eigen::Isometry3d::Identity(), target));
+                      test::getCorrespondences(target_to_camera, Eigen::Isometry3d::Identity(), target));
 
   PnPResult result = optimize(problem);
   EXPECT_TRUE(result.converged);
@@ -175,16 +166,14 @@ TEST_F(PnP3DTest, PerfectInitialConditions)
   checkCorrelation(result.covariance.correlation_matrix);
 
   // BUG: tests pass but nothing is printed
-//  printMatrix(result.covariance.correlation_matrix, "Correlation");
-//  std::cout << result.covariance.toString() << std::endl;
+  //  printMatrix(result.covariance.correlation_matrix, "Correlation");
+  //  std::cout << result.covariance.toString() << std::endl;
 }
 
 TEST_F(PnP3DTest, PerturbedInitialCondition)
 {
   PnPProblem3D problem;
-  problem.correspondences = test::getCorrespondences(target_to_camera,
-                                                     Eigen::Isometry3d::Identity(),
-                                                     target);
+  problem.correspondences = test::getCorrespondences(target_to_camera, Eigen::Isometry3d::Identity(), target);
 
   namespace ba = boost::accumulators;
   ba::accumulator_set<double, ba::features<ba::stats<ba::tag::mean, ba::tag::variance>>> residual_acc;
@@ -214,7 +203,7 @@ TEST_F(PnP3DTest, PerturbedInitialCondition)
   EXPECT_LT(ba::mean(residual_acc) + 3 * std::sqrt(ba::variance(residual_acc)), 1.0e-10);
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

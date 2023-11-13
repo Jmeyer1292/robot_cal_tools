@@ -7,7 +7,7 @@ namespace
 {
 struct SolvePnPCostFunc
 {
-  public:
+public:
   SolvePnPCostFunc(const rct_optimizations::CameraIntrinsics& intr,
                    const Eigen::Vector3d& pt_in_target,
                    const Eigen::Vector2d& pt_in_image)
@@ -15,8 +15,10 @@ struct SolvePnPCostFunc
   {
   }
 
-  template<typename T>
-  bool operator()(const T *const cam_to_tgt_angle_axis_ptr, const T *const cam_to_tgt_translation_ptr, T *const residual) const
+  template <typename T>
+  bool operator()(const T* const cam_to_tgt_angle_axis_ptr,
+                  const T* const cam_to_tgt_translation_ptr,
+                  T* const residual) const
   {
     using Isometry3 = Eigen::Transform<T, 3, Eigen::Isometry>;
     using Vector3 = Eigen::Matrix<T, 3, 1>;
@@ -25,9 +27,8 @@ struct SolvePnPCostFunc
     Eigen::Map<const Vector3> cam_to_tgt_angle_axis(cam_to_tgt_angle_axis_ptr);
     Eigen::Map<const Vector3> cam_to_tgt_translation(cam_to_tgt_translation_ptr);
     Isometry3 camera_to_target = Isometry3::Identity();
-    camera_to_target = Eigen::Translation<T, 3>(cam_to_tgt_translation)
-                       * Eigen::AngleAxis<T>(cam_to_tgt_angle_axis.norm(),
-                                             cam_to_tgt_angle_axis.normalized());
+    camera_to_target = Eigen::Translation<T, 3>(cam_to_tgt_translation) *
+                       Eigen::AngleAxis<T>(cam_to_tgt_angle_axis.norm(), cam_to_tgt_angle_axis.normalized());
 
     // Transform points into camera coordinates
     Vector3 camera_pt = camera_to_target * in_target_.cast<T>();
@@ -48,13 +49,15 @@ struct SolvePnPCostFunc
 struct SolvePnPCostFunc3D
 {
 public:
-  SolvePnPCostFunc3D(const Eigen::Vector3d& pt_in_target,
-                     const Eigen::Vector3d& pt_in_image)
-    :in_target_(pt_in_target), in_image_(pt_in_image)
-  {}
+  SolvePnPCostFunc3D(const Eigen::Vector3d& pt_in_target, const Eigen::Vector3d& pt_in_image)
+    : in_target_(pt_in_target), in_image_(pt_in_image)
+  {
+  }
 
-  template<typename T>
-  bool operator()(const T *const cam_to_tgt_angle_axis_ptr, const T *const cam_to_tgt_translation_ptr, T *const residual) const
+  template <typename T>
+  bool operator()(const T* const cam_to_tgt_angle_axis_ptr,
+                  const T* const cam_to_tgt_translation_ptr,
+                  T* const residual) const
   {
     using Isometry3 = Eigen::Transform<T, 3, Eigen::Isometry>;
     using Vector3 = Eigen::Matrix<T, 3, 1>;
@@ -62,9 +65,8 @@ public:
     Eigen::Map<const Vector3> cam_to_tgt_angle_axis(cam_to_tgt_angle_axis_ptr);
     Eigen::Map<const Vector3> cam_to_tgt_translation(cam_to_tgt_translation_ptr);
     Isometry3 camera_to_target = Isometry3::Identity();
-    camera_to_target = Eigen::Translation<T, 3>(cam_to_tgt_translation)
-                       * Eigen::AngleAxis<T>(cam_to_tgt_angle_axis.norm(),
-                                             cam_to_tgt_angle_axis.normalized());
+    camera_to_target = Eigen::Translation<T, 3>(cam_to_tgt_translation) *
+                       Eigen::AngleAxis<T>(cam_to_tgt_angle_axis.norm(), cam_to_tgt_angle_axis.normalized());
 
     // Transform points into camera coordinates
     Vector3 camera_pt = camera_to_target * in_target_.cast<T>();
@@ -79,12 +81,11 @@ public:
   Eigen::Vector3d in_image_;
 };
 
-} // namespace anonymous
+}  // namespace
 
 namespace rct_optimizations
 {
-
-PnPResult optimize(const PnPProblem &params)
+PnPResult optimize(const PnPProblem& params)
 {
   // Create the optimization variables from the input guess
   Eigen::AngleAxisd cam_to_tgt_rotation(params.camera_to_target_guess.rotation());
@@ -98,9 +99,9 @@ PnPResult optimize(const PnPProblem &params)
   {
     // Allocate Ceres data structures - ownership is taken by the ceres
     // Problem data structure
-    auto *cost_fn = new SolvePnPCostFunc(params.intr, corr.in_target, corr.in_image);
+    auto* cost_fn = new SolvePnPCostFunc(params.intr, corr.in_target, corr.in_image);
 
-    auto *cost_block = new ceres::AutoDiffCostFunction<SolvePnPCostFunc, 2, 3, 3>(cost_fn);
+    auto* cost_block = new ceres::AutoDiffCostFunction<SolvePnPCostFunc, 2, 3, 3>(cost_fn);
 
     problem.AddResidualBlock(cost_block, nullptr, cam_to_tgt_angle_axis.data(), cam_to_tgt_translation.data());
   }
@@ -113,9 +114,8 @@ PnPResult optimize(const PnPProblem &params)
   result.converged = summary.termination_type == ceres::CONVERGENCE;
   result.initial_cost_per_obs = summary.initial_cost / summary.num_residuals;
   result.final_cost_per_obs = summary.final_cost / summary.num_residuals;
-  result.camera_to_target = Eigen::Translation3d(cam_to_tgt_translation)
-                            * Eigen::AngleAxisd(cam_to_tgt_angle_axis.norm(),
-                                                cam_to_tgt_angle_axis.normalized());
+  result.camera_to_target = Eigen::Translation3d(cam_to_tgt_translation) *
+                            Eigen::AngleAxisd(cam_to_tgt_angle_axis.norm(), cam_to_tgt_angle_axis.normalized());
 
   // compose labels "camera_to_target_x", etc.
   std::vector<std::string> labels_camera_to_target_guess_translation;
@@ -134,9 +134,10 @@ PnPResult optimize(const PnPProblem &params)
   param_labels[cam_to_tgt_translation.data()] = labels_camera_to_target_guess_translation;
   param_labels[cam_to_tgt_angle_axis.data()] = labels_camera_to_target_guess_quaternion;
 
-  result.covariance = rct_optimizations::computeCovariance(problem,
-                                                           std::vector<const double *>({cam_to_tgt_translation.data(), cam_to_tgt_angle_axis.data()}),
-                                                           param_labels);
+  result.covariance = rct_optimizations::computeCovariance(
+      problem,
+      std::vector<const double*>({ cam_to_tgt_translation.data(), cam_to_tgt_angle_axis.data() }),
+      param_labels);
 
   return result;
 }
@@ -150,8 +151,8 @@ PnPResult optimize(const rct_optimizations::PnPProblem3D& params)
 
   ceres::Problem problem;
 
-  //only one loop, for correspondences
-  for (const auto& corr : params.correspondences) // For each 3D point seen in the 3D image
+  // only one loop, for correspondences
+  for (const auto& corr : params.correspondences)  // For each 3D point seen in the 3D image
   {
     // Allocate Ceres data structures - ownership is taken by the ceres
     // Problem data structure
@@ -171,9 +172,8 @@ PnPResult optimize(const rct_optimizations::PnPProblem3D& params)
   result.converged = summary.termination_type == ceres::CONVERGENCE;
   result.initial_cost_per_obs = summary.initial_cost / summary.num_residuals;
   result.final_cost_per_obs = summary.final_cost / summary.num_residuals;
-  result.camera_to_target = Eigen::Translation3d(cam_to_tgt_translation)
-                            * Eigen::AngleAxisd(cam_to_tgt_angle_axis.norm(),
-                                                cam_to_tgt_angle_axis.normalized());
+  result.camera_to_target = Eigen::Translation3d(cam_to_tgt_translation) *
+                            Eigen::AngleAxisd(cam_to_tgt_angle_axis.norm(), cam_to_tgt_angle_axis.normalized());
 
   // compose labels "camera_to_target_x", etc.
   std::vector<std::string> labels_camera_to_target_guess_translation;
@@ -192,10 +192,11 @@ PnPResult optimize(const rct_optimizations::PnPProblem3D& params)
   param_labels[cam_to_tgt_translation.data()] = labels_camera_to_target_guess_translation;
   param_labels[cam_to_tgt_angle_axis.data()] = labels_camera_to_target_guess_quaternion;
 
-  result.covariance = rct_optimizations::computeCovariance(problem,
-                                                           std::vector<const double *>({cam_to_tgt_translation.data(), cam_to_tgt_angle_axis.data()}),
-                                                           param_labels);
+  result.covariance = rct_optimizations::computeCovariance(
+      problem,
+      std::vector<const double*>({ cam_to_tgt_translation.data(), cam_to_tgt_angle_axis.data() }),
+      param_labels);
 
   return result;
 }
-} // namespace rct_optimizations
+}  // namespace rct_optimizations

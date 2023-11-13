@@ -22,4 +22,4 @@ using MapVectorEigenVector = std::map<unsigned, VectorEigenVector<DIM>>;
  */
 using TargetFeatures = MapVectorEigenVector<2>;
 
-} // namespace rct_image_tools
+}  // namespace rct_image_tools

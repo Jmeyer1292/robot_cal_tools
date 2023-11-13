@@ -15,11 +15,7 @@ using namespace rct_image_tools;
 class TargetFinderTestFixture : public ::testing::Test
 {
 public:
-  TargetFinderTestFixture()
-    : ::testing::Test()
-    , homography_error_threshold(1.0)
-  {
-  }
+  TargetFinderTestFixture() : ::testing::Test(), homography_error_threshold(1.0) {}
 
   void runTest()
   {
@@ -115,7 +111,11 @@ class CharucoFinderPredefinedBoardTest : public TargetFinderTestFixture
 public:
   CharucoFinderPredefinedBoardTest()
     : TargetFinderTestFixture()
-    , target(cv::aruco::CharucoBoard::create(5, 7, 0.02f, 0.01f, cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250)))
+    , target(cv::aruco::CharucoBoard::create(5,
+                                             7,
+                                             0.02f,
+                                             0.01f,
+                                             cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250)))
   {
     finder = std::make_shared<CharucoGridBoardTargetFinder>(target);
   }
@@ -175,9 +175,7 @@ public:
 class ArucoFinderTest : public TargetFinderTestFixture
 {
 public:
-  ArucoFinderTest()
-    : TargetFinderTestFixture()
-    , target(20, 20, 0.035f, 0.010f, cv::aruco::DICT_6X6_1000)
+  ArucoFinderTest() : TargetFinderTestFixture(), target(20, 20, 0.035f, 0.010f, cv::aruco::DICT_6X6_1000)
   {
     finder = std::make_shared<ArucoGridBoardTargetFinder>(target);
   }
@@ -205,7 +203,11 @@ class ArucoFinderPredefinedBoardTest : public TargetFinderTestFixture
 public:
   ArucoFinderPredefinedBoardTest()
     : TargetFinderTestFixture()
-    , target(cv::aruco::GridBoard::create(20, 20, 0.035f, 0.010f, cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_1000)))
+    , target(cv::aruco::GridBoard::create(20,
+                                          20,
+                                          0.035f,
+                                          0.010f,
+                                          cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_1000)))
   {
     finder = std::make_shared<ArucoGridBoardTargetFinder>(target);
   }
@@ -228,42 +230,21 @@ public:
   ArucoGridTarget target;
 };
 
-TEST_F(ModifiedCircleGridFinderTest, findTargetFeatures)
-{
-  this->runTest();
-}
+TEST_F(ModifiedCircleGridFinderTest, findTargetFeatures) { this->runTest(); }
 
-TEST_F(CharucoFinderTest, findTargetFeatures)
-{
-  this->runTest();
-}
+TEST_F(CharucoFinderTest, findTargetFeatures) { this->runTest(); }
 
-TEST_F(CharucoFinderPredefinedBoardTest, findTargetFeatures)
-{
-  this->runTest();
-}
+TEST_F(CharucoFinderPredefinedBoardTest, findTargetFeatures) { this->runTest(); }
 
-TEST_F(ObscuredCharucoFinderTest, findTargetFeatures)
-{
-  this->runTest();
-}
+TEST_F(ObscuredCharucoFinderTest, findTargetFeatures) { this->runTest(); }
 
-TEST_F(OneFeatureCharucoFinderTest, findTargetFeatures)
-{
-  this->runTest();
-}
+TEST_F(OneFeatureCharucoFinderTest, findTargetFeatures) { this->runTest(); }
 
-TEST_F(ArucoFinderTest, findTargetFeatures)
-{
-  this->runTest();
-}
+TEST_F(ArucoFinderTest, findTargetFeatures) { this->runTest(); }
 
-TEST_F(ArucoFinderPredefinedBoardTest, findTargetFeatures)
-{
-  this->runTest();
-}
+TEST_F(ArucoFinderPredefinedBoardTest, findTargetFeatures) { this->runTest(); }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

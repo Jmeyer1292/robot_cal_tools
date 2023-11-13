@@ -8,9 +8,9 @@ namespace rct_optimizations
 {
 namespace test
 {
-
 /**
- * @brief a test pin-hole camera that has intrinsics, but also image size data needed for generating simulated information
+ * @brief a test pin-hole camera that has intrinsics, but also image size data needed for generating simulated
+ * information
  */
 struct Camera
 {
@@ -38,8 +38,7 @@ struct Target
   Target() = default;
 
   Target(const unsigned rows, const unsigned cols, const double spacing)
-    : origin_idx((rows - 1) * cols)
-    , center(double(rows - 1) * spacing / 2.0, double(cols - 1) * spacing / 2.0, 0.0)
+    : origin_idx((rows - 1) * cols), center(double(rows - 1) * spacing / 2.0, double(cols - 1) * spacing / 2.0, 0.0)
   {
     points.reserve(rows * cols);
 
@@ -69,9 +68,7 @@ struct Target
  * @param angle_noise - angular noise standard deviation (rad)
  * @return
  */
-Eigen::Isometry3d perturbPose(const Eigen::Isometry3d &pose,
-                              double spatial_noise,
-                              double angle_noise);
+Eigen::Isometry3d perturbPose(const Eigen::Isometry3d& pose, double spatial_noise, double angle_noise);
 
 /**
  * @brief Creates a DH parameter-based robot representation of an ABB IRB2400
@@ -80,20 +77,22 @@ Eigen::Isometry3d perturbPose(const Eigen::Isometry3d &pose,
 DHChain createABBIRB2400();
 
 /**
- * @brief Creates a DH parameter-based robot representation of a generic two-axis part positioner with arbitrary base offset
+ * @brief Creates a DH parameter-based robot representation of a generic two-axis part positioner with arbitrary base
+ * offset
  * @return
  */
 DHChain createTwoAxisPositioner();
 
 /**
- * @brief Creates a kinematic chain whose DH parameters are pertubed with Gaussian noise relative to the reference kinematic chain
+ * @brief Creates a kinematic chain whose DH parameters are pertubed with Gaussian noise relative to the reference
+ * kinematic chain
  * @param in - reference kinematic chain
  * @param stddev - standard deviation to apply to all DH parameters individually
  * @return
  */
-DHChain perturbDHChain(const DHChain &in, const double stddev);
+DHChain perturbDHChain(const DHChain& in, const double stddev);
 
-} // namespace test
-} // namespace rct_optimizations
+}  // namespace test
+}  // namespace rct_optimizations
 
-#endif // RCT_OPTIMIZATIONS_TESTS_UTILITIES_H
+#endif  // RCT_OPTIMIZATIONS_TESTS_UTILITIES_H

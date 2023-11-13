@@ -29,15 +29,9 @@ public:
    */
   virtual cv::Mat drawTargetFeatures(const cv::Mat& image, const TargetFeatures& target_features) const override;
 
-  virtual const Target& target() const override
-  {
-    return target_;
-  }
+  virtual const Target& target() const override { return target_; }
 
-  inline const CircleDetectorParams& getCircleDetectorParams() const
-  {
-    return params_;
-  }
+  inline const CircleDetectorParams& getCircleDetectorParams() const { return params_; }
 
 protected:
   const ModifiedCircleGridTarget target_;

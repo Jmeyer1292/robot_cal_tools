@@ -12,4 +12,4 @@ namespace rct_ros_tools
  */
 YAML::Node toYAML(XmlRpc::XmlRpcValue value);
 
-} // namespace rct_ros_tools
+}  // namespace rct_ros_tools

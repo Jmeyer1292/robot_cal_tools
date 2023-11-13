@@ -10,8 +10,8 @@ Camera makeKinectCamera()
   CameraIntrinsics intr;
   intr.fx() = 550.0;
   intr.fy() = 550.0;
-  intr.cx() = 640/2;
-  intr.cy() = 480/2;
+  intr.cx() = 640 / 2;
+  intr.cy() = 480 / 2;
 
   Camera camera;
   camera.intr = intr;
@@ -25,12 +25,12 @@ Eigen::Isometry3d perturbPose(const Eigen::Isometry3d& pose, double spatial_nois
 {
   auto mt_rand = std::mt19937(RCT_RANDOM_SEED);
 
-  auto spatial_dist = std::bind(std::uniform_real_distribution<double>{-spatial_noise, spatial_noise}, mt_rand);
-  auto angle_dist = std::bind(std::uniform_real_distribution<double>{-angle_noise, angle_noise}, mt_rand);
-  auto one_to_one = std::bind(std::uniform_real_distribution<double>{-1, 1}, mt_rand);
+  auto spatial_dist = std::bind(std::uniform_real_distribution<double>{ -spatial_noise, spatial_noise }, mt_rand);
+  auto angle_dist = std::bind(std::uniform_real_distribution<double>{ -angle_noise, angle_noise }, mt_rand);
+  auto one_to_one = std::bind(std::uniform_real_distribution<double>{ -1, 1 }, mt_rand);
 
-  Eigen::Vector3d translation (spatial_dist(), spatial_dist(), spatial_dist());
-  Eigen::Vector3d rot_axis (one_to_one(), one_to_one(), one_to_one());
+  Eigen::Vector3d translation(spatial_dist(), spatial_dist(), spatial_dist());
+  Eigen::Vector3d rot_axis(one_to_one(), one_to_one(), one_to_one());
   rot_axis.normalize();
 
   double angle = angle_dist();
@@ -96,7 +96,7 @@ DHChain createTwoAxisPositioner()
   return DHChain(transforms, base_offset);
 }
 
-DHChain perturbDHChain(const DHChain &in, const double stddev)
+DHChain perturbDHChain(const DHChain& in, const double stddev)
 {
   std::mt19937 mt_rand(RCT_RANDOM_SEED);
   std::normal_distribution<double> norm(0.0, stddev);
@@ -117,5 +117,5 @@ DHChain perturbDHChain(const DHChain &in, const double stddev)
   return DHChain(transforms, in.getBaseOffset());
 }
 
-} // namespace test
-} // namespace rct_optimizations
+}  // namespace test
+}  // namespace rct_optimizations

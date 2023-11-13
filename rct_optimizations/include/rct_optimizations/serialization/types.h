@@ -6,12 +6,12 @@
 
 namespace YAML
 {
-template<>
+template <>
 struct convert<rct_optimizations::CameraIntrinsics>
 {
   using T = rct_optimizations::CameraIntrinsics;
 
-  static Node encode(const T &rhs)
+  static Node encode(const T& rhs)
   {
     YAML::Node node;
     node["cx"] = rhs.cx();
@@ -21,7 +21,7 @@ struct convert<rct_optimizations::CameraIntrinsics>
     return node;
   }
 
-  static bool decode(const YAML::Node &node, T &rhs)
+  static bool decode(const YAML::Node& node, T& rhs)
   {
     if (node.size() != 4)
       return false;
@@ -35,12 +35,12 @@ struct convert<rct_optimizations::CameraIntrinsics>
   }
 };
 
-template<Eigen::Index SENSOR_DIM, Eigen::Index WORLD_DIM>
+template <Eigen::Index SENSOR_DIM, Eigen::Index WORLD_DIM>
 struct convert<rct_optimizations::Correspondence<SENSOR_DIM, WORLD_DIM>>
 {
   using T = rct_optimizations::Correspondence<SENSOR_DIM, WORLD_DIM>;
 
-  static Node encode(const T &corr)
+  static Node encode(const T& corr)
   {
     YAML::Node node;
     node["in_image"] = corr.in_image;
@@ -48,7 +48,7 @@ struct convert<rct_optimizations::Correspondence<SENSOR_DIM, WORLD_DIM>>
     return node;
   }
 
-  static bool decode(const YAML::Node &node, T &rhs)
+  static bool decode(const YAML::Node& node, T& rhs)
   {
     if (node.size() != 2)
       return false;
@@ -60,12 +60,12 @@ struct convert<rct_optimizations::Correspondence<SENSOR_DIM, WORLD_DIM>>
   }
 };
 
-template<Eigen::Index SENSOR_DIM, Eigen::Index WORLD_DIM>
+template <Eigen::Index SENSOR_DIM, Eigen::Index WORLD_DIM>
 struct convert<rct_optimizations::Observation<SENSOR_DIM, WORLD_DIM>>
 {
   using T = rct_optimizations::Observation<SENSOR_DIM, WORLD_DIM>;
 
-  static Node encode(const T &obs)
+  static Node encode(const T& obs)
   {
     YAML::Node node;
     node["correspondences"] = obs.correspondence_set;
@@ -74,7 +74,7 @@ struct convert<rct_optimizations::Observation<SENSOR_DIM, WORLD_DIM>>
     return node;
   }
 
-  static bool decode(const YAML::Node &node, T &obs)
+  static bool decode(const YAML::Node& node, T& obs)
   {
     if (node.size() != 3)
       return false;
@@ -145,4 +145,4 @@ struct convert<rct_optimizations::DHChain>
   }
 };
 
-} // namespace YAML
+}  // namespace YAML

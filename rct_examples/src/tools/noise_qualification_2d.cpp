@@ -16,8 +16,8 @@ using namespace rct_ros_tools;
 
 std::string WINDOW = "window";
 
-template<typename T>
-T get(const ros::NodeHandle &nh, const std::string &key)
+template <typename T>
+T get(const ros::NodeHandle& nh, const std::string& key)
 {
   T val;
   if (!nh.getParam(key, val))
@@ -107,7 +107,7 @@ int main(int argc, char** argv)
     ROS_INFO_STREAM("Quaternion mean (qx, qy, qz, qw)\n" << result.q_stat.mean.coeffs().transpose().format(fmt));
     ROS_INFO_STREAM("Quaternion standard deviation\n" << result.q_stat.stdev);
   }
-  catch (const std::exception &ex)
+  catch (const std::exception& ex)
   {
     ROS_ERROR_STREAM(ex.what());
     return -1;

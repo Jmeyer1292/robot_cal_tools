@@ -30,7 +30,7 @@ struct ExtrinsicHandEyeProblem2D3D
   Eigen::Isometry3d target_mount_to_target_guess;
   Eigen::Isometry3d camera_mount_to_camera_guess;
 
-  std::array<std::string, 6> labels_isometry3d = {{"x", "y", "z", "rx", "ry", "rz"}};
+  std::array<std::string, 6> labels_isometry3d = { { "x", "y", "z", "rx", "ry", "rz" } };
   std::string label_target_mount_to_target = "target_mount_to_target";
   std::string label_camera_mount_to_camera = "camera_mount_to_camera";
 
@@ -48,7 +48,7 @@ struct ExtrinsicHandEyeProblem3D3D
   Eigen::Isometry3d target_mount_to_target_guess;
   Eigen::Isometry3d camera_mount_to_camera_guess;
 
-  std::array<std::string, 6> labels_isometry3d = {{"x", "y", "z", "rx", "ry", "rz"}};
+  std::array<std::string, 6> labels_isometry3d = { { "x", "y", "z", "rx", "ry", "rz" } };
   std::string label_target_mount_to_target = "target_mount_to_target";
   std::string label_camera_mount_to_camera = "camera_mount_to_camera";
 
@@ -72,7 +72,7 @@ struct ExtrinsicHandEyeResult
   CovarianceResult covariance;
 };
 
-ExtrinsicHandEyeResult optimize(const ExtrinsicHandEyeProblem2D3D &params);
-ExtrinsicHandEyeResult optimize(const ExtrinsicHandEyeProblem3D3D &params);
+ExtrinsicHandEyeResult optimize(const ExtrinsicHandEyeProblem2D3D& params);
+ExtrinsicHandEyeResult optimize(const ExtrinsicHandEyeProblem3D3D& params);
 
-} // namespace rct_optimizations
+}  // namespace rct_optimizations

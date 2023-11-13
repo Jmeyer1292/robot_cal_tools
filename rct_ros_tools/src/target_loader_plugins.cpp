@@ -19,11 +19,13 @@ T getMember(const YAML::Node& n, const std::string& key)
   }
   catch (const YAML::BadConversion&)
   {
-    throw std::runtime_error("Failed to convert parameter '" + key + "' to type '" + boost::core::demangle(typeid(T).name()) + "'");
+    throw std::runtime_error("Failed to convert parameter '" + key + "' to type '" +
+                             boost::core::demangle(typeid(T).name()) + "'");
   }
   catch (const YAML::Exception&)
   {
-    throw std::runtime_error("Failed to find '" + key + "' parameter of type '" + boost::core::demangle(typeid(T).name()) + "'");
+    throw std::runtime_error("Failed to find '" + key + "' parameter of type '" +
+                             boost::core::demangle(typeid(T).name()) + "'");
   }
 }
 
@@ -67,7 +69,7 @@ rct_image_tools::CircleDetectorParams loadCircleDetectorParams(const YAML::Node&
   return p;
 }
 
-} // namespace anonymous
+}  // namespace
 
 namespace rct_ros_tools
 {
@@ -91,7 +93,7 @@ public:
 
       finder_ = std::make_shared<const rct_image_tools::ModifiedCircleGridTargetFinder>(target, circle_detector_params);
     }
-    catch(const std::exception& ex)
+    catch (const std::exception& ex)
     {
       ROS_WARN_STREAM("Failed to load circle detector parameters: '" << ex.what() << "'. Using default values");
       finder_ = std::make_shared<const rct_image_tools::ModifiedCircleGridTargetFinder>(target);

@@ -13,13 +13,13 @@ static std::mt19937 RAND_GEN(RCT_RANDOM_SEED);
 template <typename T>
 T perturb_normal(T val, T std_dev)
 {
-  return std::bind(std::normal_distribution<T>{val, std_dev}, RAND_GEN)();
+  return std::bind(std::normal_distribution<T>{ val, std_dev }, RAND_GEN)();
 }
 
 template <typename T>
 T perturb_random(T mean, T offset)
 {
-  return std::bind(std::uniform_real_distribution<T>{mean - offset, mean + offset}, RAND_GEN)();
+  return std::bind(std::uniform_real_distribution<T>{ mean - offset, mean + offset }, RAND_GEN)();
 }
 
 class CircleFitUnit : public ::testing::Test
@@ -58,7 +58,6 @@ protected:
   std::double_t center_x_initial, center_y_initial, radius_initial;
   std::vector<Eigen::Vector2d> observations;
 };
-
 
 class CircleFitUnit_PerfectObservations_RandomGuess : public CircleFitUnit
 {
@@ -145,13 +144,13 @@ protected:
   }
 };
 
-
 class CircleFitUnit_ClusteredObservations : public CircleFitUnit_PerfectObservations_RandomGuess
 {
 protected:
   void setObservations() override
   {
-    std::vector<std::double_t> angles {-0.02, -0.01, 0.0, 0.01, 0.02, M_PI - 0.02, M_PI - 0.01, M_PI, M_PI + 0.01, M_PI + 0.02};
+    std::vector<std::double_t> angles{ -0.02,       -0.01,       0.0,  0.01,        0.02,
+                                       M_PI - 0.02, M_PI - 0.01, M_PI, M_PI + 0.01, M_PI + 0.02 };
 
     for (auto angle : angles)
     {
@@ -167,7 +166,8 @@ class CircleFitUnit_ClusteredObservationsPerturbed : public CircleFitUnit_Perfec
 protected:
   void setObservations() override
   {
-    std::vector<std::double_t> angles {-0.02, -0.01, 0.0, 0.01, 0.02, M_PI - 0.02, M_PI - 0.01, M_PI, M_PI + 0.01, M_PI + 0.02};
+    std::vector<std::double_t> angles{ -0.02,       -0.01,       0.0,  0.01,        0.02,
+                                       M_PI - 0.02, M_PI - 0.01, M_PI, M_PI + 0.01, M_PI + 0.02 };
 
     for (auto angle : angles)
     {
@@ -218,10 +218,7 @@ protected:
 class CircleFitUnit_OneObs : public CircleFitUnit_PerfectObservations_RandomGuess
 {
 protected:
-  void setObservations() override
-  {
-    observations.emplace_back(Eigen::Vector2d(0.0, 0.0));
-  }
+  void setObservations() override { observations.emplace_back(Eigen::Vector2d(0.0, 0.0)); }
 };
 
 TEST_F(CircleFitUnit_PerfectObservations_RandomGuess, FitCircleToPerfectObs)
@@ -245,10 +242,17 @@ TEST_F(CircleFitUnit_PerfectObservations_RandomGuess, FitCircleToPerfectObs)
   ASSERT_EQ(result.covariance.correlation_matrix.cols(), 3);
 
   // expect both matrices to be symmetric
-  EXPECT_NEAR(result.covariance.covariance_matrix(0, 1), result.covariance.covariance_matrix(1, 0), std::numeric_limits<double>::epsilon());
-  EXPECT_NEAR(result.covariance.covariance_matrix(0, 2), result.covariance.covariance_matrix(2, 0), std::numeric_limits<double>::epsilon());
-  EXPECT_NEAR(result.covariance.covariance_matrix(1, 2), result.covariance.covariance_matrix(2, 1), std::numeric_limits<double>::epsilon());
-  EXPECT_TRUE(result.covariance.covariance_matrix.isApprox(result.covariance.covariance_matrix.transpose()));  // TODO: use this instead in future
+  EXPECT_NEAR(result.covariance.covariance_matrix(0, 1),
+              result.covariance.covariance_matrix(1, 0),
+              std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(result.covariance.covariance_matrix(0, 2),
+              result.covariance.covariance_matrix(2, 0),
+              std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(result.covariance.covariance_matrix(1, 2),
+              result.covariance.covariance_matrix(2, 1),
+              std::numeric_limits<double>::epsilon());
+  EXPECT_TRUE(result.covariance.covariance_matrix.isApprox(
+      result.covariance.covariance_matrix.transpose()));  // TODO: use this instead in future
 
   EXPECT_TRUE(result.covariance.correlation_matrix.isApprox(result.covariance.correlation_matrix.transpose()));
 
@@ -325,9 +329,15 @@ TEST_F(CircleFitUnit_ClusteredObservations, FitCircleToClusteredObs)
   ASSERT_EQ(result.covariance.covariance_matrix.cols(), 3);
 
   // expect matrix to be symmetric
-  EXPECT_NEAR(result.covariance.covariance_matrix(0, 1), result.covariance.covariance_matrix(1, 0), std::numeric_limits<double>::epsilon());
-  EXPECT_NEAR(result.covariance.covariance_matrix(0, 2), result.covariance.covariance_matrix(2, 0), std::numeric_limits<double>::epsilon());
-  EXPECT_NEAR(result.covariance.covariance_matrix(1, 2), result.covariance.covariance_matrix(2, 1), std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(result.covariance.covariance_matrix(0, 1),
+              result.covariance.covariance_matrix(1, 0),
+              std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(result.covariance.covariance_matrix(0, 2),
+              result.covariance.covariance_matrix(2, 0),
+              std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(result.covariance.covariance_matrix(1, 2),
+              result.covariance.covariance_matrix(2, 1),
+              std::numeric_limits<double>::epsilon());
 
   // expect diagonal elements to be positive
   EXPECT_GE(result.covariance.covariance_matrix(0, 0), 0.0);
@@ -349,9 +359,15 @@ TEST_F(CircleFitUnit_ClusteredObservationsPerturbed, FitCircleToClusteredObsPert
   ASSERT_EQ(result.covariance.covariance_matrix.cols(), 3);
 
   // expect matrix to be symmetric
-  EXPECT_NEAR(result.covariance.covariance_matrix(0, 1), result.covariance.covariance_matrix(1, 0), std::numeric_limits<double>::epsilon());
-  EXPECT_NEAR(result.covariance.covariance_matrix(0, 2), result.covariance.covariance_matrix(2, 0), std::numeric_limits<double>::epsilon());
-  EXPECT_NEAR(result.covariance.covariance_matrix(1, 2), result.covariance.covariance_matrix(2, 1), std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(result.covariance.covariance_matrix(0, 1),
+              result.covariance.covariance_matrix(1, 0),
+              std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(result.covariance.covariance_matrix(0, 2),
+              result.covariance.covariance_matrix(2, 0),
+              std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(result.covariance.covariance_matrix(1, 2),
+              result.covariance.covariance_matrix(2, 1),
+              std::numeric_limits<double>::epsilon());
 
   // expect diagonal elements to be positive
   EXPECT_GE(result.covariance.covariance_matrix(0, 0), 0.0);
@@ -375,9 +391,15 @@ TEST_F(CircleFitUnit_TwoObsX, FitCircleToTwoPoints)
 
   // expect matrix to be symmetric
   // BUG: flaky way to evaluate, since difference is sometimes (but rarely) greater than epsilon
-  EXPECT_NEAR(result.covariance.covariance_matrix(0, 1), result.covariance.covariance_matrix(1, 0), std::numeric_limits<double>::epsilon());
-  EXPECT_NEAR(result.covariance.covariance_matrix(0, 2), result.covariance.covariance_matrix(2, 0), std::numeric_limits<double>::epsilon());
-  EXPECT_NEAR(result.covariance.covariance_matrix(1, 2), result.covariance.covariance_matrix(2, 1), std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(result.covariance.covariance_matrix(0, 1),
+              result.covariance.covariance_matrix(1, 0),
+              std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(result.covariance.covariance_matrix(0, 2),
+              result.covariance.covariance_matrix(2, 0),
+              std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(result.covariance.covariance_matrix(1, 2),
+              result.covariance.covariance_matrix(2, 1),
+              std::numeric_limits<double>::epsilon());
 
   // expect diagonal elements to be positive
   EXPECT_GE(result.covariance.covariance_matrix(0, 0), 0.0);
@@ -389,10 +411,11 @@ TEST_F(CircleFitUnit_TwoObsX, FitCircleToTwoPoints)
 
   // expect covariance between X and R to be somewhat close to 0
   // TODO: fix, not always close to zero due to random initial conditions of problem
-//  EXPECT_NEAR(result.covariance(0, 2), 0.0, 1e-2);
+  //  EXPECT_NEAR(result.covariance(0, 2), 0.0, 1e-2);
 
   // expect correlation coefficient between y and r to be comparatively large, and all others to be small
-  std::vector<rct_optimizations::NamedParam> outside_thresh = result.covariance.getCorrelationCoeffOutsideThreshold(0.1);
+  std::vector<rct_optimizations::NamedParam> outside_thresh =
+      result.covariance.getCorrelationCoeffOutsideThreshold(0.1);
   EXPECT_EQ(outside_thresh.size(), 1);
   EXPECT_EQ(outside_thresh.front().names, std::make_pair(std::string("y"), std::string("r")));
 }
@@ -409,9 +432,15 @@ TEST_F(CircleFitUnit_TwoObsY, FitCircleToTwoPoints)
   ASSERT_EQ(result.covariance.covariance_matrix.cols(), 3);
 
   // expect matrix to be symmetric
-  EXPECT_NEAR(result.covariance.covariance_matrix(0, 1), result.covariance.covariance_matrix(1, 0), std::numeric_limits<double>::epsilon());
-  EXPECT_NEAR(result.covariance.covariance_matrix(0, 2), result.covariance.covariance_matrix(2, 0), std::numeric_limits<double>::epsilon());
-  EXPECT_NEAR(result.covariance.covariance_matrix(1, 2), result.covariance.covariance_matrix(2, 1), std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(result.covariance.covariance_matrix(0, 1),
+              result.covariance.covariance_matrix(1, 0),
+              std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(result.covariance.covariance_matrix(0, 2),
+              result.covariance.covariance_matrix(2, 0),
+              std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(result.covariance.covariance_matrix(1, 2),
+              result.covariance.covariance_matrix(2, 1),
+              std::numeric_limits<double>::epsilon());
 
   // expect diagonal elements to be positive
   EXPECT_GE(result.covariance.covariance_matrix(0, 0), 0.0);
@@ -423,10 +452,11 @@ TEST_F(CircleFitUnit_TwoObsY, FitCircleToTwoPoints)
 
   // expect covariance between Y and R to be somewhat close to 0
   // TODO: fix, not always close to zero due to random initial conditions of problem
-//  EXPECT_NEAR(result.covariance(1, 2), 0.0, 1e-2);
+  //  EXPECT_NEAR(result.covariance(1, 2), 0.0, 1e-2);
 
   // expect correlation coefficient between x and r to be comparatively large, and all others to be small
-  std::vector<rct_optimizations::NamedParam> outside_thresh = result.covariance.getCorrelationCoeffOutsideThreshold(0.1);
+  std::vector<rct_optimizations::NamedParam> outside_thresh =
+      result.covariance.getCorrelationCoeffOutsideThreshold(0.1);
   EXPECT_EQ(outside_thresh.size(), 1);
   EXPECT_EQ(outside_thresh.front().names, std::make_pair(std::string("x"), std::string("r")));
 }
@@ -443,9 +473,15 @@ TEST_F(CircleFitUnit_OneObs, FitCircleToOnePoint)
   ASSERT_EQ(result.covariance.covariance_matrix.cols(), 3);
 
   // expect matrix to be symmetric
-  EXPECT_NEAR(result.covariance.covariance_matrix(0, 1), result.covariance.covariance_matrix(1, 0), std::numeric_limits<double>::epsilon());
-  EXPECT_NEAR(result.covariance.covariance_matrix(0, 2), result.covariance.covariance_matrix(2, 0), std::numeric_limits<double>::epsilon());
-  EXPECT_NEAR(result.covariance.covariance_matrix(1, 2), result.covariance.covariance_matrix(2, 1), std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(result.covariance.covariance_matrix(0, 1),
+              result.covariance.covariance_matrix(1, 0),
+              std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(result.covariance.covariance_matrix(0, 2),
+              result.covariance.covariance_matrix(2, 0),
+              std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(result.covariance.covariance_matrix(1, 2),
+              result.covariance.covariance_matrix(2, 1),
+              std::numeric_limits<double>::epsilon());
 
   // expect diagonal elements to be positive
   EXPECT_GE(result.covariance.covariance_matrix(0, 0), 0.0);
@@ -458,7 +494,8 @@ TEST_F(CircleFitUnit_OneObs, FitCircleToOnePoint)
   EXPECT_NEAR(fabs(result.covariance.correlation_matrix(1, 2)), 1.0, 1e-5);
 
   // expect all correlation coefficients to be greater than 0.1
-  std::vector<rct_optimizations::NamedParam> outside_thresh = result.covariance.getCorrelationCoeffOutsideThreshold(0.1);
+  std::vector<rct_optimizations::NamedParam> outside_thresh =
+      result.covariance.getCorrelationCoeffOutsideThreshold(0.1);
   EXPECT_EQ(outside_thresh.size(), 3);
 }
 
@@ -473,9 +510,15 @@ TEST_F(CircleFitUnit_ThreeObs, FitCircleToThreePoints)
   ASSERT_EQ(result.covariance.covariance_matrix.cols(), 3);
 
   // expect matrix to be symmetric
-  EXPECT_NEAR(result.covariance.covariance_matrix(0, 1), result.covariance.covariance_matrix(1, 0), std::numeric_limits<double>::epsilon());
-  EXPECT_NEAR(result.covariance.covariance_matrix(0, 2), result.covariance.covariance_matrix(2, 0), std::numeric_limits<double>::epsilon());
-  EXPECT_NEAR(result.covariance.covariance_matrix(1, 2), result.covariance.covariance_matrix(2, 1), std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(result.covariance.covariance_matrix(0, 1),
+              result.covariance.covariance_matrix(1, 0),
+              std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(result.covariance.covariance_matrix(0, 2),
+              result.covariance.covariance_matrix(2, 0),
+              std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(result.covariance.covariance_matrix(1, 2),
+              result.covariance.covariance_matrix(2, 1),
+              std::numeric_limits<double>::epsilon());
 
   // expect diagonal elements to be positive
   EXPECT_GE(result.covariance.covariance_matrix(0, 0), 0.0);
@@ -488,12 +531,14 @@ TEST_F(CircleFitUnit_ThreeObs, FitCircleToThreePoints)
   EXPECT_NEAR(result.covariance.covariance_matrix(1, 2), 0.0, 1e-5);
 
   // expect all correlation coefficients to be less than 0.1
-  std::vector<rct_optimizations::NamedParam> outside_thresh = result.covariance.getCorrelationCoeffOutsideThreshold(0.1);
+  std::vector<rct_optimizations::NamedParam> outside_thresh =
+      result.covariance.getCorrelationCoeffOutsideThreshold(0.1);
   EXPECT_EQ(outside_thresh.size(), 0);
 }
 
 // This test exercises the the variations of the computeCovariance function.
-// Since these functions are usually set up inside an optimize() function, the CircleFit problem's setup and optimization is duplicated here.
+// Since these functions are usually set up inside an optimize() function, the CircleFit problem's setup and
+// optimization is duplicated here.
 TEST(CovarianceAnalysis, CovarianceAnalysisFunctions)
 {
   double x = perturb_random<std::double_t>(0.0, 1.0);
@@ -511,13 +556,11 @@ TEST(CovarianceAnalysis, CovarianceAnalysisFunctions)
   params_internal[1] = y;
   params_internal[2] = r_sqrt;
 
-
   rct_optimizations::CircleFitResult result;
 
   ceres::Problem problem;
 
   ceres::LossFunction* loss_fn = nullptr;
-
 
   std::vector<Eigen::Vector2d> observations;
   std::size_t n_obs_target = 50;
@@ -533,9 +576,11 @@ TEST(CovarianceAnalysis, CovarianceAnalysisFunctions)
   {
     auto* cost_fn = new rct_optimizations::CircleDistCost(obs.x(), obs.y());
 
-    // This uses the alternative CircleDist cost function where the three optimization variables are separate parameter blocks
+    // This uses the alternative CircleDist cost function where the three optimization variables are separate parameter
+    // blocks
     auto* cost_block = new ceres::AutoDiffCostFunction<rct_optimizations::CircleDistCost, 1, 1, 1, 1>(cost_fn);
-    problem.AddResidualBlock(cost_block, loss_fn, params_internal.data(), params_internal.data()+1, params_internal.data()+2);
+    problem.AddResidualBlock(
+        cost_block, loss_fn, params_internal.data(), params_internal.data() + 1, params_internal.data() + 2);
   }
 
   ceres::Solver::Options options;
@@ -560,17 +605,17 @@ TEST(CovarianceAnalysis, CovarianceAnalysisFunctions)
   EXPECT_NEAR(1.0, result.radius, 1e-5);
 
   std::map<const double*, std::vector<std::string>> labels_all;
-  labels_all[params_internal.data()] = {"circle_x"};
-  labels_all[params_internal.data()+1] = {"circle_y"};
-  labels_all[params_internal.data()+2] = {"circle_r"};
+  labels_all[params_internal.data()] = { "circle_x" };
+  labels_all[params_internal.data() + 1] = { "circle_y" };
+  labels_all[params_internal.data() + 2] = { "circle_r" };
 
   std::map<const double*, std::vector<std::string>> labels_x_r;
-  labels_x_r[params_internal.data()] = {"circle_x"};
-  labels_x_r[params_internal.data()+2] = {"circle_r"};
+  labels_x_r[params_internal.data()] = { "circle_x" };
+  labels_x_r[params_internal.data() + 2] = { "circle_r" };
 
   std::vector<const double*> param_blocks_x_r(2);
   param_blocks_x_r[0] = params_internal.data();
-  param_blocks_x_r[1] = params_internal.data()+2;
+  param_blocks_x_r[1] = params_internal.data() + 2;
 
   rct_optimizations::CovarianceResult covariance_labeled = rct_optimizations::computeCovariance(problem, labels_all);
 
@@ -584,7 +629,8 @@ TEST(CovarianceAnalysis, CovarianceAnalysisFunctions)
   EXPECT_EQ(covariance_generic_names.covariances.size(), 3);
   EXPECT_EQ(covariance_generic_names.correlation_coeffs.size(), 3);
 
-  rct_optimizations::CovarianceResult cov_x_r_generic_names = rct_optimizations::computeCovariance(problem, param_blocks_x_r);
+  rct_optimizations::CovarianceResult cov_x_r_generic_names =
+      rct_optimizations::computeCovariance(problem, param_blocks_x_r);
 
   EXPECT_EQ(cov_x_r_generic_names.standard_deviations.size(), 2);
   EXPECT_EQ(cov_x_r_generic_names.covariances.size(), 1);
@@ -604,7 +650,8 @@ TEST(CovarianceAnalysis, CovarianceAnalysisFunctions)
   EXPECT_EQ(cov_x_r_generic_names.correlation_coeffs[0].names.second, "block1_element0");
   EXPECT_EQ(cov_x_r_generic_names.correlation_coeffs[0].value, covariance_labeled.correlation_coeffs[1].value);
 
-  rct_optimizations::CovarianceResult cov_x_r_labeled = rct_optimizations::computeCovariance(problem, param_blocks_x_r, labels_x_r);
+  rct_optimizations::CovarianceResult cov_x_r_labeled =
+      rct_optimizations::computeCovariance(problem, param_blocks_x_r, labels_x_r);
 
   EXPECT_EQ(cov_x_r_labeled.standard_deviations.size(), 2);
   EXPECT_EQ(cov_x_r_labeled.covariances.size(), 1);
@@ -625,27 +672,33 @@ TEST(CovarianceAnalysis, CovarianceAnalysisFunctions)
   EXPECT_EQ(cov_x_r_labeled.correlation_coeffs[0].value, covariance_labeled.correlation_coeffs[1].value);
 
   std::cout << "covariance_labeled\n" << covariance_labeled.toString() << std::endl;
-  std::cout << "covariance_generic_names\n" <<  covariance_generic_names.toString() << std::endl;
-  std::cout << "cov_x_r_generic_names\n" <<  cov_x_r_generic_names.toString() << std::endl;
-  std::cout << "cov_x_r_labeled\n" <<  cov_x_r_labeled.toString() << std::endl;
+  std::cout << "covariance_generic_names\n" << covariance_generic_names.toString() << std::endl;
+  std::cout << "cov_x_r_generic_names\n" << cov_x_r_generic_names.toString() << std::endl;
+  std::cout << "cov_x_r_labeled\n" << cov_x_r_labeled.toString() << std::endl;
 
   // expect exception if number of label vectors is different from number of parameter blocks
-  EXPECT_THROW(rct_optimizations::computeCovariance(problem, param_blocks_x_r, labels_all), rct_optimizations::CovarianceException);
+  EXPECT_THROW(rct_optimizations::computeCovariance(problem, param_blocks_x_r, labels_all),
+               rct_optimizations::CovarianceException);
 
-  // expect exception if number of labels for a parameter block is different from the number of parameters in that block in the problem
+  // expect exception if number of labels for a parameter block is different from the number of parameters in that block
+  // in the problem
   std::map<const double*, std::vector<std::string>> labels_x_r_wrong_size;
-  labels_x_r_wrong_size[params_internal.data()] = {"circle_x", "circle_x_extra_entry"};
-  labels_x_r_wrong_size[params_internal.data()+2] = {"circle_r"};
-  EXPECT_THROW(rct_optimizations::computeCovariance(problem, param_blocks_x_r, labels_x_r_wrong_size), rct_optimizations::CovarianceException);
+  labels_x_r_wrong_size[params_internal.data()] = { "circle_x", "circle_x_extra_entry" };
+  labels_x_r_wrong_size[params_internal.data() + 2] = { "circle_r" };
+  EXPECT_THROW(rct_optimizations::computeCovariance(problem, param_blocks_x_r, labels_x_r_wrong_size),
+               rct_optimizations::CovarianceException);
 
   // expect exception with empty parameter block vector
-  EXPECT_THROW(rct_optimizations::computeCovariance(problem, std::vector<const double*>(), labels_all), rct_optimizations::CovarianceException);
+  EXPECT_THROW(rct_optimizations::computeCovariance(problem, std::vector<const double*>(), labels_all),
+               rct_optimizations::CovarianceException);
 
   // expect exception with empty labels vector
-  EXPECT_THROW(rct_optimizations::computeCovariance(problem, param_blocks_x_r, std::map<const double*, std::vector<std::string>>()), rct_optimizations::CovarianceException);
+  EXPECT_THROW(rct_optimizations::computeCovariance(
+                   problem, param_blocks_x_r, std::map<const double*, std::vector<std::string>>()),
+               rct_optimizations::CovarianceException);
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

@@ -50,4 +50,4 @@ Eigen::Isometry3d loadPose(const std::string& path);
  */
 bool loadPose(const std::string& path, Eigen::Isometry3d& pose);
 
-} // namespace rct_ros_tools
+}  // namespace rct_ros_tools

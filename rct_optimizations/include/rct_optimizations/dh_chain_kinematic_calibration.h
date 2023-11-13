@@ -8,11 +8,12 @@
 namespace rct_optimizations
 {
 /**
-   * @brief Create a mask of parameter indices from a matrix of boolean values
-   * The indices are calculated in column-wise order because Eigen stores it's values internally in column-wise order by default
-   * @param mask
-   * @return
-   */
+ * @brief Create a mask of parameter indices from a matrix of boolean values
+ * The indices are calculated in column-wise order because Eigen stores it's values internally in column-wise order by
+ * default
+ * @param mask
+ * @return
+ */
 inline std::vector<int> createDHMask(const Eigen::Array<bool, Eigen::Dynamic, 4>& mask)
 {
   std::vector<int> out;
@@ -134,10 +135,10 @@ struct KinematicCalibrationResult
 class DualDHChainCost
 {
 public:
-  DualDHChainCost(const DHChain &camera_chain,
-                  const DHChain &target_chain,
-                  const Eigen::VectorXd &camera_chain_joints,
-                  const Eigen::VectorXd &target_chain_joints)
+  DualDHChainCost(const DHChain& camera_chain,
+                  const DHChain& target_chain,
+                  const Eigen::VectorXd& camera_chain_joints,
+                  const Eigen::VectorXd& target_chain_joints)
     : camera_chain_(camera_chain)
     , target_chain_(target_chain)
     , camera_chain_joints_(camera_chain_joints)
@@ -146,8 +147,8 @@ public:
   {
   }
 
-  template<typename T>
-  static Isometry3<T> createTransform(T const *const *params, const std::size_t idx)
+  template <typename T>
+  static Isometry3<T> createTransform(T const* const* params, const std::size_t idx)
   {
     Eigen::Map<const Vector3<T>> t(params[idx]);
     Eigen::Map<const Vector3<T>> aa(params[idx + 1]);
@@ -162,16 +163,16 @@ public:
     return result;
   }
 
-  static std::vector<double *> constructParameters(Eigen::MatrixX4d &camera_chain_dh_offsets,
-                                                   Eigen::MatrixX4d &target_chain_dh_offsets,
-                                                   Eigen::Vector3d &camera_mount_to_camera_position,
-                                                   Eigen::Vector3d &camera_mount_to_camera_angle_axis,
-                                                   Eigen::Vector3d &target_mount_to_target_position,
-                                                   Eigen::Vector3d &target_mount_to_target_angle_axis,
-                                                   Eigen::Vector3d &camera_chain_base_to_target_chain_base_position,
-                                                   Eigen::Vector3d &camera_chain_base_to_target_chain_base_angle_axis)
+  static std::vector<double*> constructParameters(Eigen::MatrixX4d& camera_chain_dh_offsets,
+                                                  Eigen::MatrixX4d& target_chain_dh_offsets,
+                                                  Eigen::Vector3d& camera_mount_to_camera_position,
+                                                  Eigen::Vector3d& camera_mount_to_camera_angle_axis,
+                                                  Eigen::Vector3d& target_mount_to_target_position,
+                                                  Eigen::Vector3d& target_mount_to_target_angle_axis,
+                                                  Eigen::Vector3d& camera_chain_base_to_target_chain_base_position,
+                                                  Eigen::Vector3d& camera_chain_base_to_target_chain_base_angle_axis)
   {
-    std::vector<double *> parameters;
+    std::vector<double*> parameters;
     parameters.push_back(camera_chain_dh_offsets.data());
     parameters.push_back(target_chain_dh_offsets.data());
     parameters.push_back(camera_mount_to_camera_position.data());
@@ -184,7 +185,7 @@ public:
   }
 
   static std::map<const double*, std::vector<std::string>>
-  constructParameterLabels(const std::vector<double *>& parameters,
+  constructParameterLabels(const std::vector<double*>& parameters,
                            const std::vector<std::array<std::string, 4>>& camera_chain_labels,
                            const std::vector<std::array<std::string, 4>>& target_chain_labels,
                            const std::array<std::string, 3>& camera_mount_to_camera_position_labels,
@@ -213,17 +214,25 @@ public:
     }
     param_labels[parameters[1]] = tc_labels_concatenated;
 
-    param_labels[parameters[2]] = std::vector<std::string>(camera_mount_to_camera_position_labels.begin(),camera_mount_to_camera_position_labels.end());
-    param_labels[parameters[3]] = std::vector<std::string>(camera_mount_to_camera_angle_axis_labels.begin(),camera_mount_to_camera_angle_axis_labels.end());
-    param_labels[parameters[4]] = std::vector<std::string>(target_mount_to_target_position_labels.begin(),target_mount_to_target_position_labels.end());
-    param_labels[parameters[5]] = std::vector<std::string>(target_mount_to_target_angle_axis_labels.begin(),target_mount_to_target_angle_axis_labels.end());
-    param_labels[parameters[6]] = std::vector<std::string>(camera_chain_base_to_target_chain_base_position_labels.begin(),camera_chain_base_to_target_chain_base_position_labels.end());
-    param_labels[parameters[7]] = std::vector<std::string>(camera_chain_base_to_target_chain_base_angle_axis_labels.begin(),camera_chain_base_to_target_chain_base_angle_axis_labels.end());
+    param_labels[parameters[2]] = std::vector<std::string>(camera_mount_to_camera_position_labels.begin(),
+                                                           camera_mount_to_camera_position_labels.end());
+    param_labels[parameters[3]] = std::vector<std::string>(camera_mount_to_camera_angle_axis_labels.begin(),
+                                                           camera_mount_to_camera_angle_axis_labels.end());
+    param_labels[parameters[4]] = std::vector<std::string>(target_mount_to_target_position_labels.begin(),
+                                                           target_mount_to_target_position_labels.end());
+    param_labels[parameters[5]] = std::vector<std::string>(target_mount_to_target_angle_axis_labels.begin(),
+                                                           target_mount_to_target_angle_axis_labels.end());
+    param_labels[parameters[6]] =
+        std::vector<std::string>(camera_chain_base_to_target_chain_base_position_labels.begin(),
+                                 camera_chain_base_to_target_chain_base_position_labels.end());
+    param_labels[parameters[7]] =
+        std::vector<std::string>(camera_chain_base_to_target_chain_base_angle_axis_labels.begin(),
+                                 camera_chain_base_to_target_chain_base_angle_axis_labels.end());
     return param_labels;
   }
 
-  static std::map<const double*, std::vector<int>>
-  constructParameterMasks(const std::vector<double *>& parameters, const std::array<std::vector<int>, 8>& masks)
+  static std::map<const double*, std::vector<int>> constructParameterMasks(const std::vector<double*>& parameters,
+                                                                           const std::array<std::vector<int>, 8>& masks)
   {
     assert(parameters.size() == masks.size());
     std::map<const double*, std::vector<int>> param_masks;
@@ -233,7 +242,7 @@ public:
     return param_masks;
   }
 
-  static std::map<const double*, std::string> constructParameterNames(const std::vector<double *>& parameters)
+  static std::map<const double*, std::string> constructParameterNames(const std::vector<double*>& parameters)
   {
     std::map<const double*, std::string> names;
     names[parameters[0]] = "Camera DH Parameters";
@@ -249,8 +258,8 @@ public:
   }
 
 protected:
-  const DHChain &camera_chain_;
-  const DHChain &target_chain_;
+  const DHChain& camera_chain_;
+  const DHChain& target_chain_;
 
   const Eigen::VectorXd camera_chain_joints_;
   const Eigen::VectorXd target_chain_joints_;
@@ -258,54 +267,56 @@ protected:
 
 class DualDHChainCost2D3D : public DualDHChainCost
 {
-  public:
-  DualDHChainCost2D3D(const Eigen::Vector2d &obs,
-       const Eigen::Vector3d &point_in_target,
-       const CameraIntrinsics &intr,
-       const DHChain &camera_chain,
-       const DHChain &target_chain,
-       const Eigen::VectorXd &camera_chain_joints,
-       const Eigen::VectorXd &target_chain_joints)
-    : DualDHChainCost (camera_chain, target_chain, camera_chain_joints, target_chain_joints)
+public:
+  DualDHChainCost2D3D(const Eigen::Vector2d& obs,
+                      const Eigen::Vector3d& point_in_target,
+                      const CameraIntrinsics& intr,
+                      const DHChain& camera_chain,
+                      const DHChain& target_chain,
+                      const Eigen::VectorXd& camera_chain_joints,
+                      const Eigen::VectorXd& target_chain_joints)
+    : DualDHChainCost(camera_chain, target_chain, camera_chain_joints, target_chain_joints)
     , obs_(obs)
     , target_pt_(point_in_target)
     , intr_(intr)
   {
   }
 
-  template<typename T>
-  bool operator()(T const *const *parameters, T *residual) const
+  template <typename T>
+  bool operator()(T const* const* parameters, T* residual) const
   {
     // Step 1: Load the data
     // The first parameter is a pointer to the DH parameter offsets of the camera kinematic chain
-    Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 4>> camera_chain_dh_offsets(parameters[0], camera_chain_.dof(), 4);
+    Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 4>> camera_chain_dh_offsets(
+        parameters[0], camera_chain_.dof(), 4);
 
     // The next parameter is a pointer to the DH parameter offsets of the target kinematic chain
-    Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 4>> target_chain_dh_offsets(parameters[1], target_chain_.dof(), 4);
+    Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 4>> target_chain_dh_offsets(
+        parameters[1], target_chain_.dof(), 4);
 
-    // The next two parameters are pointers to the position and angle axis of the transform from the camera mount to the camera
+    // The next two parameters are pointers to the position and angle axis of the transform from the camera mount to the
+    // camera
     std::size_t cm_to_c_idx = 2;
     const Isometry3<T> camera_mount_to_camera = createTransform(parameters, cm_to_c_idx);
 
-    // The next two parameters are pointers to the position and angle axis of the transform from the target mount to the target
+    // The next two parameters are pointers to the position and angle axis of the transform from the target mount to the
+    // target
     std::size_t tm_to_t_idx = cm_to_c_idx + 2;
     const Isometry3<T> target_mount_to_target = createTransform(parameters, tm_to_t_idx);
 
-    // The next two parameters are pointers to the position and angle axis of the transform from the camera chain base to the target chain base
+    // The next two parameters are pointers to the position and angle axis of the transform from the camera chain base
+    // to the target chain base
     std::size_t cb_to_tb_idx = tm_to_t_idx + 2;
     const Isometry3<T> camera_base_to_target_base = createTransform(parameters, cb_to_tb_idx);
 
     // Step 2: Transformation math
     // Build the transforms from the camera chain base out to the camera
-    Isometry3<T> camera_chain_fk = camera_chain_.getFK<T>(camera_chain_joints_.cast<T>(),
-                                                          camera_chain_dh_offsets);
+    Isometry3<T> camera_chain_fk = camera_chain_.getFK<T>(camera_chain_joints_.cast<T>(), camera_chain_dh_offsets);
     Isometry3<T> camera_base_to_camera = camera_chain_fk * camera_mount_to_camera;
 
     // Build the transforms from the camera chain base out to the target
-    Isometry3<T> target_chain_fk = target_chain_.getFK<T>(target_chain_joints_.cast<T>(),
-                                                          target_chain_dh_offsets);
-    Isometry3<T> camera_base_to_target = camera_base_to_target_base * target_chain_fk
-                                         * target_mount_to_target;
+    Isometry3<T> target_chain_fk = target_chain_.getFK<T>(target_chain_joints_.cast<T>(), target_chain_dh_offsets);
+    Isometry3<T> camera_base_to_target = camera_base_to_target_base * target_chain_fk * target_mount_to_target;
 
     // Now that we have two transforms in the same frame, get the target point in the camera frame
     Isometry3<T> camera_to_target = camera_base_to_camera.inverse() * camera_base_to_target;
@@ -329,50 +340,55 @@ protected:
 
 class DualDHChainCostPose6D : public DualDHChainCost
 {
-  public:
-    DualDHChainCostPose6D(const KinematicMeasurement& measurement, const DHChain& camera_chain,
-                          const DHChain& target_chain, const double orientation_weight)
-    : DualDHChainCost (camera_chain, target_chain, measurement.camera_chain_joints, measurement.target_chain_joints)
+public:
+  DualDHChainCostPose6D(const KinematicMeasurement& measurement,
+                        const DHChain& camera_chain,
+                        const DHChain& target_chain,
+                        const double orientation_weight)
+    : DualDHChainCost(camera_chain, target_chain, measurement.camera_chain_joints, measurement.target_chain_joints)
     , camera_to_target_measured_(measurement.camera_to_target)
     , orientation_weight_(orientation_weight)
   {
   }
 
-  template<typename T>
-  bool operator()(T const *const *parameters, T *residual) const
+  template <typename T>
+  bool operator()(T const* const* parameters, T* residual) const
   {
     // Step 1: Load the data
     // The first parameter is a pointer to the DH parameter offsets of the camera kinematic chain
-    Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 4>> camera_chain_dh_offsets(parameters[0], camera_chain_.dof(), 4);
+    Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 4>> camera_chain_dh_offsets(
+        parameters[0], camera_chain_.dof(), 4);
 
     // The next parameter is a pointer to the DH parameter offsets of the target kinematic chain
-    Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 4>> target_chain_dh_offsets(parameters[1], target_chain_.dof(), 4);
+    Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 4>> target_chain_dh_offsets(
+        parameters[1], target_chain_.dof(), 4);
 
-    // The next two parameters are pointers to the position and angle axis of the transform from the camera mount to the camera
+    // The next two parameters are pointers to the position and angle axis of the transform from the camera mount to the
+    // camera
     std::size_t cm_to_c_idx = 2;
     const Isometry3<T> camera_mount_to_camera = createTransform(parameters, cm_to_c_idx);
 
-    // The next two parameters are pointers to the position and angle axis of the transform from the target mount to the target
+    // The next two parameters are pointers to the position and angle axis of the transform from the target mount to the
+    // target
     std::size_t tm_to_t_idx = cm_to_c_idx + 2;
     const Isometry3<T> target_mount_to_target = createTransform(parameters, tm_to_t_idx);
 
-    // The next two parameters are pointers to the position and angle axis of the transform from the camera chain base to the target chain base
+    // The next two parameters are pointers to the position and angle axis of the transform from the camera chain base
+    // to the target chain base
     std::size_t cb_to_tb_idx = tm_to_t_idx + 2;
     const Isometry3<T> camera_base_to_target_base = createTransform(parameters, cb_to_tb_idx);
 
     // Step 2: Transformation math
     // Build the transforms from the camera chain base out to the camera
-    Isometry3<T> camera_chain_fk = camera_chain_.getFK<T>(camera_chain_joints_.cast<T>(),
-                                                          camera_chain_dh_offsets);
+    Isometry3<T> camera_chain_fk = camera_chain_.getFK<T>(camera_chain_joints_.cast<T>(), camera_chain_dh_offsets);
     Isometry3<T> camera_base_to_camera = camera_chain_fk * camera_mount_to_camera;
 
     // Build the transforms from the camera chain base out to the target
-    Isometry3<T> target_chain_fk = target_chain_.getFK<T>(target_chain_joints_.cast<T>(),
-                                                          target_chain_dh_offsets);
-    Isometry3<T> camera_base_to_target = camera_base_to_target_base * target_chain_fk
-                                         * target_mount_to_target;
+    Isometry3<T> target_chain_fk = target_chain_.getFK<T>(target_chain_joints_.cast<T>(), target_chain_dh_offsets);
+    Isometry3<T> camera_base_to_target = camera_base_to_target_base * target_chain_fk * target_mount_to_target;
 
-    // Now that we have two transforms in the same frame, get the difference between the expected and observed pose of the target
+    // Now that we have two transforms in the same frame, get the difference between the expected and observed pose of
+    // the target
     Isometry3<T> camera_to_target = camera_base_to_camera.inverse() * camera_base_to_target;
 
     Isometry3<T> tform_error = camera_to_target_measured_.cast<T>() * camera_to_target.inverse();
@@ -389,9 +405,9 @@ class DualDHChainCostPose6D : public DualDHChainCost
     return true;
   }
 
-  protected:
-    const Eigen::Isometry3d camera_to_target_measured_;
-    const double orientation_weight_;
+protected:
+  const Eigen::Isometry3d camera_to_target_measured_;
+  const double orientation_weight_;
 };
 
 /**
@@ -399,12 +415,13 @@ class DualDHChainCostPose6D : public DualDHChainCost
  * @param problem
  * @return
  */
-KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D &problem);
+KinematicCalibrationResult optimize(const KinematicCalibrationProblem2D3D& problem);
 
 /**
  * @brief Performs the kinematic calibration optimization with 6D pose measurements
  * @param problem
- * @param orientation_weight - The value by which the orientation residual should be scaled relative to the position residual
+ * @param orientation_weight - The value by which the orientation residual should be scaled relative to the position
+ * residual
  * @param options - Ceres solver options
  * @return
  */
@@ -412,5 +429,4 @@ KinematicCalibrationResult optimize(const KinematicCalibrationProblemPose6D& pro
                                     const double orientation_weight = 100.0,
                                     const ceres::Solver::Options& options = ceres::Solver::Options());
 
-} // namespace rct_optimizations
-
+}  // namespace rct_optimizations

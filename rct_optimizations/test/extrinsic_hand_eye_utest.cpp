@@ -15,52 +15,51 @@ enum class InitialConditions
   RANDOM_AROUND_ANSWER
 };
 
-template<typename ProblemT>
+template <typename ProblemT>
 struct ProblemCreator
 {
-  static Eigen::Isometry3d createPose(const Eigen::Isometry3d &pose, const InitialConditions &init)
+  static Eigen::Isometry3d createPose(const Eigen::Isometry3d& pose, const InitialConditions& init)
   {
     Eigen::Isometry3d out(pose);
     switch (init)
     {
-    case InitialConditions::RANDOM_AROUND_ANSWER:
-    {
-      const double spatial_noise = 0.25; // +/- 0.25 meters
-      const double angular_noise = 45. * M_PI / 180.0; // +/- 45 degrees
-      out = test::perturbPose(pose, spatial_noise, angular_noise);
-      break;
-    }
-    default: // PERFECT
-      out = pose;
+      case InitialConditions::RANDOM_AROUND_ANSWER: {
+        const double spatial_noise = 0.25;                // +/- 0.25 meters
+        const double angular_noise = 45. * M_PI / 180.0;  // +/- 45 degrees
+        out = test::perturbPose(pose, spatial_noise, angular_noise);
+        break;
+      }
+      default:  // PERFECT
+        out = pose;
     }
 
     return out;
   }
 
-  static ProblemT createProblem(const Eigen::Isometry3d &true_target,
-                                const Eigen::Isometry3d &true_camera,
+  static ProblemT createProblem(const Eigen::Isometry3d& true_target,
+                                const Eigen::Isometry3d& true_camera,
                                 const std::shared_ptr<test::PoseGenerator>& pose_generator,
-                                const test::Target &target,
-                                const InitialConditions &init);
+                                const test::Target& target,
+                                const InitialConditions& init);
 
-  static ProblemT createProblem(const Eigen::Isometry3d &true_target,
-                                const Eigen::Isometry3d &true_camera,
+  static ProblemT createProblem(const Eigen::Isometry3d& true_target,
+                                const Eigen::Isometry3d& true_camera,
                                 const std::vector<std::shared_ptr<test::PoseGenerator>>& pose_generators,
-                                const test::Target &target,
-                                const InitialConditions &init);
+                                const test::Target& target,
+                                const InitialConditions& init);
 
   /** @brief The maximum allowable cost per observation for this problem
    * Note: this cost is squared (i.e. pixels^2 or m^2) */
   static double max_cost_per_obs;
 };
 
-template<>
+template <>
 ExtrinsicHandEyeProblem2D3D ProblemCreator<ExtrinsicHandEyeProblem2D3D>::createProblem(
-  const Eigen::Isometry3d &true_target,
-  const Eigen::Isometry3d &true_camera,
-  const std::vector<std::shared_ptr<test::PoseGenerator>>& pose_generators,
-  const test::Target &target,
-  const InitialConditions &init)
+    const Eigen::Isometry3d& true_target,
+    const Eigen::Isometry3d& true_camera,
+    const std::vector<std::shared_ptr<test::PoseGenerator>>& pose_generators,
+    const test::Target& target,
+    const InitialConditions& init)
 {
   test::Camera camera = test::makeKinectCamera();
 
@@ -68,37 +67,33 @@ ExtrinsicHandEyeProblem2D3D ProblemCreator<ExtrinsicHandEyeProblem2D3D>::createP
   problem.intr = camera.intr;
   problem.target_mount_to_target_guess = createPose(true_target, init);
   problem.camera_mount_to_camera_guess = createPose(true_camera, init);
-  problem.observations = test::createObservations(camera,
-                                                  target,
-                                                  pose_generators,
-                                                  true_target,
-                                                  true_camera);
+  problem.observations = test::createObservations(camera, target, pose_generators, true_target, true_camera);
 
   return problem;
 }
 
-
-template<>
-ExtrinsicHandEyeProblem2D3D ProblemCreator<ExtrinsicHandEyeProblem2D3D>::createProblem(
-  const Eigen::Isometry3d &true_target,
-  const Eigen::Isometry3d &true_camera,
-  const std::shared_ptr<test::PoseGenerator>& pose_generator,
-  const test::Target &target,
-  const InitialConditions &init)
+template <>
+ExtrinsicHandEyeProblem2D3D
+ProblemCreator<ExtrinsicHandEyeProblem2D3D>::createProblem(const Eigen::Isometry3d& true_target,
+                                                           const Eigen::Isometry3d& true_camera,
+                                                           const std::shared_ptr<test::PoseGenerator>& pose_generator,
+                                                           const test::Target& target,
+                                                           const InitialConditions& init)
 {
-  return ProblemCreator<ExtrinsicHandEyeProblem2D3D>::createProblem(true_target, true_camera, std::vector<std::shared_ptr<test::PoseGenerator>>({pose_generator}), target, init);
+  return ProblemCreator<ExtrinsicHandEyeProblem2D3D>::createProblem(
+      true_target, true_camera, std::vector<std::shared_ptr<test::PoseGenerator>>({ pose_generator }), target, init);
 }
 
-template<>
+template <>
 double ProblemCreator<ExtrinsicHandEyeProblem2D3D>::max_cost_per_obs = 1.0;
 
-template<>
+template <>
 ExtrinsicHandEyeProblem3D3D ProblemCreator<ExtrinsicHandEyeProblem3D3D>::createProblem(
-  const Eigen::Isometry3d &true_target,
-  const Eigen::Isometry3d &true_camera,
-  const std::vector<std::shared_ptr<test::PoseGenerator>>& pose_generators,
-  const test::Target &target,
-  const InitialConditions &init)
+    const Eigen::Isometry3d& true_target,
+    const Eigen::Isometry3d& true_camera,
+    const std::vector<std::shared_ptr<test::PoseGenerator>>& pose_generators,
+    const test::Target& target,
+    const InitialConditions& init)
 {
   ExtrinsicHandEyeProblem3D3D problem;
   problem.target_mount_to_target_guess = createPose(true_target, init);
@@ -107,21 +102,22 @@ ExtrinsicHandEyeProblem3D3D ProblemCreator<ExtrinsicHandEyeProblem3D3D>::createP
   return problem;
 }
 
-template<>
-ExtrinsicHandEyeProblem3D3D ProblemCreator<ExtrinsicHandEyeProblem3D3D>::createProblem(
-  const Eigen::Isometry3d &true_target,
-  const Eigen::Isometry3d &true_camera,
-  const std::shared_ptr<test::PoseGenerator>& pose_generator,
-  const test::Target &target,
-  const InitialConditions &init)
+template <>
+ExtrinsicHandEyeProblem3D3D
+ProblemCreator<ExtrinsicHandEyeProblem3D3D>::createProblem(const Eigen::Isometry3d& true_target,
+                                                           const Eigen::Isometry3d& true_camera,
+                                                           const std::shared_ptr<test::PoseGenerator>& pose_generator,
+                                                           const test::Target& target,
+                                                           const InitialConditions& init)
 {
-  return ProblemCreator<ExtrinsicHandEyeProblem3D3D>::createProblem(true_target, true_camera, std::vector<std::shared_ptr<test::PoseGenerator>>({pose_generator}), target, init);
+  return ProblemCreator<ExtrinsicHandEyeProblem3D3D>::createProblem(
+      true_target, true_camera, std::vector<std::shared_ptr<test::PoseGenerator>>({ pose_generator }), target, init);
 }
 
-template<>
+template <>
 double ProblemCreator<ExtrinsicHandEyeProblem3D3D>::max_cost_per_obs = std::pow(1.0e-6, 2.0);
 
-template<typename ProblemT>
+template <typename ProblemT>
 class HandEyeTest : public ::testing::Test
 {
 public:
@@ -136,7 +132,7 @@ public:
     true_camera_mount_to_camera.linear() << 0, 0, 1, -1, 0, 0, 0, -1, 0;
   }
 
-  static void printResults(const ExtrinsicHandEyeResult &r)
+  static void printResults(const ExtrinsicHandEyeResult& r)
   {
     // Report results
     std::cout << "Did converge?: " << r.converged << "\n";
@@ -200,14 +196,13 @@ TYPED_TEST(HandEyeTest, RandomAroundAnswerInitialConditions)
 
   auto pg = std::make_shared<test::HemispherePoseGenerator>();
 
-  while(count < n && count < max_attempts)
+  while (count < n && count < max_attempts)
   {
-    TypeParam prob
-      = ProblemCreator<TypeParam>::createProblem(this->true_target_mount_to_target,
-                                                 this->true_camera_mount_to_camera,
-                                                 pg,
-                                                 this->target,
-                                                 InitialConditions::RANDOM_AROUND_ANSWER);
+    TypeParam prob = ProblemCreator<TypeParam>::createProblem(this->true_target_mount_to_target,
+                                                              this->true_camera_mount_to_camera,
+                                                              pg,
+                                                              this->target,
+                                                              InitialConditions::RANDOM_AROUND_ANSWER);
     // Run the optimization
     // Catch exceptions during the optimization because there is a good chance that infeasible initial
     // transform guesses will be randomly generated
@@ -216,7 +211,7 @@ TYPED_TEST(HandEyeTest, RandomAroundAnswerInitialConditions)
     {
       result = optimize(prob);
     }
-    catch (const std::exception &ex)
+    catch (const std::exception& ex)
     {
       std::cout << "Exception from optimization; continuing: '" << ex.what() << "'" << std::endl;
       continue;
@@ -249,22 +244,22 @@ TYPED_TEST(HandEyeTest, RandomAroundAnswerInitialConditions_MoreHemispheres)
   const std::size_t max_attempts = 2 * n;
   std::size_t count = 0;
 
-
   Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
   offset.translation().x() = 0.1;
 
   std::vector<std::shared_ptr<test::PoseGenerator>> pgs;
-  pgs.push_back(std::make_shared<test::RandomZRotPoseGenerator>(std::make_shared<test::HemispherePoseGenerator>(2.0, 10, 10, 0.0, Eigen::Isometry3d::Identity())));
-  pgs.push_back(std::make_shared<test::RandomZRotPoseGenerator>(std::make_shared<test::HemispherePoseGenerator>(2.0, 10, 10, 0.0, offset)));
+  pgs.push_back(std::make_shared<test::RandomZRotPoseGenerator>(
+      std::make_shared<test::HemispherePoseGenerator>(2.0, 10, 10, 0.0, Eigen::Isometry3d::Identity())));
+  pgs.push_back(std::make_shared<test::RandomZRotPoseGenerator>(
+      std::make_shared<test::HemispherePoseGenerator>(2.0, 10, 10, 0.0, offset)));
 
-  while(count < n && count < max_attempts)
+  while (count < n && count < max_attempts)
   {
-    TypeParam prob
-      = ProblemCreator<TypeParam>::createProblem(this->true_target_mount_to_target,
-                                                 this->true_camera_mount_to_camera,
-                                                 pgs,
-                                                 this->target,
-                                                 InitialConditions::RANDOM_AROUND_ANSWER);
+    TypeParam prob = ProblemCreator<TypeParam>::createProblem(this->true_target_mount_to_target,
+                                                              this->true_camera_mount_to_camera,
+                                                              pgs,
+                                                              this->target,
+                                                              InitialConditions::RANDOM_AROUND_ANSWER);
     // Run the optimization
     // Catch exceptions during the optimization because there is a good chance that infeasible initial
     // transform guesses will be randomly generated
@@ -273,7 +268,7 @@ TYPED_TEST(HandEyeTest, RandomAroundAnswerInitialConditions_MoreHemispheres)
     {
       result = optimize(prob);
     }
-    catch (const std::exception &ex)
+    catch (const std::exception& ex)
     {
       std::cout << "Exception from optimization; continuing: '" << ex.what() << "'" << std::endl;
       continue;
@@ -300,7 +295,7 @@ TYPED_TEST(HandEyeTest, RandomAroundAnswerInitialConditions_MoreHemispheres)
   EXPECT_LT(count, max_attempts);
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

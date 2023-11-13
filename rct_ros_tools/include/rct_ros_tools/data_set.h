@@ -9,7 +9,6 @@
 
 namespace rct_ros_tools
 {
-
 struct ExtrinsicDataSet
 {
   std::vector<cv::Mat> images;
@@ -29,8 +28,8 @@ bool saveToDirectory(const std::string& path, const ExtrinsicDataSet& data);
 class ExtrinsicCorrespondenceDataSet
 {
 public:
-  ExtrinsicCorrespondenceDataSet(const std::vector<rct_ros_tools::ExtrinsicDataSet> &extrinsic_data_set,
-                                 const rct_image_tools::TargetFinder &target_finder,
+  ExtrinsicCorrespondenceDataSet(const std::vector<rct_ros_tools::ExtrinsicDataSet>& extrinsic_data_set,
+                                 const rct_image_tools::TargetFinder& target_finder,
                                  bool debug = false);
 
   /** @brief Get the number of cameras */
@@ -49,7 +48,8 @@ public:
   bool foundCorrespondence(std::size_t camera_index, std::size_t image_index) const;
 
   /** @brief Get the correspondence set for a given camera and image index */
-  const rct_optimizations::Correspondence2D3D::Set& getCorrespondenceSet(std::size_t camera_index, std::size_t image_index) const;
+  const rct_optimizations::Correspondence2D3D::Set& getCorrespondenceSet(std::size_t camera_index,
+                                                                         std::size_t image_index) const;
 
 private:
   /** @brief Correspondence pairs for a given image and camera */
@@ -57,7 +57,6 @@ private:
 
   /** @brief Mask matrix indicating if the target was found */
   Eigen::Matrix<unsigned, Eigen::Dynamic, Eigen::Dynamic> mask_;
-
 };
 
-} // namespace rct_ros_tools
+}  // namespace rct_ros_tools

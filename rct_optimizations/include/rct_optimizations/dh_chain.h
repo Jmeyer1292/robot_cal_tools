@@ -13,7 +13,7 @@ struct as_if;
 
 template <typename T>
 struct convert;
-}
+}  // namespace YAML
 
 namespace rct_optimizations
 {
@@ -26,28 +26,28 @@ enum class DHJointType : unsigned
   REVOLUTE,
 };
 
-template<typename T>
+template <typename T>
 using Isometry3 = Eigen::Transform<T, 3, Eigen::Isometry>;
 
-template<typename T>
+template <typename T>
 using Quaternion = Eigen::Quaternion<T>;
 
-template<typename T>
+template <typename T>
 using AngleAxis = Eigen::AngleAxis<T>;
 
-template<typename T>
+template <typename T>
 using Vector4 = Eigen::Matrix<T, 4, 1>;
 
-template<typename T>
+template <typename T>
 using Vector3 = Eigen::Matrix<T, 3, 1>;
 
-template<typename T>
+template <typename T>
 using Vector2 = Eigen::Matrix<T, 2, 1>;
 
 /**
  * @brief Struct representing the DH parameters of a single transformation between adjacent links.
- * This struct follows the classical DH parameter convention: Trans[Zi-1](d) * Rot[Zi-1](theta) * Trans[Xi](r) * Rot[Xi](alpha)
- * See @link https://en.wikipedia.org/wiki/Denavit%E2%80%93Hartenberg_parameters for reference
+ * This struct follows the classical DH parameter convention: Trans[Zi-1](d) * Rot[Zi-1](theta) * Trans[Xi](r) *
+ * Rot[Xi](alpha) See @link https://en.wikipedia.org/wiki/Denavit%E2%80%93Hartenberg_parameters for reference
  */
 struct DHTransform
 {
@@ -61,9 +61,8 @@ struct DHTransform
    * @param offsets - The DH parameter offsets to apply when calculating the transform
    * @return
    */
-  template<typename T>
-  Isometry3<T> createRelativeTransform(const T joint_value,
-                                       const Eigen::Matrix<T, 1, 4>& offsets) const
+  template <typename T>
+  Isometry3<T> createRelativeTransform(const T joint_value, const Eigen::Matrix<T, 1, 4>& offsets) const
   {
     Isometry3<T> transform(Isometry3<T>::Identity());
 
@@ -72,16 +71,16 @@ struct DHTransform
 
     switch (type)
     {
-    case DHJointType::LINEAR:
-      // Add the joint value to d (index 0) if the joint is linear
-      updated_params(0) += joint_value;
-      break;
-    case DHJointType::REVOLUTE:
-      // Add the joint value to theta (index 1) if the joint is revolute
-      updated_params(1) += joint_value;
-      break;
-    default:
-      throw std::runtime_error("Unknown DH joint type");
+      case DHJointType::LINEAR:
+        // Add the joint value to d (index 0) if the joint is linear
+        updated_params(0) += joint_value;
+        break;
+      case DHJointType::REVOLUTE:
+        // Add the joint value to theta (index 1) if the joint is revolute
+        updated_params(1) += joint_value;
+        break;
+      default:
+        throw std::runtime_error("Unknown DH joint type");
     }
 
     // Perform the DH transformations
@@ -94,11 +93,12 @@ struct DHTransform
   }
 
   /**
-   * @brief Creates the homogoneous transformation from the previous link to the current link without applying DH parameter offsets
+   * @brief Creates the homogoneous transformation from the previous link to the current link without applying DH
+   * parameter offsets
    * @param joint_value - The joint value to apply when calculating the transform
    * @return
    */
-  template<typename T>
+  template <typename T>
   Isometry3<T> createRelativeTransform(const T joint_value) const
   {
     Eigen::Matrix<T, 1, 4> offsets = Eigen::Matrix<T, 1, 4>::Zero();
@@ -149,8 +149,8 @@ public:
    * @return
    * @throws Exception if the size of joint values is larger than the number of DH transforms in the chain
    */
-  template<typename T>
-  Isometry3<T> getFK(const Eigen::Matrix<T, Eigen::Dynamic, 1> &joint_values) const
+  template <typename T>
+  Isometry3<T> getFK(const Eigen::Matrix<T, Eigen::Dynamic, 1>& joint_values) const
   {
     Eigen::Matrix<T, Eigen::Dynamic, 4> offsets = Eigen::Matrix<T, Eigen::Dynamic, 4>::Zero(dof(), 4);
     return getFK(joint_values, offsets);
@@ -165,7 +165,7 @@ public:
    * @throws Exception if the size of @ref joint_values is larger than the number of DH transforms in the chain
    * or if the size of @ref joint_values is larger than the rows of DH offsets
    */
-  template<typename T>
+  template <typename T>
   Isometry3<T> getFK(const Eigen::Matrix<T, Eigen::Dynamic, 1>& joint_values,
                      const Eigen::Matrix<T, Eigen::Dynamic, 4>& offsets) const
   {
@@ -186,14 +186,15 @@ public:
     Isometry3<T> transform(base_offset_.cast<T>());
     for (Eigen::Index i = 0; i < joint_values.size(); ++i)
     {
-      const Eigen::Matrix<T, 1, 4> &offset = offsets.row(i);
+      const Eigen::Matrix<T, 1, 4>& offset = offsets.row(i);
       transform = transform * transforms_.at(i).createRelativeTransform(joint_values[i], offset);
     }
     return transform;
   }
 
   /**
-   * @brief Creates a random joint pose by choosing a random uniformly distributed joint value for each joint in the chain
+   * @brief Creates a random joint pose by choosing a random uniformly distributed joint value for each joint in the
+   * chain
    * @return
    */
   Eigen::VectorXd createUniformlyRandomPose() const;
@@ -248,4 +249,4 @@ protected:
   DHChain() = default;
 };
 
-} // namespace rct_optimizations
+}  // namespace rct_optimizations

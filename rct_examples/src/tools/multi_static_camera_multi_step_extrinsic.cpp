@@ -28,7 +28,6 @@ static void reproject(const Eigen::Isometry3d& base_to_target,
                       const cv::Mat& image,
                       const std::vector<Correspondence2D3D::Set>& correspondence_sets)
 {
-
   Eigen::Isometry3d camera_to_target = base_to_camera[0].inverse() * base_to_target;
 
   std::vector<Eigen::Vector3d> target_points;
@@ -139,7 +138,8 @@ int main(int argc, char** argv)
 
     Eigen::Isometry3d wrist_to_target;
     if (!loadPose(pnh, "wrist_to_target_guess", wrist_to_target))
-      throw std::runtime_error("Unable to load guess for wrist to target from the 'wrist_to_target_guess' parameter struct");
+      throw std::runtime_error("Unable to load guess for wrist to target from the 'wrist_to_target_guess' parameter "
+                               "struct");
 
     ExtrinsicCorrespondenceDataSet corr_data_set(maybe_data_set, *target_finder, true);
 
@@ -163,8 +163,7 @@ int main(int argc, char** argv)
     // Run optimization
     printTitle("Running calibration for only cameras");
 
-    ExtrinsicMultiStaticCameraOnlyResult
-        opt_result = optimize(problem_def);
+    ExtrinsicMultiStaticCameraOnlyResult opt_result = optimize(problem_def);
 
     // Report results
     printOptResults(opt_result.converged, opt_result.initial_cost_per_obs, opt_result.final_cost_per_obs);
@@ -179,7 +178,7 @@ int main(int argc, char** argv)
       printTransform(t, "Base", "Camera (" + param_base + ")", "Base To Camera (" + param_base + ")");
       printNewLine();
 
-      t = opt_result.base_to_camera[0].inverse()  * t;
+      t = opt_result.base_to_camera[0].inverse() * t;
       printTransform(t, "Camera 0", "Camera (" + param_base + ")", "Camera 0 to Camera " + std::to_string(c));
       printNewLine();
     }
@@ -191,11 +190,12 @@ int main(int argc, char** argv)
     problem_wrist_def.wrist_to_target_guess = wrist_to_target;
     problem_wrist_def.image_observations = problem_def.image_observations;
     problem_wrist_def.base_to_camera_guess = opt_result.base_to_camera;
-    ExtrinsicMultiStaticCameraMovingTargetWristOnlyResult
-        opt_wrist_only_result = optimize(problem_wrist_def);
+    ExtrinsicMultiStaticCameraMovingTargetWristOnlyResult opt_wrist_only_result = optimize(problem_wrist_def);
 
     // Report results
-    printOptResults(opt_wrist_only_result.converged, opt_wrist_only_result.initial_cost_per_obs, opt_wrist_only_result.final_cost_per_obs);
+    printOptResults(opt_wrist_only_result.converged,
+                    opt_wrist_only_result.initial_cost_per_obs,
+                    opt_wrist_only_result.final_cost_per_obs);
     printNewLine();
 
     Eigen::Isometry3d t = opt_wrist_only_result.wrist_to_target;

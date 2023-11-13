@@ -15,44 +15,43 @@ enum class InitialConditions
   RANDOM_AROUND_ANSWER
 };
 
-template<typename ProblemT>
+template <typename ProblemT>
 struct ProblemCreator
 {
-  static Eigen::Isometry3d createPose(const Eigen::Isometry3d &pose, const InitialConditions &init)
+  static Eigen::Isometry3d createPose(const Eigen::Isometry3d& pose, const InitialConditions& init)
   {
     Eigen::Isometry3d out(pose);
     switch (init)
     {
-    case InitialConditions::RANDOM_AROUND_ANSWER:
-    {
-      const double spatial_noise = 0.1; // +/- 0.1 meters
-      const double angular_noise = 20.0 * M_PI / 180.0; // +/- 20 degrees
-      out = test::perturbPose(pose, spatial_noise, angular_noise);
-      break;
-    }
-    default: // PERFECT
-      out = pose;
+      case InitialConditions::RANDOM_AROUND_ANSWER: {
+        const double spatial_noise = 0.1;                  // +/- 0.1 meters
+        const double angular_noise = 20.0 * M_PI / 180.0;  // +/- 20 degrees
+        out = test::perturbPose(pose, spatial_noise, angular_noise);
+        break;
+      }
+      default:  // PERFECT
+        out = pose;
     }
 
     return out;
   }
 
-  static ProblemT createProblem(const Eigen::Isometry3d &true_target,
-                                const Eigen::Isometry3d &true_camera,
-                                const test::Target &target,
-                                const InitialConditions &init);
+  static ProblemT createProblem(const Eigen::Isometry3d& true_target,
+                                const Eigen::Isometry3d& true_camera,
+                                const test::Target& target,
+                                const InitialConditions& init);
 
   /** @brief The maximum allowable cost per observation for this problem
    * Note: this cost is squared (i.e. pixels^2 or m^2) */
   static double max_cost_per_obs;
 };
 
-template<>
-ExtrinsicHandEyeProblem2D3D ProblemCreator<ExtrinsicHandEyeProblem2D3D>::createProblem(
-  const Eigen::Isometry3d &true_target,
-  const Eigen::Isometry3d &true_camera,
-  const test::Target &target,
-  const InitialConditions &init)
+template <>
+ExtrinsicHandEyeProblem2D3D
+ProblemCreator<ExtrinsicHandEyeProblem2D3D>::createProblem(const Eigen::Isometry3d& true_target,
+                                                           const Eigen::Isometry3d& true_camera,
+                                                           const test::Target& target,
+                                                           const InitialConditions& init)
 {
   test::Camera camera = test::makeKinectCamera();
 
@@ -63,26 +62,20 @@ ExtrinsicHandEyeProblem2D3D ProblemCreator<ExtrinsicHandEyeProblem2D3D>::createP
 
   DHChain camera_chain = test::createABBIRB2400();
   DHChain target_chain(std::vector<DHTransform>{});
-  problem.observations = test::createObservations(camera_chain,
-                                                  target_chain,
-                                                  true_camera,
-                                                  Eigen::Isometry3d::Identity(),
-                                                  true_target,
-                                                  target,
-                                                  camera,
-                                                  100);
+  problem.observations = test::createObservations(
+      camera_chain, target_chain, true_camera, Eigen::Isometry3d::Identity(), true_target, target, camera, 100);
   return problem;
 }
 
-template<>
+template <>
 double ProblemCreator<ExtrinsicHandEyeProblem2D3D>::max_cost_per_obs = 1.0;
 
-template<>
-ExtrinsicHandEyeProblem3D3D ProblemCreator<ExtrinsicHandEyeProblem3D3D>::createProblem(
-  const Eigen::Isometry3d &true_target,
-  const Eigen::Isometry3d &true_camera,
-  const test::Target &target,
-  const InitialConditions &init)
+template <>
+ExtrinsicHandEyeProblem3D3D
+ProblemCreator<ExtrinsicHandEyeProblem3D3D>::createProblem(const Eigen::Isometry3d& true_target,
+                                                           const Eigen::Isometry3d& true_camera,
+                                                           const test::Target& target,
+                                                           const InitialConditions& init)
 {
   ExtrinsicHandEyeProblem3D3D problem;
   problem.target_mount_to_target_guess = createPose(true_target, init);
@@ -90,23 +83,18 @@ ExtrinsicHandEyeProblem3D3D ProblemCreator<ExtrinsicHandEyeProblem3D3D>::createP
 
   DHChain camera_chain = test::createABBIRB2400();
   DHChain target_chain(std::vector<DHTransform>{});
-  problem.observations = test::createObservations(camera_chain,
-                                                  target_chain,
-                                                  true_camera,
-                                                  Eigen::Isometry3d::Identity(),
-                                                  true_target,
-                                                  target,
-                                                  100);
+  problem.observations = test::createObservations(
+      camera_chain, target_chain, true_camera, Eigen::Isometry3d::Identity(), true_target, target, 100);
   return problem;
 }
 
-template<>
+template <>
 double ProblemCreator<ExtrinsicHandEyeProblem3D3D>::max_cost_per_obs = std::pow(1.0e-6, 2.0);
 
-template<typename ProblemT>
+template <typename ProblemT>
 class HandEyeChainTest : public ::testing::Test
 {
-  public:
+public:
   HandEyeChainTest()
     : true_target_mount_to_target(Eigen::Isometry3d::Identity())
     , true_camera_mount_to_camera(Eigen::Isometry3d::Identity())
@@ -118,7 +106,7 @@ class HandEyeChainTest : public ::testing::Test
     true_camera_mount_to_camera.linear() << 0, 0, 1, -1, 0, 0, 0, -1, 0;
   }
 
-  static void printResults(const ExtrinsicHandEyeResult &r)
+  static void printResults(const ExtrinsicHandEyeResult& r)
   {
     // Report results
     std::cout << "Did converge?: " << r.converged << "\n";
@@ -145,10 +133,8 @@ TYPED_TEST_CASE(HandEyeChainTest, Implementations);
 
 TYPED_TEST(HandEyeChainTest, PerfectInitialConditions)
 {
-  TypeParam prob = ProblemCreator<TypeParam>::createProblem(this->true_target_mount_to_target,
-                                                     this->true_camera_mount_to_camera,
-                                                     this->target,
-                                                     InitialConditions::PERFECT);
+  TypeParam prob = ProblemCreator<TypeParam>::createProblem(
+      this->true_target_mount_to_target, this->true_camera_mount_to_camera, this->target, InitialConditions::PERFECT);
   // Run the optimization
   // Do not attempt to catch exceptions here because the initial guess should be correct
   auto result = optimize(prob);
@@ -168,13 +154,12 @@ TYPED_TEST(HandEyeChainTest, RandomAroundAnswerInitialConditions)
   const std::size_t n = 10;
   const std::size_t max_attempts = 2 * n;
   std::size_t count = 0;
-  while(count < n && count < max_attempts)
+  while (count < n && count < max_attempts)
   {
-    TypeParam prob
-      = ProblemCreator<TypeParam>::createProblem(this->true_target_mount_to_target,
-                                                 this->true_camera_mount_to_camera,
-                                                 this->target,
-                                                 InitialConditions::RANDOM_AROUND_ANSWER);
+    TypeParam prob = ProblemCreator<TypeParam>::createProblem(this->true_target_mount_to_target,
+                                                              this->true_camera_mount_to_camera,
+                                                              this->target,
+                                                              InitialConditions::RANDOM_AROUND_ANSWER);
 
     // Attempt to catch exceptions thrown by the optimize function
     // It is likely that randomly perturbing the camera and target produce an infeasible initial state
@@ -195,7 +180,7 @@ TYPED_TEST(HandEyeChainTest, RandomAroundAnswerInitialConditions)
 
       this->printResults(result);
     }
-    catch (const std::exception &ex)
+    catch (const std::exception& ex)
     {
       std::cout << "Error from optimization; continuing: '" << ex.what() << "'" << std::endl;
       continue;
@@ -205,7 +190,7 @@ TYPED_TEST(HandEyeChainTest, RandomAroundAnswerInitialConditions)
   EXPECT_LT(count, max_attempts);
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

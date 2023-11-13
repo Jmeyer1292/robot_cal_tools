@@ -21,8 +21,10 @@ using namespace rct_image_tools;
 using namespace rct_ros_tools;
 using namespace rct_common;
 
-static void reproject(const Eigen::Isometry3d& base_to_target, const std::vector<Eigen::Isometry3d>& base_to_camera,
-                      const std::vector<CameraIntrinsics>& intr, const cv::Mat& image,
+static void reproject(const Eigen::Isometry3d& base_to_target,
+                      const std::vector<Eigen::Isometry3d>& base_to_camera,
+                      const std::vector<CameraIntrinsics>& intr,
+                      const cv::Mat& image,
                       const std::vector<Correspondence2D3D::Set>& correspondence_sets)
 {
   Eigen::Isometry3d camera_to_target = base_to_camera[0].inverse() * base_to_target;
@@ -124,11 +126,13 @@ int main(int argc, char** argv)
       param_name = param_base + "base_to_camera_guess";
       // Our 'base to camera guess': A camera off to the side, looking at a point centered in front of the robot
       if (!loadPose(pnh, param_name, problem_def.base_to_camera_guess[c]))
-        throw std::runtime_error("Unable to load guess for base to camera from the '" + param_name + "' parameter struct");
+        throw std::runtime_error("Unable to load guess for base to camera from the '" + param_name +
+                                 "' parameter struct");
     }
 
     if (!loadPose(pnh, "wrist_to_target_guess", problem_def.wrist_to_target_guess))
-      throw std::runtime_error("Unable to load guess for wrist to target from the 'wrist_to_target_guess' parameter struct");
+      throw std::runtime_error("Unable to load guess for wrist to target from the 'wrist_to_target_guess' parameter "
+                               "struct");
 
     // Load the target finder
     auto target_finder_config = get<XmlRpc::XmlRpcValue>(pnh, "target_finder");

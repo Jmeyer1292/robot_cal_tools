@@ -7,7 +7,6 @@
 
 namespace rct_image_tools
 {
-
 struct CircleDetectorParams
 {
   /** @brief The minimum grayscale pixel intensity value at which to start the image thresholding (inclusive) */
@@ -17,13 +16,14 @@ struct CircleDetectorParams
   /** @brief The number of thresholding steps to apply */
   std::size_t nThresholds = 18;
 
-  /** @brief The number of times a particular circle must be identified to be considered valid (must be <= the number of threshold steps) */
+  /** @brief The number of times a particular circle must be identified to be considered valid (must be <= the number of
+   * threshold steps) */
   size_t minRepeatability = 3;
   /** @brief The radius (pixels) around an identified circle within which new detected blobs will be considered to be
-     * the same feature as the circle */
+   * the same feature as the circle */
   float circleInclusionRadius = 5;
   /** @brief The maximum difference in radius (pixels) between an identified circle and a detected blob, above which
-     * the blob will not be considered to be the same feature as the previously identified circle */
+   * the blob will not be considered to be the same feature as the previously identified circle */
   float maxRadiusDiff = 5;
 
   /** @brief The maximum average deviation of the contour of a blob from its calculated ellipse fit (percentage) */
@@ -81,7 +81,8 @@ public:
    * @param keypoints
    * @param mask
    */
-  virtual void detect(cv::InputArray image, std::vector<cv::KeyPoint>& keypoints,
+  virtual void detect(cv::InputArray image,
+                      std::vector<cv::KeyPoint>& keypoints,
                       cv::InputArray mask = cv::noArray()) override;
 
   /**
@@ -102,4 +103,4 @@ protected:
   const CircleDetectorParams params;
 };
 }  // namespace rct_image_tools
-#endif // RCT_IMAGE_TOOLS_CIRCLE_DETECTOR_H
+#endif  // RCT_IMAGE_TOOLS_CIRCLE_DETECTOR_H

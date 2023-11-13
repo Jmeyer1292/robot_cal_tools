@@ -1,15 +1,13 @@
 /**
-  * ArUco gridboard detector, following the same pattern as ModifiedCircleGridTargetFinder.
-  * Author: Joseph Schornak
-  */
+ * ArUco gridboard detector, following the same pattern as ModifiedCircleGridTargetFinder.
+ * Author: Joseph Schornak
+ */
 
 #include "rct_image_tools/aruco_finder.h"
 
 namespace rct_image_tools
 {
-ArucoGridBoardTargetFinder::ArucoGridBoardTargetFinder(const ArucoGridTarget& target)
-  : TargetFinder()
-  , target_(target)
+ArucoGridBoardTargetFinder::ArucoGridBoardTargetFinder(const ArucoGridTarget& target) : TargetFinder(), target_(target)
 {
 }
 
@@ -21,7 +19,8 @@ TargetFeatures ArucoGridBoardTargetFinder::findTargetFeatures(const cv::Mat& ima
   std::vector<int> marker_ids;
   cv::Ptr<cv::aruco::DetectorParameters> parameters(new cv::aruco::DetectorParameters);
 
-  cv::aruco::detectMarkers(image, target_.board->dictionary, marker_corners, marker_ids, parameters, rejected_candidates);
+  cv::aruco::detectMarkers(
+      image, target_.board->dictionary, marker_corners, marker_ids, parameters, rejected_candidates);
   cv::aruco::refineDetectedMarkers(image, target_.board, marker_corners, marker_ids, rejected_candidates);
 
   for (unsigned i = 0; i < marker_ids.size(); i++)
@@ -38,18 +37,21 @@ TargetFeatures ArucoGridBoardTargetFinder::findTargetFeatures(const cv::Mat& ima
   return map_ids_to_obs_corners;
 }
 
-cv::Mat ArucoGridBoardTargetFinder::drawTargetFeatures(const cv::Mat& image, const TargetFeatures& target_features) const
+cv::Mat ArucoGridBoardTargetFinder::drawTargetFeatures(const cv::Mat& image,
+                                                       const TargetFeatures& target_features) const
 {
   std::vector<int> marker_ids;
   std::vector<std::vector<cv::Point2f>> marker_corners;
-  for(auto it = target_features.begin(); it != target_features.end(); ++it)
+  for (auto it = target_features.begin(); it != target_features.end(); ++it)
   {
     marker_ids.push_back(it->first);
     std::vector<cv::Point2f> cv_obs(it->second.size());
-    std::transform(it->second.begin(), it->second.end(), cv_obs.begin(), [](const Eigen::Vector2d& o) {return cv::Point2d(o.x(), o.y()); });
+    std::transform(it->second.begin(), it->second.end(), cv_obs.begin(), [](const Eigen::Vector2d& o) {
+      return cv::Point2d(o.x(), o.y());
+    });
     marker_corners.push_back(cv_obs);
   }
   cv::aruco::drawDetectedMarkers(image, marker_corners, marker_ids);
   return image;
 }
-} // namespace rct_image_tools
+}  // namespace rct_image_tools
