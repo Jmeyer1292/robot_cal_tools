@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <launch>
-  <arg name="camera_file" default="$(find rct_examples)/config/kinect_camera_intr.yaml"/>
-  <arg name="target_file" default="$(find rct_examples)/config/target_10x10.yaml"/>
-  <arg name="guess_file" default="$(find rct_examples)/config/camera_on_wrist_guesses.yaml"/>
+  <arg name="camera_file" default="$(find rct_examples)/data/test_set_10x10/camera_intr.yaml"/>
+  <arg name="target_file" default="$(find rct_examples)/data/test_set_10x10/target.yaml"/>
+  <arg name="guess_file" default="$(find rct_examples)/data/test_set_10x10/pose_guesses.yaml"/>
   <arg name="data_path" default="$(find rct_examples)/data/test_set_10x10/cal_data.yaml"/>
-  <arg name="homography_threshold" default="1.0" doc="Threshold for average reprojection error for an obseravation (in pixels), above which an observation will be excluded from the calibration"/>
+  <arg name="homography_threshold" default="2.0" doc="Threshold for average reprojection error for an obseravation (in pixels), above which an observation will be excluded from the calibration"/>
 
   <node pkg="rct_examples" type="moving_cam_extr_cal_ex" name="camera_on_wrist" output="screen">
     <rosparam command="load" file="$(arg camera_file)"/>
