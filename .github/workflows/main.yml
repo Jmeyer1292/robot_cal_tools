@@ -7,29 +7,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        env:
-          - {BADGE: focal,
-             OS_NAME: ubuntu,
-             OS_CODE_NAME: focal,
-             ROS_DISTRO: noetic,
-             ROS_REPO: main,
-             ADDITIONAL_DEBS: git,
-             VERBOSE_TESTS: true,
-             TARGET_CMAKE_ARGS: "-DRCT_BUILD_TESTS=ON",
-             CTEST_OUTPUT_ON_FAILURE: true,
-             AFTER_SCRIPT: "cd $target_ws/build/rct_optimizations && ctest -V && cd $target_ws/build/rct_image_tools && ctest -V"}
-          - {BADGE: bionic,
-             OS_NAME: ubuntu,
-             OS_CODE_NAME: bionic,
-             ROS_DISTRO: melodic,
-             ROS_REPO: main,
-             ADDITIONAL_DEBS: git,
-             VERBOSE_TESTS: true,
-             TARGET_CMAKE_ARGS: "-DRCT_BUILD_TESTS=ON",
-             CTEST_OUTPUT_ON_FAILURE: true,
-             AFTER_SCRIPT: "cd $target_ws/build/rct_optimizations && ctest -V && cd $target_ws/build/rct_image_tools && ctest -V"}
+        distro: [melodic, noetic]
+
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
       - uses: 'ros-industrial/industrial_ci@master'
-        env: ${{matrix.env}}
+        env:
+          BADGE: ${{ matrix.distro }}
+          ROS_DISTRO: ${{ matrix.distro }}
+          ROS_REPO: main
+          VERBOSE_TESTS: true
+          TARGET_CMAKE_ARGS: "-DRCT_BUILD_TESTS=ON"
+          CTEST_OUTPUT_ON_FAILURE: true
+          AFTER_SCRIPT: "cd $target_ws/build/rct_optimizations && ctest -V && cd $target_ws/build/rct_image_tools && ctest -V"
