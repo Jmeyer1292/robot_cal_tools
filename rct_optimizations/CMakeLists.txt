@@ -31,6 +31,8 @@ add_library(
   src/${PROJECT_NAME}/validation/noise_qualification.cpp
   # Target Homography
   src/${PROJECT_NAME}/validation/homography_validation.cpp
+  # Projection
+  src/${PROJECT_NAME}/validation/projection.cpp
   # DH Chain Kinematic Calibration
   src/${PROJECT_NAME}/dh_chain.cpp
   src/${PROJECT_NAME}/dh_chain_kinematic_calibration.cpp)
