@@ -12,16 +12,16 @@ Eigen::Transform<FloatT, 3, Eigen::Isometry> toIsometry(const Eigen::Vector3d& t
          Eigen::AngleAxisd(euler_zyx(1), Eigen::Vector3d::UnitY()) *
          Eigen::AngleAxisd(euler_zyx(0), Eigen::Vector3d::UnitX());
 }
-} // namespace anonymous
+}  // namespace
 
 namespace YAML
 {
-template<>
+template <>
 struct convert<rct_optimizations::ExtrinsicHandEyeProblem2D3D>
 {
   using T = rct_optimizations::ExtrinsicHandEyeProblem2D3D;
 
-  static Node encode(const T &rhs)
+  static Node encode(const T& rhs)
   {
     Node node;
 
@@ -33,26 +33,28 @@ struct convert<rct_optimizations::ExtrinsicHandEyeProblem2D3D>
     return node;
   }
 
-  static bool decode(const Node &node, T &rhs)
+  static bool decode(const Node& node, T& rhs)
   {
     if (node.size() != 4)
       return false;
 
     rhs.intr = node["intr"].as<decltype(rhs.intr)>();
-    rhs.camera_mount_to_camera_guess = node["camera_mount_to_camera_guess"].as<decltype(rhs.camera_mount_to_camera_guess)>();
-    rhs.target_mount_to_target_guess = node["target_mount_to_target_guess"].as<decltype(rhs.target_mount_to_target_guess)>();
+    rhs.camera_mount_to_camera_guess =
+        node["camera_mount_to_camera_guess"].as<decltype(rhs.camera_mount_to_camera_guess)>();
+    rhs.target_mount_to_target_guess =
+        node["target_mount_to_target_guess"].as<decltype(rhs.target_mount_to_target_guess)>();
     rhs.observations = node["observations"].as<decltype(rhs.observations)>();
 
     return true;
   }
 };
 
-template<>
+template <>
 struct convert<rct_optimizations::ExtrinsicHandEyeProblem3D3D>
 {
   using T = rct_optimizations::ExtrinsicHandEyeProblem3D3D;
 
-  static Node encode(const T &rhs)
+  static Node encode(const T& rhs)
   {
     Node node;
 
@@ -63,20 +65,22 @@ struct convert<rct_optimizations::ExtrinsicHandEyeProblem3D3D>
     return node;
   }
 
-  static bool decode(const Node &node, T &rhs)
+  static bool decode(const Node& node, T& rhs)
   {
     if (node.size() != 3)
       return false;
 
-    rhs.camera_mount_to_camera_guess = node["camera_mount_to_camera_guess"].as<decltype(rhs.camera_mount_to_camera_guess)>();
-    rhs.target_mount_to_target_guess = node["target_mount_to_target_guess"].as<decltype(rhs.target_mount_to_target_guess)>();
+    rhs.camera_mount_to_camera_guess =
+        node["camera_mount_to_camera_guess"].as<decltype(rhs.camera_mount_to_camera_guess)>();
+    rhs.target_mount_to_target_guess =
+        node["target_mount_to_target_guess"].as<decltype(rhs.target_mount_to_target_guess)>();
     rhs.observations = node["observations"].as<decltype(rhs.observations)>();
 
     return true;
   }
 };
 
-template<>
+template <>
 struct convert<rct_optimizations::ExtrinsicHandEyeResult>
 {
   using T = rct_optimizations::ExtrinsicHandEyeResult;
@@ -90,8 +94,10 @@ struct convert<rct_optimizations::ExtrinsicHandEyeResult>
     node["camera_mount_to_camera_pos"] = Eigen::Vector3d(rhs.camera_mount_to_camera.translation());
 
     // Serialize transform orientation in RPY for convenience
-    node["target_mount_to_target_rpy"] = Eigen::Vector3d (rhs.target_mount_to_target.rotation().eulerAngles(2, 1, 0).reverse());
-    node["camera_mount_to_camera_rpy"] = Eigen::Vector3d(rhs.camera_mount_to_camera.rotation().eulerAngles(2, 1, 0).reverse());
+    node["target_mount_to_target_rpy"] =
+        Eigen::Vector3d(rhs.target_mount_to_target.rotation().eulerAngles(2, 1, 0).reverse());
+    node["camera_mount_to_camera_rpy"] =
+        Eigen::Vector3d(rhs.camera_mount_to_camera.rotation().eulerAngles(2, 1, 0).reverse());
     return node;
   }
 
@@ -116,4 +122,4 @@ struct convert<rct_optimizations::ExtrinsicHandEyeResult>
   }
 };
 
-} // namespace YAML
+}  // namespace YAML

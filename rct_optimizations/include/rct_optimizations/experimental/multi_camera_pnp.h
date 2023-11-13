@@ -17,7 +17,6 @@
 
 namespace rct_optimizations
 {
-
 struct MultiCameraPnPProblem
 {
   /** @brief The basic camera intrinsic propeties: fx, fy, cx, cy used to reproject points;
@@ -67,6 +66,6 @@ struct MultiCameraPnPResult
 
 MultiCameraPnPResult optimize(const MultiCameraPnPProblem& params);
 
-}
+}  // namespace rct_optimizations
 
-#endif // RCT_MULTI_STATIC_CAMERA_PNP_H
+#endif  // RCT_MULTI_STATIC_CAMERA_PNP_H

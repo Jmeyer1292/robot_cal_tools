@@ -10,16 +10,16 @@ DHTransform::DHTransform(const Eigen::Vector4d& params_, DHJointType type_)
 {
 }
 
-DHTransform::DHTransform(const Eigen::Vector4d &params_, DHJointType type_, const std::string& name_)
+DHTransform::DHTransform(const Eigen::Vector4d& params_, DHJointType type_, const std::string& name_)
   : DHTransform(params_, type_, name_, std::random_device{}())
 {
 }
 
-DHTransform::DHTransform(const Eigen::Vector4d& params_, DHJointType type_, const std::string& name_, std::size_t random_seed_)
-  : params(params_)
-  , type(type_)
-  , name(name_)
-  , random_seed(random_seed_)
+DHTransform::DHTransform(const Eigen::Vector4d& params_,
+                         DHJointType type_,
+                         const std::string& name_,
+                         std::size_t random_seed_)
+  : params(params_), type(type_), name(name_), random_seed(random_seed_)
 {
 }
 
@@ -36,20 +36,18 @@ double DHTransform::createRandomJointValue() const
 
 std::array<std::string, 4> DHTransform::getParamLabels() const
 {
-  return  std::array<std::string, 4>({name + "_d",
-                                      name + "_theta",
-                                      name + "_r",
-                                      name + "_alpha",
-                                      });
+  return std::array<std::string, 4>({
+      name + "_d",
+      name + "_theta",
+      name + "_r",
+      name + "_alpha",
+  });
 }
-
 
 // DH Chain
 
-DHChain::DHChain(std::vector<DHTransform> transforms,
-                 const Eigen::Isometry3d& base_offset)
-  : transforms_(std::move(transforms))
-  , base_offset_(base_offset)
+DHChain::DHChain(std::vector<DHTransform> transforms, const Eigen::Isometry3d& base_offset)
+  : transforms_(std::move(transforms)), base_offset_(base_offset)
 {
 }
 
@@ -75,10 +73,7 @@ Eigen::VectorXd DHChain::createUniformlyRandomPose() const
   return joints;
 }
 
-std::size_t DHChain::dof() const
-{
-  return transforms_.size();
-}
+std::size_t DHChain::dof() const { return transforms_.size(); }
 
 Eigen::MatrixX4d DHChain::getDHTable() const
 {
@@ -94,7 +89,7 @@ std::vector<DHJointType> DHChain::getJointTypes() const
 {
   std::vector<DHJointType> out;
   out.reserve(transforms_.size());
-  for (const auto &t : transforms_)
+  for (const auto& t : transforms_)
   {
     out.push_back(t.type);
   }
@@ -104,17 +99,14 @@ std::vector<DHJointType> DHChain::getJointTypes() const
 std::vector<std::array<std::string, 4>> DHChain::getParamLabels() const
 {
   std::vector<std::array<std::string, 4>> out;
-  for (const auto &t : transforms_)
+  for (const auto& t : transforms_)
   {
     out.push_back(t.getParamLabels());
   }
   return out;
 }
 
-Eigen::Isometry3d DHChain::getBaseOffset() const
-{
-  return base_offset_;
-}
+Eigen::Isometry3d DHChain::getBaseOffset() const { return base_offset_; }
 
 Eigen::Isometry3d DHChain::getRelativeTransform(int joint_index, double value) const
 {
@@ -124,4 +116,4 @@ Eigen::Isometry3d DHChain::getRelativeTransform(int joint_index, double value) c
   return transforms_[joint_index].createRelativeTransform(value);
 }
 
-} // namespace rct_optimizations
+}  // namespace rct_optimizations

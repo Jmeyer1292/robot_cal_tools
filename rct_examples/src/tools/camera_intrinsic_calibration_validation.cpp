@@ -21,11 +21,12 @@ using namespace rct_common;
 
 std::string WINDOW = "window";
 
-void analyzeResults(const IntrinsicCalibrationAccuracyResult &result,
-                    const double pos_tol, const double ang_tol)
+void analyzeResults(const IntrinsicCalibrationAccuracyResult& result, const double pos_tol, const double ang_tol)
 {
-  ROS_INFO_STREAM("Positional Error:\nMean (m): " << result.pos_error.first << "\nStd. Dev. (m): " << result.pos_error.second);
-  ROS_INFO_STREAM("Angular Error:\nMean (rad): " << result.ang_error.first << "\nStd. Dev. (rad): " << result.ang_error.second);
+  ROS_INFO_STREAM("Positional Error:\nMean (m): " << result.pos_error.first
+                                                  << "\nStd. Dev. (m): " << result.pos_error.second);
+  ROS_INFO_STREAM("Angular Error:\nMean (rad): " << result.ang_error.first
+                                                 << "\nStd. Dev. (rad): " << result.ang_error.second);
 
   // Calculate the error such that it represents ~95% of the results (mean + 2 * sigma)
   double pos_error = result.pos_error.first + 2.0 * result.pos_error.second;
@@ -53,7 +54,7 @@ T get(const ros::NodeHandle& nh, const std::string& key)
   return val;
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   ros::init(argc, argv, "camera_on_wrist_extrinsic");
   ros::NodeHandle pnh("~");
@@ -105,7 +106,7 @@ int main(int argc, char **argv)
         cv::imshow(WINDOW, target_finder->drawTargetFeatures(data_set.images[i], target_features));
         cv::waitKey();
       }
-      catch(const std::runtime_error& ex)
+      catch (const std::runtime_error& ex)
       {
         ROS_WARN_STREAM("Image " << i << ": '" << ex.what() << "'");
         cv::imshow(WINDOW, data_set.images[i]);
@@ -133,13 +134,13 @@ int main(int argc, char **argv)
         observations, intr, camera_mount_to_camera, target_mount_to_target, Eigen::Isometry3d::Identity(), 1.0);
 
     // Analyze the results
-    // These error tolerances allow the virtual correspondence sets for each observation to deviate from the expectation by up to 1 mm and 0.05 degrees
-    // The chosen tolerances are relatively arbitrary, but should be very small
+    // These error tolerances allow the virtual correspondence sets for each observation to deviate from the expectation
+    // by up to 1 mm and 0.05 degrees The chosen tolerances are relatively arbitrary, but should be very small
     double pos_tol = 1.0e-3;
     double ang_tol = 0.05 * M_PI / 180.0;
     analyzeResults(result, pos_tol, ang_tol);
   }
-  catch (const std::exception &ex)
+  catch (const std::exception& ex)
   {
     ROS_ERROR_STREAM(ex.what());
     return -1;

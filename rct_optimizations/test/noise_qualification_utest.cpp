@@ -16,7 +16,7 @@ static const double CAMERA_STANDOFF = 0.5;
 
 TEST(NoiseTest, QuatMeanTest)
 {
-  //base quaternion
+  // base quaternion
   Eigen::Quaterniond q_mean(1, 0, 0, 0);
 
   // Make a lot of quaternions randomly oriented about the x-axis
@@ -32,17 +32,17 @@ TEST(NoiseTest, QuatMeanTest)
     random_q.push_back(q_mean * Eigen::AngleAxisd(dist(mt_rand), Eigen::Vector3d::UnitX()));
   }
 
-  //average new quats
+  // average new quats
   QuaternionStats q_stats = computeQuaternionStats(random_q);
 
-  //The two quaternions are 2 pi rad apart, so the mean should be ~PI away from both
+  // The two quaternions are 2 pi rad apart, so the mean should be ~PI away from both
   EXPECT_LT(q_mean.angularDistance(q_stats.mean), 1.0 * M_PI / 180.0);
   EXPECT_LT(std::abs(stdev - q_stats.stdev), 1.0 * M_PI / 180.0);
 }
 
 class NoiseQualification2D : public ::testing::Test
 {
-  public:
+public:
   NoiseQualification2D()
     : target(TARGET_ROWS, TARGET_COLS, SPACING)
     , camera(test::makeKinectCamera())
@@ -59,11 +59,8 @@ class NoiseQualification2D : public ::testing::Test
   Correspondence2D3D::Set createCorrespondences()
   {
     Correspondence2D3D::Set out;
-    EXPECT_NO_THROW(out = test::getCorrespondences(target_to_camera,
-                                                   Eigen::Isometry3d::Identity(),
-                                                   camera,
-                                                   target,
-                                                   true););
+    EXPECT_NO_THROW(
+        out = test::getCorrespondences(target_to_camera, Eigen::Isometry3d::Identity(), camera, target, true););
     return out;
   }
 
@@ -71,7 +68,7 @@ class NoiseQualification2D : public ::testing::Test
   {
     std::normal_distribution<double> dist(mean, stdev);
     Correspondence2D3D::Set out = createCorrespondences();
-    for (auto &correspondence : out)
+    for (auto& correspondence : out)
     {
       Eigen::Vector2d noise;
       noise << dist(mt_rand), dist(mt_rand);
@@ -89,12 +86,12 @@ class NoiseQualification2D : public ::testing::Test
 
 TEST_F(NoiseQualification2D, PerfectData)
 {
-  //reserve observations
+  // reserve observations
   const std::size_t obs_cnt = 35;
   std::vector<PnPProblem> ideal_problem_set;
   ideal_problem_set.reserve(obs_cnt);
 
-  //create observations
+  // create observations
   Eigen::Isometry3d expected_pose = target_to_camera.inverse();
   for (std::size_t i = 0; i < obs_cnt; ++i)
   {
@@ -116,16 +113,16 @@ TEST_F(NoiseQualification2D, PerfectData)
 
 TEST_F(NoiseQualification2D, NoisyData)
 {
-  //reserve observations
+  // reserve observations
   std::size_t obs_cnt = 35;
   std::vector<PnPProblem> perturbed_problem_set;
   perturbed_problem_set.reserve(obs_cnt);
 
-  //add noise boilerplate
+  // add noise boilerplate
   const double mean = 0.0;
   const double stdev = 2.0;
 
-  //create observations
+  // create observations
   Eigen::Isometry3d expected_pose = target_to_camera.inverse();
   for (std::size_t i = 0; i < obs_cnt; ++i)
   {
@@ -142,36 +139,33 @@ TEST_F(NoiseQualification2D, NoisyData)
   // Project the mean camera to target translation into the camera
   Eigen::Vector2d uv = projectPoint(camera.intr, results.p_stat.mean);
 
-  // Take the differential of the camera projection equations to estimate the change in [x,y,z] that is expected from applying camera image noise of [stdev, stdev]
-  // u = fx * (x / z) + cx --> dx = du * (z / fx)
-  // v = fy * (y / z) + cy --> dy = du * (z / fy)
-  // z = fx * x / (u - cx) --> dz = du * -1.0 * (fx * x) / (u - cx)^2
+  // Take the differential of the camera projection equations to estimate the change in [x,y,z] that is expected from
+  // applying camera image noise of [stdev, stdev] u = fx * (x / z) + cx --> dx = du * (z / fx) v = fy * (y / z) + cy
+  // --> dy = du * (z / fy) z = fx * x / (u - cx) --> dz = du * -1.0 * (fx * x) / (u - cx)^2
   Eigen::Vector3d delta;
   delta.x() = stdev * results.p_stat.mean.z() / camera.intr.fx();
   delta.y() = stdev * results.p_stat.mean.z() / camera.intr.fy();
-  delta.z() = stdev * -1.0 * camera.intr.fx() * results.p_stat.mean.x()
-              / std::pow((uv(0) - camera.intr.cx()), 2.0);
+  delta.z() = stdev * -1.0 * camera.intr.fx() * results.p_stat.mean.x() / std::pow((uv(0) - camera.intr.cx()), 2.0);
 
   EXPECT_LT(results.p_stat.stdev.norm(), delta.norm());
   EXPECT_TRUE(results.p_stat.mean.isApprox(expected_pose.translation(), delta.norm()));
 
   // Expect the mean quaternion to be within 1 sigma of the expected orientation
-  EXPECT_LT(results.q_stat.mean.angularDistance(Eigen::Quaterniond(expected_pose.linear())),
-            results.q_stat.stdev);
+  EXPECT_LT(results.q_stat.mean.angularDistance(Eigen::Quaterniond(expected_pose.linear())), results.q_stat.stdev);
 }
 
 TEST_F(NoiseQualification2D, NoisyDataPerturbedGuess)
 {
-  //reserve observations
+  // reserve observations
   std::size_t obs_cnt = 35;
   std::vector<PnPProblem> perturbed_problem_set;
   perturbed_problem_set.reserve(obs_cnt);
 
-  //add noise boilerplate
+  // add noise boilerplate
   const double mean = 0.0;
   const double stdev = 2.0;
 
-  //create observations
+  // create observations
   Eigen::Isometry3d expected_pose = target_to_camera.inverse();
   for (std::size_t i = 0; i < obs_cnt; ++i)
   {
@@ -188,27 +182,24 @@ TEST_F(NoiseQualification2D, NoisyDataPerturbedGuess)
   // Project the mean camera to target translation into the camera
   Eigen::Vector2d uv = projectPoint(camera.intr, results.p_stat.mean);
 
-  // Take the differential of the camera projection equations to estimate the change in [x,y,z] that is expected from applying camera image noise of [stdev, stdev]
-  // u = fx * (x / z) + cx --> dx = du * (z / fx)
-  // v = fy * (y / z) + cy --> dy = du * (z / fy)
-  // z = fx * x / (u - cx) --> dz = du * -1.0 * (fx * x) / (u - cx)^2
+  // Take the differential of the camera projection equations to estimate the change in [x,y,z] that is expected from
+  // applying camera image noise of [stdev, stdev] u = fx * (x / z) + cx --> dx = du * (z / fx) v = fy * (y / z) + cy
+  // --> dy = du * (z / fy) z = fx * x / (u - cx) --> dz = du * -1.0 * (fx * x) / (u - cx)^2
   Eigen::Vector3d delta;
   delta.x() = stdev * results.p_stat.mean.z() / camera.intr.fx();
   delta.y() = stdev * results.p_stat.mean.z() / camera.intr.fy();
-  delta.z() = stdev * -1.0 * camera.intr.fx() * results.p_stat.mean.x()
-              / std::pow((uv(0) - camera.intr.cx()), 2.0);
+  delta.z() = stdev * -1.0 * camera.intr.fx() * results.p_stat.mean.x() / std::pow((uv(0) - camera.intr.cx()), 2.0);
 
   EXPECT_LT(results.p_stat.stdev.norm(), delta.norm());
   EXPECT_TRUE(results.p_stat.mean.isApprox(expected_pose.translation(), delta.norm()));
 
   // Expect the mean quaternion to be within 1 sigma of the expected orientation
-  EXPECT_LT(results.q_stat.mean.angularDistance(Eigen::Quaterniond(expected_pose.linear())),
-            results.q_stat.stdev);
+  EXPECT_LT(results.q_stat.mean.angularDistance(Eigen::Quaterniond(expected_pose.linear())), results.q_stat.stdev);
 }
 
 class NoiseQualification3D : public ::testing::Test
 {
-  public:
+public:
   NoiseQualification3D()
     : target(test::Target(TARGET_ROWS, TARGET_COLS, SPACING))
     , target_to_camera(Eigen::Isometry3d::Identity())
@@ -224,8 +215,7 @@ class NoiseQualification3D : public ::testing::Test
   Correspondence3D3D::Set createCorrespondences()
   {
     Correspondence3D3D::Set out;
-    EXPECT_NO_THROW(
-      out = test::getCorrespondences(target_to_camera, Eigen::Isometry3d::Identity(), target););
+    EXPECT_NO_THROW(out = test::getCorrespondences(target_to_camera, Eigen::Isometry3d::Identity(), target););
 
     return out;
   }
@@ -235,7 +225,7 @@ class NoiseQualification3D : public ::testing::Test
     Correspondence3D3D::Set out = createCorrespondences();
     std::normal_distribution<double> dist(mean, stdev);
 
-    for (auto &corr : out)
+    for (auto& corr : out)
     {
       Eigen::Vector3d noise;
       noise << dist(mt_rand), dist(mt_rand), dist(mt_rand);
@@ -252,12 +242,12 @@ class NoiseQualification3D : public ::testing::Test
 
 TEST_F(NoiseQualification3D, PerfectData)
 {
-  //reserve observations
+  // reserve observations
   std::size_t obs_cnt = 35;
   std::vector<PnPProblem3D> ideal_problem_set;
   ideal_problem_set.reserve(obs_cnt);
 
-  //create observations
+  // create observations
   Eigen::Isometry3d expected_pose = target_to_camera.inverse();
   for (std::size_t i = 0; i < obs_cnt; ++i)
   {
@@ -278,7 +268,7 @@ TEST_F(NoiseQualification3D, PerfectData)
 
 TEST_F(NoiseQualification3D, NoisyData)
 {
-  //reserve observations
+  // reserve observations
   std::size_t obs_cnt = 35;
   std::vector<PnPProblem3D> ideal_problem_set;
   ideal_problem_set.reserve(obs_cnt);
@@ -286,7 +276,7 @@ TEST_F(NoiseQualification3D, NoisyData)
   double mean = 0.0;
   double stdev = 0.005;
 
-  //create observations
+  // create observations
   Eigen::Isometry3d expected_pose = target_to_camera.inverse();
   for (std::size_t i = 0; i < obs_cnt; ++i)
   {
@@ -310,7 +300,7 @@ TEST_F(NoiseQualification3D, NoisyData)
 
 TEST_F(NoiseQualification3D, NoisyDataPerturbedGuess)
 {
-  //reserve observations
+  // reserve observations
   std::size_t obs_cnt = 35;
   std::vector<PnPProblem3D> ideal_problem_set;
   ideal_problem_set.reserve(obs_cnt);
@@ -318,7 +308,7 @@ TEST_F(NoiseQualification3D, NoisyDataPerturbedGuess)
   double mean = 0.0;
   double stdev = 0.005;
 
-  //create observations
+  // create observations
   Eigen::Isometry3d expected_pose = target_to_camera.inverse();
   for (std::size_t i = 0; i < obs_cnt; ++i)
   {
@@ -340,7 +330,7 @@ TEST_F(NoiseQualification3D, NoisyDataPerturbedGuess)
   EXPECT_LT(result.q_stat.mean.angularDistance(Eigen::Quaterniond(expected_pose.linear())), result.q_stat.stdev);
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

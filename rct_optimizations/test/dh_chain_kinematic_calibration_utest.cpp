@@ -68,14 +68,17 @@ public:
 
   virtual void setObservations()
   {
-    EXPECT_NO_THROW(problem.observations = test::createKinematicObservations(
-                        camera_chain, target_chain, camera_mount_to_camera, target_mount_to_target,
-                        camera_base_to_target_base, target, camera, n_observations));
+    EXPECT_NO_THROW(problem.observations = test::createKinematicObservations(camera_chain,
+                                                                             target_chain,
+                                                                             camera_mount_to_camera,
+                                                                             target_mount_to_target,
+                                                                             camera_base_to_target_base,
+                                                                             target,
+                                                                             camera,
+                                                                             n_observations));
   }
 
-  virtual void applyMasks()
-  {
-  }
+  virtual void applyMasks() {}
 
   virtual void analyzeResults(const KinematicCalibrationResult& result)
   {
@@ -106,8 +109,7 @@ public:
       Eigen::Isometry3d nominal_fk = camera_chain.getFK(random_pose) * camera_mount_to_camera;
 
       // Optimized chain
-      Eigen::Isometry3d optimized_fk = optimized_chain.getFK(random_pose)
-                                       * result.camera_mount_to_camera;
+      Eigen::Isometry3d optimized_fk = optimized_chain.getFK(random_pose) * result.camera_mount_to_camera;
 
       // Compare
       Eigen::Isometry3d diff = nominal_fk.inverse() * optimized_fk;
@@ -267,20 +269,20 @@ TEST_F(DHChainCalTest, TestCostFunction)
   Eigen::Vector3d aa_ccb_to_tcb(rot_ccb_to_tcb.angle() * rot_ccb_to_tcb.axis());
 
   // Create containers for the kinematic chain DH offsets
-  // Ceres will not work with parameter blocks of size zero, so create a dummy set of DH offsets for chains with DoF == 0
+  // Ceres will not work with parameter blocks of size zero, so create a dummy set of DH offsets for chains with DoF ==
+  // 0
   Eigen::MatrixX4d camera_chain_dh_offsets = Eigen::MatrixX4d::Zero(camera_chain.dof(), 4);
   Eigen::MatrixX4d target_chain_dh_offsets = Eigen::MatrixX4d::Zero(target_chain.dof(), 4);
 
   // Create a vector of the pointers to the optimization variables in the order that the cost function expects them
-  std::vector<double *> parameters
-      = DualDHChainCost2D3D::constructParameters(camera_chain_dh_offsets,
-                                                 target_chain_dh_offsets,
-                                                 t_cm_to_c,
-                                                 aa_cm_to_c,
-                                                 t_tm_to_t,
-                                                 aa_tm_to_t,
-                                                 t_ccb_to_tcb,
-                                                 aa_ccb_to_tcb);
+  std::vector<double*> parameters = DualDHChainCost2D3D::constructParameters(camera_chain_dh_offsets,
+                                                                             target_chain_dh_offsets,
+                                                                             t_cm_to_c,
+                                                                             aa_cm_to_c,
+                                                                             t_tm_to_t,
+                                                                             aa_tm_to_t,
+                                                                             t_ccb_to_tcb,
+                                                                             aa_ccb_to_tcb);
 
   // Create observations
   KinObservation2D3D::Set observations = test::createKinematicObservations(camera_chain,
@@ -293,9 +295,9 @@ TEST_F(DHChainCalTest, TestCostFunction)
                                                                            n_observations);
 
   // Test the cost function
-  for (const auto &obs : observations)
+  for (const auto& obs : observations)
   {
-    for (const auto &corr : obs.correspondence_set)
+    for (const auto& corr : obs.correspondence_set)
     {
       DualDHChainCost2D3D cost(corr.in_image,
                                corr.in_target,
@@ -334,7 +336,7 @@ TEST_F(DHChainCalTest_PerturbedDH_PertubedGuess, PerturbedDHPerturbedGuess)
   analyzeResults(result);
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

@@ -22,10 +22,9 @@ using namespace rct_common;
 
 std::string WINDOW = "window";
 
-static Eigen::Isometry3d solveCVPnP(const CameraIntrinsics& intr,
-                                    const Correspondence2D3D::Set& correspondences)
+static Eigen::Isometry3d solveCVPnP(const CameraIntrinsics& intr, const Correspondence2D3D::Set& correspondences)
 {
-  cv::Mat cam_matrix (3, 3, cv::DataType<double>::type);
+  cv::Mat cam_matrix(3, 3, cv::DataType<double>::type);
   cv::setIdentity(cam_matrix);
 
   cam_matrix.at<double>(0, 0) = intr.fx();
@@ -46,11 +45,11 @@ static Eigen::Isometry3d solveCVPnP(const CameraIntrinsics& intr,
     target_points.push_back(cv::Point3d(corr.in_target.x(), corr.in_target.y(), corr.in_target.z()));
   }
 
-  cv::Mat rvec (3, 1, cv::DataType<double>::type);
-  cv::Mat tvec (3, 1, cv::DataType<double>::type);
+  cv::Mat rvec(3, 1, cv::DataType<double>::type);
+  cv::Mat tvec(3, 1, cv::DataType<double>::type);
   cv::solvePnP(target_points, image_points, cam_matrix, cv::noArray(), rvec, tvec);
 
-  Eigen::Vector3d rr (Eigen::Vector3d(rvec.at<double>(0, 0), rvec.at<double>(1, 0), rvec.at<double>(2, 0)));
+  Eigen::Vector3d rr(Eigen::Vector3d(rvec.at<double>(0, 0), rvec.at<double>(1, 0), rvec.at<double>(2, 0)));
   Eigen::Isometry3d result(Eigen::AngleAxisd(rr.norm(), rr.normalized()));
   result.translation() = Eigen::Vector3d(tvec.at<double>(0, 0), tvec.at<double>(1, 0), tvec.at<double>(2, 0));
 
@@ -72,7 +71,7 @@ T get(const ros::NodeHandle& nh, const std::string& key)
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "solve_pnp_ex", ros::init_options::AnonymousName);
-  ros::NodeHandle pnh ("~");
+  ros::NodeHandle pnh("~");
 
   try
   {
@@ -120,7 +119,7 @@ int main(int argc, char** argv)
     printTransform(pnp_result.camera_to_target, "Camera", "Target", "RCT CAMERA TO TARGET");
     printNewLine();
   }
-  catch(const std::exception& ex)
+  catch (const std::exception& ex)
   {
     ROS_ERROR_STREAM(ex.what());
     return -1;

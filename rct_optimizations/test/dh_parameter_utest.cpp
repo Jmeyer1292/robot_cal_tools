@@ -76,11 +76,9 @@ TEST(DHChain, generateObservations3D)
 
 class DHChainObservationGeneration : public ::testing::Test
 {
-  public:
+public:
   DHChainObservationGeneration()
-    : camera_chain(test::createABBIRB2400())
-    , target_chain(std::vector<DHTransform>{})
-    , target(7, 5, 0.025)
+    : camera_chain(test::createABBIRB2400()), target_chain(std::vector<DHTransform>{}), target(7, 5, 0.025)
   {
     // Create a transform to the tool0 of the robot at it's all-zero position
     camera_base_to_target_base = camera_chain.getFK<double>(Eigen::VectorXd::Zero(camera_chain.dof()));
@@ -90,7 +88,7 @@ class DHChainObservationGeneration : public ::testing::Test
     camera_base_to_target_base.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY()));
   }
 
-  protected:
+protected:
   DHChain camera_chain;
   DHChain target_chain;
   Eigen::Isometry3d camera_base_to_target_base;
@@ -169,18 +167,17 @@ TEST(DHChain, generateKinematicMeasurements)
 
   // Create the measurements
   const std::size_t n = 100;
-  KinematicMeasurement::Set measurements
-    = test::createKinematicMeasurements(camera_chain,
-                                        target_chain,
-                                        Eigen::Isometry3d::Identity(),
-                                        Eigen::Isometry3d::Identity(),
-                                        camera_base_to_target_base,
-                                        n);
+  KinematicMeasurement::Set measurements = test::createKinematicMeasurements(camera_chain,
+                                                                             target_chain,
+                                                                             Eigen::Isometry3d::Identity(),
+                                                                             Eigen::Isometry3d::Identity(),
+                                                                             camera_base_to_target_base,
+                                                                             n);
 
   EXPECT_EQ(measurements.size(), n);
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

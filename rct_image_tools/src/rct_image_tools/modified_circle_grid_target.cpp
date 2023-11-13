@@ -7,7 +7,7 @@ ModifiedCircleGridTarget::ModifiedCircleGridTarget(const unsigned rows_, const u
 {
 }
 
-bool ModifiedCircleGridTarget::operator==(const ModifiedCircleGridTarget &other) const
+bool ModifiedCircleGridTarget::operator==(const ModifiedCircleGridTarget& other) const
 {
   bool equal = true;
   equal &= (rows == other.rows);
@@ -17,7 +17,8 @@ bool ModifiedCircleGridTarget::operator==(const ModifiedCircleGridTarget &other)
   return equal;
 }
 
-rct_optimizations::Correspondence2D3D::Set ModifiedCircleGridTarget::createCorrespondences(const TargetFeatures &target_features) const
+rct_optimizations::Correspondence2D3D::Set
+ModifiedCircleGridTarget::createCorrespondences(const TargetFeatures& target_features) const
 {
   std::vector<Eigen::Vector3d> target_points = createPoints();
   assert(target_features.size() == target_points.size());
@@ -58,4 +59,4 @@ std::vector<Eigen::Vector3d> ModifiedCircleGridTarget::createPoints() const
   return points;
 }
 
-} // namespace rct_image_tools
+}  // namespace rct_image_tools

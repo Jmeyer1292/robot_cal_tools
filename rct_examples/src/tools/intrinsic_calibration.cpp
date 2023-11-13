@@ -41,7 +41,7 @@ void opencvCameraCalibration(const std::vector<Correspondence2D3D::Set>& obs,
     image_points.push_back(ip);
   }
 
-  cv::Mat camera_matrix (3, 3, cv::DataType<double>::type);
+  cv::Mat camera_matrix(3, 3, cv::DataType<double>::type);
   cv::setIdentity(camera_matrix);
   camera_matrix.at<double>(0, 0) = intr.fx();
   camera_matrix.at<double>(1, 1) = intr.fy();
@@ -138,8 +138,8 @@ int main(int argc, char** argv)
 
     // Also try the OpenCV cameraCalibrate function
     printTitle("OpenCV Calibration");
-    opencvCameraCalibration(problem_def.image_observations, data_set.images.front().size(),
-                            problem_def.intrinsics_guess);
+    opencvCameraCalibration(
+        problem_def.image_observations, data_set.images.front().size(), problem_def.intrinsics_guess);
 
     // Run optimization
     auto opt_result = optimize(problem_def);

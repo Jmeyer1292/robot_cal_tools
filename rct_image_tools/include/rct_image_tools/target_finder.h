@@ -37,4 +37,4 @@ public:
   virtual const Target& target() const = 0;
 };
 
-} // namespace rct_image_tools
+}  // namespace rct_image_tools

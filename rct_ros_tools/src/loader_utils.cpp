@@ -39,7 +39,7 @@ std::vector<T> fromArray(XmlRpc::XmlRpcValue xml)
   return vec;
 }
 
-} // namespace anonymous
+}  // namespace
 
 namespace rct_ros_tools
 {
@@ -96,4 +96,4 @@ YAML::Node toYAML(XmlRpc::XmlRpcValue value)
   return node;
 }
 
-} // namespace rct_ros_tools
+}  // namespace rct_ros_tools

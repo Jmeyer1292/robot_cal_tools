@@ -6,7 +6,7 @@
 
 using namespace rct_optimizations;
 
-void printResults(const ExtrinsicMultiStaticCameraMovingTargetResult &opt_result)
+void printResults(const ExtrinsicMultiStaticCameraMovingTargetResult& opt_result)
 {
   // Report results
   std::cout << "Did converge?: " << opt_result.converged << "\n";
@@ -30,7 +30,8 @@ void printResults(const ExtrinsicMultiStaticCameraMovingTargetResult &opt_result
     std::cout << "--- URDF Format Base to Camera (" + param_base + ") ---\n";
     Eigen::Vector3d rpy = t.rotation().eulerAngles(2, 1, 0);
     std::cout << "xyz=\"" << t.translation()(0) << " " << t.translation()(1) << " " << t.translation()(2) << "\"\n";
-    std::cout << "rpy=\"" << rpy(2) << "(" << rpy(2) * 180/M_PI << " deg) " << rpy(1) << "(" << rpy(1) * 180/M_PI << " deg) " << rpy(0) << "(" << rpy(0) * 180/M_PI << " deg)\"\n";
+    std::cout << "rpy=\"" << rpy(2) << "(" << rpy(2) * 180 / M_PI << " deg) " << rpy(1) << "(" << rpy(1) * 180 / M_PI
+              << " deg) " << rpy(0) << "(" << rpy(0) * 180 / M_PI << " deg)\"\n";
   }
 
   std::cout << opt_result.covariance.toString() << std::endl;
@@ -42,11 +43,11 @@ struct Observations
   std::vector<Correspondence2D3D::Set> correspondences;
 };
 
-Observations addObservations(const test::Target &target,
-                             const test::Camera &camera,
-                             const Eigen::Isometry3d &base_to_camera,
-                             const Eigen::Isometry3d &wrist_to_target,
-                             const Eigen::Vector3d &axis)
+Observations addObservations(const test::Target& target,
+                             const test::Camera& camera,
+                             const Eigen::Isometry3d& base_to_camera,
+                             const Eigen::Isometry3d& wrist_to_target,
+                             const Eigen::Vector3d& axis)
 {
   const int n = 20;
 
@@ -67,11 +68,7 @@ Observations addObservations(const test::Target &target,
     Eigen::Isometry3d base_to_target = base_to_wrist * wrist_to_target;
 
     // Get visible observations
-    Correspondence2D3D::Set obs_set = test::getCorrespondences(base_to_camera,
-                                                               base_to_target,
-                                                               camera,
-                                                               target,
-                                                               false);
+    Correspondence2D3D::Set obs_set = test::getCorrespondences(base_to_camera, base_to_target, camera, target, false);
 
     if (obs_set.size() > 0)
     {
@@ -118,7 +115,7 @@ TEST(ExtrinsicMultiStaticCamera, single_camera)
   problem_def.image_observations.resize(problem_def.intr.size());
 
   // Set up variables for observation generation
-  std::vector<Eigen::Vector3d> axes = {Eigen::Vector3d::UnitY(), Eigen::Vector3d::UnitX()};
+  std::vector<Eigen::Vector3d> axes = { Eigen::Vector3d::UnitY(), Eigen::Vector3d::UnitX() };
 
   // Generate observations for each camera
   for (std::size_t i = 0; i < problem_def.intr.size(); ++i)
@@ -130,16 +127,16 @@ TEST(ExtrinsicMultiStaticCamera, single_camera)
     camera.height = 1200;
 
     // Generate various data by rotating about different axes
-    for(const auto& axis : axes)
+    for (const auto& axis : axes)
     {
       auto tmp = addObservations(target, camera, base_to_camera.at(i), wrist_to_target, axis);
 
       // Add the wrist poses to the problem
-      auto &poses = problem_def.wrist_poses.at(i);
+      auto& poses = problem_def.wrist_poses.at(i);
       poses.insert(poses.end(), tmp.wrist_poses.begin(), tmp.wrist_poses.end());
 
       // Add the image_observations to the problem
-      auto &obs = problem_def.image_observations.at(i);
+      auto& obs = problem_def.image_observations.at(i);
       obs.insert(obs.end(), tmp.correspondences.begin(), tmp.correspondences.end());
     }
   }
@@ -208,7 +205,7 @@ TEST(ExtrinsicMultiStaticCamera, two_cameras)
   problem_def.image_observations.resize(problem_def.intr.size());
 
   // Set up variables for observation generation
-  std::vector<Eigen::Vector3d> axes = {Eigen::Vector3d::UnitY(), Eigen::Vector3d::UnitX()};
+  std::vector<Eigen::Vector3d> axes = { Eigen::Vector3d::UnitY(), Eigen::Vector3d::UnitX() };
 
   // Generate observations for each camera
   for (std::size_t i = 0; i < problem_def.intr.size(); ++i)
@@ -220,16 +217,16 @@ TEST(ExtrinsicMultiStaticCamera, two_cameras)
     camera.height = 1200;
 
     // Generate various data by rotating about different axes
-    for(const auto& axis : axes)
+    for (const auto& axis : axes)
     {
       auto tmp = addObservations(target, camera, base_to_camera.at(i), wrist_to_target, axis);
 
       // Add the wrist poses to the problem
-      auto &poses = problem_def.wrist_poses.at(i);
+      auto& poses = problem_def.wrist_poses.at(i);
       poses.insert(poses.end(), tmp.wrist_poses.begin(), tmp.wrist_poses.end());
 
       // Add the image_observations to the problem
-      auto &obs = problem_def.image_observations.at(i);
+      auto& obs = problem_def.image_observations.at(i);
       obs.insert(obs.end(), tmp.correspondences.begin(), tmp.correspondences.end());
     }
   }
@@ -256,7 +253,7 @@ TEST(ExtrinsicMultiStaticCamera, two_cameras)
   printResults(opt_result);
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

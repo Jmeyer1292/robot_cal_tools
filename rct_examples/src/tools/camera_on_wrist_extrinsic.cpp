@@ -102,13 +102,15 @@ int main(int argc, char** argv)
         obs.to_target_mount = Eigen::Isometry3d::Identity();
         obs.correspondence_set = target_finder->target().createCorrespondences(target_features);
 
-        //// 3. Check that a homography matrix can accurately reproject the observed points onto the expected target points within a defined threshold
+        //// 3. Check that a homography matrix can accurately reproject the observed points onto the expected target
+        /// points within a defined threshold
         rct_optimizations::RandomCorrespondenceSampler random_sampler(obs.correspondence_set.size(),
                                                                       obs.correspondence_set.size() / 3);
         Eigen::VectorXd homography_error =
             rct_optimizations::calculateHomographyError(obs.correspondence_set, random_sampler);
         if (homography_error.array().mean() > homography_threshold)
-          throw std::runtime_error("Homography error exceeds threshold (" + std::to_string(homography_error.array().mean()) + ")");
+          throw std::runtime_error("Homography error exceeds threshold (" +
+                                   std::to_string(homography_error.array().mean()) + ")");
 
         //// 3. And finally add that to the problem
         problem.observations.push_back(obs);

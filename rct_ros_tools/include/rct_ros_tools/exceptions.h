@@ -14,4 +14,4 @@ public:
   BadFileException(const std::string& what) : std::runtime_error(what) {}
 };
 
-} // namespace rct_ros_tools
+}  // namespace rct_ros_tools

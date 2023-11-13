@@ -8,7 +8,6 @@ namespace rct_optimizations
 {
 namespace test
 {
-
 /**
  * @brief Observes a set of simulated 2D-3D correspondences given a 2D camera and target definition
  * This method performs validity checks to ensure target observations appear in the camera field of view
@@ -20,10 +19,10 @@ namespace test
  * @return A set of all "seen" correspondences
  * @throws Exception if @ref require_all is true and not all observations are seen
  */
-Correspondence2D3D::Set getCorrespondences(const Eigen::Isometry3d &camera_pose,
-                                           const Eigen::Isometry3d &target_pose,
-                                           const Camera &camera,
-                                           const Target &target,
+Correspondence2D3D::Set getCorrespondences(const Eigen::Isometry3d& camera_pose,
+                                           const Eigen::Isometry3d& target_pose,
+                                           const Camera& camera,
+                                           const Target& target,
                                            const bool require_all = false);
 
 /**
@@ -34,9 +33,9 @@ Correspondence2D3D::Set getCorrespondences(const Eigen::Isometry3d &camera_pose,
  * @param target - the observation target definition
  * @return
  */
-Correspondence3D3D::Set getCorrespondences(const Eigen::Isometry3d &camera_pose,
-                                           const Eigen::Isometry3d &target_pose,
-                                           const Target &target) noexcept;
+Correspondence3D3D::Set getCorrespondences(const Eigen::Isometry3d& camera_pose,
+                                           const Eigen::Isometry3d& target_pose,
+                                           const Target& target) noexcept;
 
 /**
  * @brief Creates a 2D-3D observation set
@@ -45,16 +44,17 @@ Correspondence3D3D::Set getCorrespondences(const Eigen::Isometry3d &camera_pose,
  * @param pose_generators - vector of shared pointers to variants of base class for camera pose generation
  * @param true_target_mount_to_target - the true transform from the target mount to the target
  * @param true_camera_mount_to_camera - the true transform from the camera mount to the camera
- * @param camera_base_to_target_base - the transform from the camera base frame to the target base frame (typically identity)
+ * @param camera_base_to_target_base - the transform from the camera base frame to the target base frame (typically
+ * identity)
  * @return
  */
-Observation2D3D::Set createObservations(
-  const Camera &camera,
-  const Target &target,
-  const std::vector<std::shared_ptr<PoseGenerator>> &pose_generators,
-  const Eigen::Isometry3d &true_target_mount_to_target,
-  const Eigen::Isometry3d &true_camera_mount_to_camera,
-  const Eigen::Isometry3d &camera_base_to_target_base = Eigen::Isometry3d::Identity());
+Observation2D3D::Set
+createObservations(const Camera& camera,
+                   const Target& target,
+                   const std::vector<std::shared_ptr<PoseGenerator>>& pose_generators,
+                   const Eigen::Isometry3d& true_target_mount_to_target,
+                   const Eigen::Isometry3d& true_camera_mount_to_camera,
+                   const Eigen::Isometry3d& camera_base_to_target_base = Eigen::Isometry3d::Identity());
 
 /**
  * @brief Creates a 3D-3D observation set
@@ -62,17 +62,18 @@ Observation2D3D::Set createObservations(
  * @param pose_generators - vector of shared pointers to variants of base class for camera pose generation
  * @param true_target_mount_to_target - the true transform from the target mount to the target
  * @param true_camera_mount_to_camera - the true transform from the camera mount to the camera
- * @param camera_base_to_target_base - the transform from the camera base frame to the target base frame (typically identity)
+ * @param camera_base_to_target_base - the transform from the camera base frame to the target base frame (typically
+ * identity)
  * @return
  */
-Observation3D3D::Set createObservations(
-  const Target &target,
-  const std::vector<std::shared_ptr<PoseGenerator>> &pose_generators,
-  const Eigen::Isometry3d &true_target_mount_to_target,
-  const Eigen::Isometry3d &true_camera_mount_to_camera,
-  const Eigen::Isometry3d &camera_base_to_target_base = Eigen::Isometry3d::Identity());
+Observation3D3D::Set
+createObservations(const Target& target,
+                   const std::vector<std::shared_ptr<PoseGenerator>>& pose_generators,
+                   const Eigen::Isometry3d& true_target_mount_to_target,
+                   const Eigen::Isometry3d& true_camera_mount_to_camera,
+                   const Eigen::Isometry3d& camera_base_to_target_base = Eigen::Isometry3d::Identity());
 
-} // namespace test
-} // namespace rct_optimizations
+}  // namespace test
+}  // namespace rct_optimizations
 
-#endif // RCT_OPTIMIZATIONS_TESTS_OBS_CREATOR_H
+#endif  // RCT_OPTIMIZATIONS_TESTS_OBS_CREATOR_H

@@ -4,10 +4,10 @@
 
 namespace rct_optimizations
 {
-GridCorrespondenceSampler::GridCorrespondenceSampler(const std::size_t rows_, const std::size_t cols_, const std::size_t stride_)
-  : rows(rows_)
-  , cols(cols_)
-  , stride(stride_)
+GridCorrespondenceSampler::GridCorrespondenceSampler(const std::size_t rows_,
+                                                     const std::size_t cols_,
+                                                     const std::size_t stride_)
+  : rows(rows_), cols(cols_), stride(stride_)
 {
 }
 
@@ -19,7 +19,8 @@ std::vector<std::size_t> GridCorrespondenceSampler::getSampleCorrespondenceIndic
   if ((rows * cols / 2) < n_samples)
   {
     std::stringstream ss;
-    ss << "Number of correspondences does not exceed minimum of " << n_samples * 2 << " (" << rows * cols << " provided)";
+    ss << "Number of correspondences does not exceed minimum of " << n_samples * 2 << " (" << rows * cols
+       << " provided)";
     throw std::runtime_error(ss.str());
   }
 
@@ -40,10 +41,10 @@ std::vector<std::size_t> GridCorrespondenceSampler::getSampleCorrespondenceIndic
   return correspondence_indices;
 }
 
-RandomCorrespondenceSampler::RandomCorrespondenceSampler(const std::size_t n_correspondences_, const std::size_t n_samples_, const unsigned seed_)
-  : n_correspondences(n_correspondences_)
-  , n_samples(n_samples_)
-  , seed(seed_)
+RandomCorrespondenceSampler::RandomCorrespondenceSampler(const std::size_t n_correspondences_,
+                                                         const std::size_t n_samples_,
+                                                         const unsigned seed_)
+  : n_correspondences(n_correspondences_), n_samples(n_samples_), seed(seed_)
 {
   const unsigned min_samples = 4;
   if (n_samples < min_samples)
@@ -74,23 +75,25 @@ std::vector<std::size_t> RandomCorrespondenceSampler::getSampleCorrespondenceInd
   return output;
 }
 
-Eigen::VectorXd calculateHomographyError(const Correspondence2D3D::Set &correspondences,
-                                         const CorrespondenceSampler &correspondence_sampler)
+Eigen::VectorXd calculateHomographyError(const Correspondence2D3D::Set& correspondences,
+                                         const CorrespondenceSampler& correspondence_sampler)
 {
   /* There is a 3x3 homography matrix, H, that can transform a point from one plane onto a different plane
    * | u | = k * | H00 H01 H02 | * | x |
    * | v |       | H10 H11 H12 |   | y |
    * | 1 |       | H20 H12  1  |   | 1 |
    *
-   * In our case we have 2 sets of known corresponding planar points: points on the planar target, and points in the image plane
-   * Therefore, there is some matrix, H, which can transform target points into the image plane.
-   * If the target points and camera points actually match, we should be able to:
+   * In our case we have 2 sets of known corresponding planar points: points on the planar target, and points in the
+   * image plane Therefore, there is some matrix, H, which can transform target points into the image plane. If the
+   * target points and camera points actually match, we should be able to:
    *   1. Calculate H for a subset of corresponding points
    *   2. Transform the remaining target points by H to obtain estimates of their locations in the image plane
-   *   3. Compare the calculated estimations to the actual image points to make sure they are very close. If they are not close, we know that the correspondences are not valid
+   *   3. Compare the calculated estimations to the actual image points to make sure they are very close. If they are
+   * not close, we know that the correspondences are not valid
    *
    * The matrix H has 8 unique values.
-   * These 8 values of the homography matrix can be solved for, given a set of (at least) 8 corresponding planar vectors, by rearranging the above equations:
+   * These 8 values of the homography matrix can be solved for, given a set of (at least) 8 corresponding planar
+   * vectors, by rearranging the above equations:
    *
    * A * H = b, where
    * H = inv(A) * b
@@ -108,16 +111,15 @@ Eigen::VectorXd calculateHomographyError(const Correspondence2D3D::Set &correspo
    */
 
   // Select the points that we want to use to create the H matrix
-  std::vector<std::size_t> sample_correspondence_indices = correspondence_sampler
-                                                             .getSampleCorrespondenceIndices();
+  std::vector<std::size_t> sample_correspondence_indices = correspondence_sampler.getSampleCorrespondenceIndices();
   std::size_t n_samples = sample_correspondence_indices.size();
 
   // Ensure that there are enough points for testing outside of the sampled set
   if (correspondences.size() < 2 * n_samples)
   {
     std::stringstream ss;
-    ss << "Correspondences size is not more than 2x sample size (" << correspondences.size()
-       << " correspondences vs. " << n_samples << ")";
+    ss << "Correspondences size is not more than 2x sample size (" << correspondences.size() << " correspondences vs. "
+       << n_samples << ")";
     throw std::runtime_error(ss.str());
   }
 
@@ -129,9 +131,9 @@ Eigen::VectorXd calculateHomographyError(const Correspondence2D3D::Set &correspo
   for (std::size_t i = 0; i < n_samples; ++i)
   {
     std::size_t corr_idx = sample_correspondence_indices.at(i);
-    const Correspondence2D3D &corr = correspondences.at(corr_idx);
+    const Correspondence2D3D& corr = correspondences.at(corr_idx);
 
-    //assign A row-th row:
+    // assign A row-th row:
     const double x = corr.in_target.x();
     const double y = corr.in_target.y();
     const double u = corr.in_image.x();
@@ -155,7 +157,7 @@ Eigen::VectorXd calculateHomographyError(const Correspondence2D3D::Set &correspo
   Eigen::VectorXd error(correspondences.size());
   for (std::size_t i = 0; i < correspondences.size(); ++i)
   {
-    const Correspondence2D3D &corr = correspondences[i];
+    const Correspondence2D3D& corr = correspondences[i];
 
     // Calculate the scaling factor
     double ki = 1.0 / (H(2, 0) * corr.in_target.x() + H(2, 1) * corr.in_target.y() + 1.0);
@@ -206,5 +208,4 @@ Eigen::VectorXd calculateHomographyError(const Correspondence3D3D::Set& correspo
   return error.cwiseProduct(z_values);
 }
 
-} // namespace rct_optimizations
-
+}  // namespace rct_optimizations

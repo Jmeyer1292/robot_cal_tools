@@ -4,14 +4,14 @@
 
 namespace rct_optimizations
 {
-VirtualCorrespondenceResult measureVirtualTargetDiff(const Correspondence2D3D::Set &correspondences,
-                                                     const CameraIntrinsics &intr,
-                                                     const Eigen::Isometry3d &camera_to_target_guess,
+VirtualCorrespondenceResult measureVirtualTargetDiff(const Correspondence2D3D::Set& correspondences,
+                                                     const CameraIntrinsics& intr,
+                                                     const Eigen::Isometry3d& camera_to_target_guess,
                                                      const double pnp_sq_error_threshold)
 {
   // Create a lambda for doing the PnP optimization
   auto solve_pnp = [&intr, &camera_to_target_guess, &pnp_sq_error_threshold](
-                     const Correspondence2D3D::Set &corr) -> Eigen::Isometry3d {
+                       const Correspondence2D3D::Set& corr) -> Eigen::Isometry3d {
     // Create the first virtual target PnP problem
     PnPProblem problem;
     problem.intr = intr;
@@ -22,9 +22,8 @@ VirtualCorrespondenceResult measureVirtualTargetDiff(const Correspondence2D3D::S
     if (!result.converged || result.final_cost_per_obs > pnp_sq_error_threshold)
     {
       std::stringstream ss;
-      ss << "PnP optimization " << (result.converged ? "converged" : "did not converge")
-         << " with residual error of " << result.final_cost_per_obs << " ("
-         << pnp_sq_error_threshold << " max)";
+      ss << "PnP optimization " << (result.converged ? "converged" : "did not converge") << " with residual error of "
+         << result.final_cost_per_obs << " (" << pnp_sq_error_threshold << " max)";
       throw std::runtime_error(ss.str());
     }
 
@@ -57,20 +56,20 @@ VirtualCorrespondenceResult measureVirtualTargetDiff(const Correspondence2D3D::S
   return res;
 }
 
-IntrinsicCalibrationAccuracyResult measureIntrinsicCalibrationAccuracy(
-  const Observation2D3D::Set &observations,
-  const CameraIntrinsics &intr,
-  const Eigen::Isometry3d &camera_mount_to_camera,
-  const Eigen::Isometry3d &target_mount_to_target,
-  const Eigen::Isometry3d &camera_base_to_target_base,
-  const double pnp_sq_error_threshold)
+IntrinsicCalibrationAccuracyResult
+measureIntrinsicCalibrationAccuracy(const Observation2D3D::Set& observations,
+                                    const CameraIntrinsics& intr,
+                                    const Eigen::Isometry3d& camera_mount_to_camera,
+                                    const Eigen::Isometry3d& target_mount_to_target,
+                                    const Eigen::Isometry3d& camera_base_to_target_base,
+                                    const double pnp_sq_error_threshold)
 {
   // Check that the observations are all the same size
   // Assuming that each observation's correspondences are ordered the same
   for (std::size_t i = 0; i < observations.size() - 1; ++i)
   {
-    const Observation2D3D &obs_1 = observations[i];
-    const Observation2D3D &obs_2 = observations[i + 1];
+    const Observation2D3D& obs_1 = observations[i];
+    const Observation2D3D& obs_2 = observations[i + 1];
 
     // Check that the correspondences in all observations are the same size
     if (obs_1.correspondence_set.size() != obs_2.correspondence_set.size())
@@ -83,31 +82,27 @@ IntrinsicCalibrationAccuracyResult measureIntrinsicCalibrationAccuracy(
 
   // Create accumulators for mean and variance
   namespace ba = boost::accumulators;
-  ba::accumulator_set<double, ba::features<ba::stats<ba::tag::mean>, ba::stats<ba::tag::variance>>>
-    pos_acc;
-  ba::accumulator_set<double, ba::features<ba::stats<ba::tag::mean>, ba::stats<ba::tag::variance>>>
-    ang_acc;
+  ba::accumulator_set<double, ba::features<ba::stats<ba::tag::mean>, ba::stats<ba::tag::variance>>> pos_acc;
+  ba::accumulator_set<double, ba::features<ba::stats<ba::tag::mean>, ba::stats<ba::tag::variance>>> ang_acc;
 
   // Accumulate the position vector of the transformation
-  for (const auto &obs : observations)
+  for (const auto& obs : observations)
   {
     Eigen::Isometry3d camera_base_to_camera = obs.to_camera_mount * camera_mount_to_camera;
-    Eigen::Isometry3d camera_base_to_target = camera_base_to_target_base * obs.to_target_mount
-                                              * target_mount_to_target;
+    Eigen::Isometry3d camera_base_to_target = camera_base_to_target_base * obs.to_target_mount * target_mount_to_target;
 
     Eigen::Isometry3d camera_to_target = camera_base_to_camera.inverse() * camera_base_to_target;
 
-    VirtualCorrespondenceResult res = measureVirtualTargetDiff(obs.correspondence_set,
-                                                               intr,
-                                                               camera_to_target,
-                                                               pnp_sq_error_threshold);
+    VirtualCorrespondenceResult res =
+        measureVirtualTargetDiff(obs.correspondence_set, intr, camera_to_target, pnp_sq_error_threshold);
     pos_acc(res.positional_error);
     ang_acc(res.angular_error);
   }
 
   // Calculate the mean and variance of the measurements
   // Theoretically each transform from virtual target 1 to virtual target 2 should be zero; thus the mean should be zero
-  // In practice the mean represents bias from the ideal zero state and the variance is the amount of change around the mean
+  // In practice the mean represents bias from the ideal zero state and the variance is the amount of change around the
+  // mean
   IntrinsicCalibrationAccuracyResult res;
   // Positional
   res.pos_error.first = ba::mean(pos_acc);
@@ -119,4 +114,4 @@ IntrinsicCalibrationAccuracyResult measureIntrinsicCalibrationAccuracy(
   return res;
 }
 
-} // namespace rct_optimizations
+}  // namespace rct_optimizations

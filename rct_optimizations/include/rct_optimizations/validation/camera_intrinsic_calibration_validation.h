@@ -7,7 +7,8 @@
 namespace rct_optimizations
 {
 /**
- * @brief Structure containing the error measurements between 2 virtual correspondence sets within one real correspondence set
+ * @brief Structure containing the error measurements between 2 virtual correspondence sets within one real
+ * correspondence set
  */
 struct VirtualCorrespondenceResult
 {
@@ -20,27 +21,30 @@ struct VirtualCorrespondenceResult
 };
 
 /**
- * @brief Divides a set of correspondences into two halves and measures the difference in position of one half to the other
- *   Method:
+ * @brief Divides a set of correspondences into two halves and measures the difference in position of one half to the
+ * other Method:
  *     1. Split the correspondence set into two virtual correspondence sets
- *     2. Solve PnP optimization for each virtual correspondence set to get the transform from the camera to the virtual correspondence set
+ *     2. Solve PnP optimization for each virtual correspondence set to get the transform from the camera to the virtual
+ * correspondence set
  *     3. Return the error between the two virtual correspondence sets
  *
- *  Note: the two virtual correspondence sets are composed of different points, but those points are relative to the same origin
- *  Therefore, the transformation from one virtual correspondence set to the other should be identity, given perfect camera intrinsic parameters
+ *  Note: the two virtual correspondence sets are composed of different points, but those points are relative to the
+ * same origin Therefore, the transformation from one virtual correspondence set to the other should be identity, given
+ * perfect camera intrinsic parameters
  *
  * @param correspondences - set of corresponding observed features and target features
  * @param intr - camera intrinsic parameters
- * @param camera_to_target_guess - an initial guess about the location of the target relative to the camera (default: identity)
+ * @param camera_to_target_guess - an initial guess about the location of the target relative to the camera (default:
+ * identity)
  * @param pnp_sq_error_threshold - Max squared error allowed for a PnP optimization.
  * This value should be driven by the accuracy of the sensor providing the observations (default: 1.0 pixel^2)
  * @return
  */
-VirtualCorrespondenceResult measureVirtualTargetDiff(
-  const Correspondence2D3D::Set &correspondences,
-  const CameraIntrinsics &intr,
-  const Eigen::Isometry3d &camera_to_target_guess = Eigen::Isometry3d::Identity(),
-  const double pnp_sq_error_threshold = 1.0);
+VirtualCorrespondenceResult
+measureVirtualTargetDiff(const Correspondence2D3D::Set& correspondences,
+                         const CameraIntrinsics& intr,
+                         const Eigen::Isometry3d& camera_to_target_guess = Eigen::Isometry3d::Identity(),
+                         const double pnp_sq_error_threshold = 1.0);
 
 /**
  * @brief Structure containing measurements of the intrinsic calibration accuracy
@@ -52,9 +56,8 @@ struct IntrinsicCalibrationAccuracyResult
 };
 
 /**
- * @brief Calculates the mean and variance of the transform between two virtual correspondence sets (extracted from a single correspondence set)
- * for a set of calibration observations
- *   Method:
+ * @brief Calculates the mean and variance of the transform between two virtual correspondence sets (extracted from a
+ * single correspondence set) for a set of calibration observations Method:
  *     1. Check that the correspondences in all observations are the same size
  *       - Assumptions:
  *         - Correspondences are ordered in the same way for each observation
@@ -68,17 +71,18 @@ struct IntrinsicCalibrationAccuracyResult
  * @param intr - camera intrinsic parameters
  * @param camera_mount_to_camera - The transformation from the camera mount frame to the camera
  * @param target_mount_to_target - The transformation from the target mount frame to the target
- * @param camera_base_to_target_base - the transform from the camera base frame to the target base frame (typically identity)
+ * @param camera_base_to_target_base - the transform from the camera base frame to the target base frame (typically
+ * identity)
  * @param pnp_sq_error_threshold - Max squared error allowed for a PnP optimization.
  * This value should be driven by the accuracy of the sensor providing the observations (default: 1.0 pixel^2)
  * @return
  */
-IntrinsicCalibrationAccuracyResult measureIntrinsicCalibrationAccuracy(
-  const Observation2D3D::Set &observations,
-  const CameraIntrinsics &intr,
-  const Eigen::Isometry3d &camera_mount_to_camera,
-  const Eigen::Isometry3d &target_mount_to_target,
-  const Eigen::Isometry3d &camera_base_to_target_base,
-  const double pnp_sq_error_threshold = 1.0);
+IntrinsicCalibrationAccuracyResult
+measureIntrinsicCalibrationAccuracy(const Observation2D3D::Set& observations,
+                                    const CameraIntrinsics& intr,
+                                    const Eigen::Isometry3d& camera_mount_to_camera,
+                                    const Eigen::Isometry3d& target_mount_to_target,
+                                    const Eigen::Isometry3d& camera_base_to_target_base,
+                                    const double pnp_sq_error_threshold = 1.0);
 
-} // namespace rct_optimizations
+}  // namespace rct_optimizations

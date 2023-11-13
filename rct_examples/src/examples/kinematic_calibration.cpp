@@ -144,12 +144,16 @@ struct Stats
     std::cout << "Position: " << 100.0 * (pos_mean - other.pos_mean) / pos_mean << "%" << std::endl;
     std::cout << "Position Std. Dev.: " << 100.0 * (pos_stdev - other.pos_stdev) / pos_stdev << "%" << std::endl;
     std::cout << "Orientation: " << 100.0 * (rot_mean - other.rot_mean) / rot_mean << "%" << std::endl;
-    std::cout << "Orientation Std. Dev.: " << 100.0 * (rot_stdev - other.rot_stdev) / rot_stdev << "%" << "\n" << std::endl;
+    std::cout << "Orientation Std. Dev.: " << 100.0 * (rot_stdev - other.rot_stdev) / rot_stdev << "%"
+              << "\n"
+              << std::endl;
   }
 };
 
-Stats compareToMeasurements(const DHChain& initial_camera_chain, const DHChain& initial_target_chain,
-                            const KinematicCalibrationResult& result, const KinematicMeasurement::Set& measurements)
+Stats compareToMeasurements(const DHChain& initial_camera_chain,
+                            const DHChain& initial_target_chain,
+                            const KinematicCalibrationResult& result,
+                            const KinematicMeasurement::Set& measurements)
 {
   // Test the result by moving the robot around to a lot of positions and seeing of the results match
   DHChain camera_chain(initial_camera_chain, result.camera_chain_dh_offsets);
@@ -176,7 +180,8 @@ Stats compareToMeasurements(const DHChain& initial_camera_chain, const DHChain& 
     // Compare
     Eigen::Isometry3d diff = camera_to_target.inverse() * m.camera_to_target;
     pos_acc(diff.translation().norm());
-    ori_acc(Eigen::Quaterniond(camera_to_target.linear()).angularDistance(Eigen::Quaterniond(m.camera_to_target.linear())));
+    ori_acc(
+        Eigen::Quaterniond(camera_to_target.linear()).angularDistance(Eigen::Quaterniond(m.camera_to_target.linear())));
   }
 
   Stats stats;
@@ -278,7 +283,8 @@ int main(int argc, char** argv)
     KinematicCalibrationResult result = optimize(problem, 100.0, options);
     printResults(result);
 
-    // Compare the results of this optimization with the measurements using the measured joints and nominal kinematic chain
+    // Compare the results of this optimization with the measurements using the measured joints and nominal kinematic
+    // chain
     cal_stats_static_dh = compareToMeasurements(problem.camera_chain, problem.target_chain, result, measurements);
     std::cout << "Calibration validation - static DH parameters:" << std::endl;
     cal_stats_static_dh.print();

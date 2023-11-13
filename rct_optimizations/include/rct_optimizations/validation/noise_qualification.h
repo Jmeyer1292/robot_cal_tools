@@ -16,8 +16,8 @@ struct PositionStats
 };
 
 /**
-* @brief Contains the mean and standard deviation of a quaternion orientation
-*/
+ * @brief Contains the mean and standard deviation of a quaternion orientation
+ */
 struct QuaternionStats
 {
   Eigen::Quaterniond mean;
@@ -25,8 +25,8 @@ struct QuaternionStats
 };
 
 /**
-* @brief Noise statistics for a position vector and quaternion orientation
-*/
+ * @brief Noise statistics for a position vector and quaternion orientation
+ */
 struct PnPNoiseStat
 {
   PositionStats p_stat;
@@ -38,7 +38,7 @@ struct PnPNoiseStat
  * @param quaternions
  * @return
  */
-QuaternionStats computeQuaternionStats(const std::vector<Eigen::Quaterniond> &quaternions);
+QuaternionStats computeQuaternionStats(const std::vector<Eigen::Quaterniond>& quaternions);
 
 /**
  * @brief Computes the mean of a set of quaternions
@@ -67,4 +67,4 @@ PnPNoiseStat qualifyNoise2D(const std::vector<PnPProblem>& params);
  */
 PnPNoiseStat qualifyNoise3D(const std::vector<PnPProblem3D>& params);
 
-} // namespace rct_optimizations
+}  // namespace rct_optimizations

@@ -41,7 +41,8 @@ namespace rct_optimizations
  * @brief Local parameterization of an Eigen quaternion
  *
  * As of version 1.12.0, Ceres does not provide implementations of auto-diff local parameterizations out of the box
- * However, Ceres uses them in unit its own unit tests. This struct is adapted directly from the following Ceres unit test:
+ * However, Ceres uses them in unit its own unit tests. This struct is adapted directly from the following Ceres unit
+ * test:
  *
  * https://ceres-solver.googlesource.com/ceres-solver/+/master/internal/ceres/local_parameterization_test.cc#345
  * blob: 636cac29a78648e823758e154681583cd81d5b25
@@ -49,16 +50,16 @@ namespace rct_optimizations
  */
 struct EigenQuaternionPlus
 {
-  template<typename T>
-  bool operator()(const T *x, const T *delta, T *x_plus_delta) const
+  template <typename T>
+  bool operator()(const T* x, const T* delta, T* x_plus_delta) const
   {
     const T norm_delta = sqrt(delta[0] * delta[0] + delta[1] * delta[1] + delta[2] * delta[2]);
     Eigen::Quaternion<T> q_delta;
     if (norm_delta > T(0.0))
     {
       const T sin_delta_by_delta = sin(norm_delta) / norm_delta;
-      q_delta.coeffs() << sin_delta_by_delta * delta[0], sin_delta_by_delta * delta[1],
-        sin_delta_by_delta * delta[2], cos(norm_delta);
+      q_delta.coeffs() << sin_delta_by_delta * delta[0], sin_delta_by_delta * delta[1], sin_delta_by_delta * delta[2],
+          cos(norm_delta);
     }
     else
     {
@@ -78,7 +79,8 @@ struct EigenQuaternionPlus
 /**
  * @brief Adds subset parameterization for all parameter blocks for a given problem
  * @param problem - Ceres optimization problem
- * @param param_masks - A map of parameter to an array of masks indicating the index of the parameters that should be held constant.
+ * @param param_masks - A map of parameter to an array of masks indicating the index of the parameters that should be
+ * held constant.
  *   - The map must be the same size as the number of parameter blocks in the problem
  *   - If all parameters are masked it sets that block to constant
  * @throws OptimizationException
@@ -88,7 +90,7 @@ void addSubsetParameterization(ceres::Problem& problem, const std::map<const dou
   if (param_masks.empty())
     return;
 
-  std::vector<double *> parameter_blocks;
+  std::vector<double*> parameter_blocks;
   problem.GetParameterBlocks(&parameter_blocks);
 
   // Set identity local parameterization on individual variables that we want to remain constant
@@ -132,4 +134,4 @@ void addSubsetParameterization(ceres::Problem& problem, const std::map<const dou
   }
 }
 
-} // namespace rct_optimizations
+}  // namespace rct_optimizations

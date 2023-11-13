@@ -12,7 +12,7 @@ const double SPACING = 0.025;
 
 class HomographyTest : public ::testing::Test
 {
-  public:
+public:
   HomographyTest()
     : camera(test::makeKinectCamera())
     , target(TARGET_ROWS, TARGET_COLS, SPACING)
@@ -34,11 +34,8 @@ class HomographyTest : public ::testing::Test
 TEST_F(HomographyTest, PerfectInitialConditions)
 {
   rct_optimizations::Correspondence2D3D::Set correspondence_set;
-  EXPECT_NO_THROW(correspondence_set = test::getCorrespondences(target_to_camera,
-                                                                Eigen::Isometry3d::Identity(),
-                                                                camera,
-                                                                target,
-                                                                true));
+  EXPECT_NO_THROW(correspondence_set =
+                      test::getCorrespondences(target_to_camera, Eigen::Isometry3d::Identity(), camera, target, true));
 
   Eigen::VectorXd error = calculateHomographyError(correspondence_set, sampler);
   // Expect all of the errors to be extremely small
@@ -48,19 +45,13 @@ TEST_F(HomographyTest, PerfectInitialConditions)
 TEST_F(HomographyTest, SwapCorrespondencesConditions)
 {
   rct_optimizations::Correspondence2D3D::Set correspondence_set;
-  EXPECT_NO_THROW(correspondence_set = test::getCorrespondences(target_to_camera,
-                                                                Eigen::Isometry3d::Identity(),
-                                                                camera,
-                                                                target,
-                                                                true));
-
-
-
+  EXPECT_NO_THROW(correspondence_set =
+                      test::getCorrespondences(target_to_camera, Eigen::Isometry3d::Identity(), camera, target, true));
 
   // Swap the image measurements between 2 arbitrary correspondences
-  Correspondence2D3D &c1 = correspondence_set.at(10);
+  Correspondence2D3D& c1 = correspondence_set.at(10);
   Eigen::Vector2d in_image_1 = c1.in_image;
-  Correspondence2D3D &c2 = correspondence_set.at(21);
+  Correspondence2D3D& c2 = correspondence_set.at(21);
   Eigen::Vector2d in_image_2 = c2.in_image;
   c1.in_image = in_image_2;
   c2.in_image = in_image_1;
@@ -81,17 +72,14 @@ TEST_F(HomographyTest, SwapCorrespondencesConditions)
 TEST_F(HomographyTest, NoisyCorrespondences)
 {
   rct_optimizations::Correspondence2D3D::Set correspondence_set;
-  EXPECT_NO_THROW(correspondence_set = test::getCorrespondences(target_to_camera,
-                                                                Eigen::Isometry3d::Identity(),
-                                                                camera,
-                                                                target,
-                                                                true));
+  EXPECT_NO_THROW(correspondence_set =
+                      test::getCorrespondences(target_to_camera, Eigen::Isometry3d::Identity(), camera, target, true));
 
   // Add Gaussian noise to the image features
   std::mt19937 mt_rand(RCT_RANDOM_SEED);
   const double stdev = 1.0;
   std::normal_distribution<double> dist(0.0, stdev);
-  for (Correspondence2D3D &corr : correspondence_set)
+  for (Correspondence2D3D& corr : correspondence_set)
   {
     Eigen::Vector2d noise;
     noise << dist(mt_rand), dist(mt_rand);
@@ -100,13 +88,14 @@ TEST_F(HomographyTest, NoisyCorrespondences)
 
   Eigen::VectorXd error = calculateHomographyError(correspondence_set, sampler);
 
-  // TODO: create an informed expectation for the max or average error. Initial testing indicates that the average error can occasionally be > 4 * stddev
-//  double stdev_mag = stdev * std::sqrt(2.0);
+  // TODO: create an informed expectation for the max or average error. Initial testing indicates that the average error
+  // can occasionally be > 4 * stddev
+  //  double stdev_mag = stdev * std::sqrt(2.0);
   EXPECT_GT(error.maxCoeff(), 0.0);
   EXPECT_GT(error.mean(), 0.0);
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

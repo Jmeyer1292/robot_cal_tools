@@ -23,12 +23,16 @@ using namespace rct_image_tools;
  * @return
  */
 Eigen::Isometry3d reproject(const Eigen::Isometry3d& camera_to_target,
-                            const Correspondence2D3D::Set& correspondence_set, const CameraIntrinsics& intr,
-                            const cv::Mat& image, const std::string& window_name)
+                            const Correspondence2D3D::Set& correspondence_set,
+                            const CameraIntrinsics& intr,
+                            const cv::Mat& image,
+                            const std::string& window_name)
 {
   std::vector<Eigen::Vector3d> target_points;
   target_points.reserve(correspondence_set.size());
-  std::transform(correspondence_set.begin(), correspondence_set.end(), std::back_inserter(target_points),
+  std::transform(correspondence_set.begin(),
+                 correspondence_set.end(),
+                 std::back_inserter(target_points),
                  [](const rct_optimizations::Correspondence2D3D& corr) { return corr.in_target; });
   std::vector<cv::Point2d> reprojections = getReprojections(camera_to_target, intr, target_points);
 
@@ -57,8 +61,10 @@ Eigen::Isometry3d reproject(const Eigen::Isometry3d& camera_to_target,
  * @param images
  * @param window_name
  */
-void analyzeResults(const ExtrinsicHandEyeProblem2D3D& problem, const ExtrinsicHandEyeResult& opt_result,
-                    const std::vector<cv::Mat>& images, const std::string& window_name)
+void analyzeResults(const ExtrinsicHandEyeProblem2D3D& problem,
+                    const ExtrinsicHandEyeResult& opt_result,
+                    const std::vector<cv::Mat>& images,
+                    const std::string& window_name)
 {
   // Create accumulators to more easily calculate the mean and standard deviation of the position and orientation
   // differences

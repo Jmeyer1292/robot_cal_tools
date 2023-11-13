@@ -34,13 +34,13 @@ Eigen::Isometry3d rct_optimizations::poseCalToEigen(const rct_optimizations::Pos
   }
   else
   {
-    p.linear()(0, 0) = 1.0; // Logic taken from Ceres' own aaxis to rot matrix conversion
+    p.linear()(0, 0) = 1.0;  // Logic taken from Ceres' own aaxis to rot matrix conversion
     p.linear()(1, 0) = rr[2];
     p.linear()(2, 0) = -rr[1];
     p.linear()(0, 1) = -rr[2];
     p.linear()(1, 1) = 1.0;
-    p.linear()(2, 1) =  rr[0];
-    p.linear()(0, 2) =  rr[1];
+    p.linear()(2, 1) = rr[0];
+    p.linear()(0, 2) = rr[1];
     p.linear()(1, 2) = -rr[0];
     p.linear()(2, 2) = 1.0;
   }

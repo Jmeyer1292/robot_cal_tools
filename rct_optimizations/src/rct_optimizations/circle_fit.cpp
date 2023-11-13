@@ -2,9 +2,7 @@
 #include <rct_optimizations/circle_fit.h>
 #include <rct_optimizations/covariance_analysis.h>
 
-
-rct_optimizations::CircleFitResult
-rct_optimizations::optimize(const rct_optimizations::CircleFitProblem& params)
+rct_optimizations::CircleFitResult rct_optimizations::optimize(const rct_optimizations::CircleFitProblem& params)
 {
   double x = params.x_center_initial;
   double y = params.y_center_initial;
@@ -36,7 +34,6 @@ rct_optimizations::optimize(const rct_optimizations::CircleFitProblem& params)
   options.linear_solver_type = ceres::DENSE_QR;
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);
-
 
   std::cout << summary.BriefReport() << std::endl;
 

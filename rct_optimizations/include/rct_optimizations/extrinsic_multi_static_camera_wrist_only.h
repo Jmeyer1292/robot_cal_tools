@@ -22,7 +22,6 @@
 
 namespace rct_optimizations
 {
-
 struct ExtrinsicMultiStaticCameraMovingTargetWristOnlyProblem
 {
   /** @brief The basic camera intrinsic propeties: fx, fy, cx, cy used to reproject points;
@@ -48,10 +47,10 @@ struct ExtrinsicMultiStaticCameraMovingTargetWristOnlyProblem
   /** @brief Your best guess at the "base frame" to "camera frame" transform; one for each camera.
    * Also it assumses the relationship between the cameras is correct and fixed, so it will
    * calibrating the set of cameras using a single transformation.
-    */
+   */
   std::vector<Eigen::Isometry3d> base_to_camera_guess;
 
-  const std::array<std::string, 6> labels_isometry3d = {{"x", "y", "z", "rx", "ry", "rz"}};
+  const std::array<std::string, 6> labels_isometry3d = { { "x", "y", "z", "rx", "ry", "rz" } };
 
   std::string label_wrist_to_target = "wrist_to_target";
 
@@ -96,8 +95,9 @@ struct ExtrinsicMultiStaticCameraMovingTargetWristOnlyResult
   CovarianceResult covariance;
 };
 
-ExtrinsicMultiStaticCameraMovingTargetWristOnlyResult optimize(const ExtrinsicMultiStaticCameraMovingTargetWristOnlyProblem& params);
+ExtrinsicMultiStaticCameraMovingTargetWristOnlyResult
+optimize(const ExtrinsicMultiStaticCameraMovingTargetWristOnlyProblem& params);
 
-}
+}  // namespace rct_optimizations
 
-#endif // RCT_EXTRINSIC_MULTI_STATIC_CAMERA_WRIST_ONLY_H
+#endif  // RCT_EXTRINSIC_MULTI_STATIC_CAMERA_WRIST_ONLY_H

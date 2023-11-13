@@ -6,10 +6,11 @@
 template <typename T>
 bool isEqual(const T& a, const T& b, const T& tol = std::numeric_limits<T>::epsilon())
 {
-    return abs(a - b) < tol;
+  return abs(a - b) < tol;
 }
 
-static void drawPointLabel(const std::string& label, const cv::Point2d& position, const cv::Scalar& color, cv::Mat& image)
+static void
+drawPointLabel(const std::string& label, const cv::Point2d& position, const cv::Scalar& color, cv::Mat& image)
 {
   const double font_scale = 0.75;
   const int line_thickness = 2;
@@ -23,7 +24,8 @@ static void drawPointLabel(const std::string& label, const cv::Point2d& position
   cv::circle(image, position, radius, color, -1);
 }
 
-static cv::Mat renderObservations(const cv::Mat& input, const std::vector<cv::Point2d>& observation_points,
+static cv::Mat renderObservations(const cv::Mat& input,
+                                  const std::vector<cv::Point2d>& observation_points,
                                   const rct_image_tools::ModifiedCircleGridTarget& target)
 {
   cv::Mat output_image;
@@ -40,18 +42,22 @@ static cv::Mat renderObservations(const cv::Mat& input, const std::vector<cv::Po
 
     // Draw point labels // TODO
     drawPointLabel("First Point", observation_points[0], cv::Scalar(0, 255, 0), output_image);
-    drawPointLabel("Origin", observation_points[target.rows * target.cols - target.cols], cv::Scalar(255, 0, 0),
-                   output_image);
-    drawPointLabel("Last Point", observation_points[observation_points.size() - 1], cv::Scalar(0, 0, 255), output_image);
+    drawPointLabel(
+        "Origin", observation_points[target.rows * target.cols - target.cols], cv::Scalar(255, 0, 0), output_image);
+    drawPointLabel(
+        "Last Point", observation_points[observation_points.size() - 1], cv::Scalar(0, 0, 255), output_image);
   }
 
   return output_image;
 }
 
 template <typename DETECTOR_PTR>
-static std::vector<cv::Point2d> extractKeyPoints(const cv::Mat& image, const std::vector<cv::Point2d>& feature_coordinates,
-                                                 cv::Ptr<DETECTOR_PTR>& detector_ptr, const std::size_t rows,
-                                                 const std::size_t cols, const bool flipped)
+static std::vector<cv::Point2d> extractKeyPoints(const cv::Mat& image,
+                                                 const std::vector<cv::Point2d>& feature_coordinates,
+                                                 cv::Ptr<DETECTOR_PTR>& detector_ptr,
+                                                 const std::size_t rows,
+                                                 const std::size_t cols,
+                                                 const bool flipped)
 {
   /*
     Note(cLewis):
@@ -87,12 +93,14 @@ static std::vector<cv::Point2d> extractKeyPoints(const cv::Mat& image, const std
   }
 
   // OpenCV creates duplicate feature_coordinates sometimes.  https://github.com/opencv/opencv/issues/4775
-  // Make sure every center has a matching keypoint.  It may be sufficient just to check feature_coordinates for duplicates.
+  // Make sure every center has a matching keypoint.  It may be sufficient just to check feature_coordinates for
+  // duplicates.
   std::vector<cv::Point2d> feature_coordinates_tmp = feature_coordinates;
   for (auto&& keypoint : keypoints)
   {
-    auto it = std::find_if(feature_coordinates_tmp.begin(), feature_coordinates_tmp.end(),
-                           [&](const cv::Point2f& pt) { return (isEqual(pt.x, keypoint.pt.x)  && isEqual(pt.y, keypoint.pt.y)); });
+    auto it = std::find_if(feature_coordinates_tmp.begin(), feature_coordinates_tmp.end(), [&](const cv::Point2f& pt) {
+      return (isEqual(pt.x, keypoint.pt.x) && isEqual(pt.y, keypoint.pt.y));
+    });
 
     if (it != feature_coordinates_tmp.end())
     {
@@ -101,7 +109,8 @@ static std::vector<cv::Point2d> extractKeyPoints(const cv::Mat& image, const std
   }
 
   if (!feature_coordinates_tmp.empty())
-    throw std::runtime_error("feature_coordinates and keypoints did not match. Check this issue: 'https://github.com/opencv/opencv/issues/4775'");
+    throw std::runtime_error("feature_coordinates and keypoints did not match. Check this issue: "
+                             "'https://github.com/opencv/opencv/issues/4775'");
 
   // If a flipped pattern is found, flip the rows/columns
   std::size_t temp_rows = flipped ? cols : rows;
@@ -144,32 +153,32 @@ static std::vector<cv::Point2d> extractKeyPoints(const cv::Mat& image, const std
   }
 
   // Comparing the start last row corner to the second point in the last row
-  double start_last_row_rel_row_size = feature_sizes[start_last_row] / feature_sizes[start_last_row+1];
+  double start_last_row_rel_row_size = feature_sizes[start_last_row] / feature_sizes[start_last_row + 1];
   // Comparing the start last row corner to the start of the second to last row
-  double start_last_row_rel_col_size = feature_sizes[start_last_row] / feature_sizes[start_last_row-cols];
+  double start_last_row_rel_col_size = feature_sizes[start_last_row] / feature_sizes[start_last_row - cols];
   // Find the average relative size of the start last row corner to its two adjacent circles
-  start_last_row_avg_rel_size = (start_last_row_rel_row_size + start_last_row_rel_col_size)/2.0;
+  start_last_row_avg_rel_size = (start_last_row_rel_row_size + start_last_row_rel_col_size) / 2.0;
 
   // Comparing the end last row corner to the second to last point in the last row
-  double end_last_row_rel_row_size = feature_sizes[end_last_row] / feature_sizes[end_last_row-1];
+  double end_last_row_rel_row_size = feature_sizes[end_last_row] / feature_sizes[end_last_row - 1];
   // Comparing the end last row corner to the end of the second to last row
-  double end_last_row_rel_col_size = feature_sizes[end_last_row] / feature_sizes[end_last_row-cols];
+  double end_last_row_rel_col_size = feature_sizes[end_last_row] / feature_sizes[end_last_row - cols];
   // Find the average relative size of the end last row corner to its two adjacent circles
-  end_last_row_avg_rel_size = (end_last_row_rel_row_size + end_last_row_rel_col_size)/2.0;
+  end_last_row_avg_rel_size = (end_last_row_rel_row_size + end_last_row_rel_col_size) / 2.0;
 
   // Comparing the start fisrt row corner to the second point in the first row
-  double start_first_row_rel_row_size = feature_sizes[start_first_row] / feature_sizes[start_first_row+1];
+  double start_first_row_rel_row_size = feature_sizes[start_first_row] / feature_sizes[start_first_row + 1];
   // Comparing the start first row corner to the start of the second  row
-  double start_first_row_rel_col_size = feature_sizes[start_first_row] / feature_sizes[start_first_row+cols];
+  double start_first_row_rel_col_size = feature_sizes[start_first_row] / feature_sizes[start_first_row + cols];
   // Find the average relative size of the start first row corner to its two adjacent circles
-  start_first_row_avg_rel_size = (start_first_row_rel_row_size + start_first_row_rel_col_size)/2.0;
+  start_first_row_avg_rel_size = (start_first_row_rel_row_size + start_first_row_rel_col_size) / 2.0;
 
   // Comparing the end first row corner to the second to last point in the first row
-  double end_first_row_rel_row_size = feature_sizes[end_first_row] / feature_sizes[end_first_row-1];
+  double end_first_row_rel_row_size = feature_sizes[end_first_row] / feature_sizes[end_first_row - 1];
   // Comparing the end first row corner to the end of the second row
-  double end_first_row_rel_col_size = feature_sizes[end_first_row] / feature_sizes[end_first_row+cols];
+  double end_first_row_rel_col_size = feature_sizes[end_first_row] / feature_sizes[end_first_row + cols];
   // Find the average relative size of the end first row corner to its two adjacent circles
-  end_first_row_avg_rel_size = (end_first_row_rel_row_size + end_first_row_rel_col_size)/2.0;
+  end_first_row_avg_rel_size = (end_first_row_rel_row_size + end_first_row_rel_col_size) / 2.0;
 
   /*
     Note(cLewis):
@@ -204,7 +213,8 @@ static std::vector<cv::Point2d> extractKeyPoints(const cv::Mat& image, const std
     ......
     o.....
   */
-  if (start_last_row_avg_rel_size > start_first_row_avg_rel_size && start_last_row_avg_rel_size > end_first_row_avg_rel_size &&
+  if (start_last_row_avg_rel_size > start_first_row_avg_rel_size &&
+      start_last_row_avg_rel_size > end_first_row_avg_rel_size &&
       start_last_row_avg_rel_size > end_last_row_avg_rel_size)
   {
     large_point.x = static_cast<int>(start_last_row_pt.x);
@@ -216,13 +226,14 @@ static std::vector<cv::Point2d> extractKeyPoints(const cv::Mat& image, const std
         observation_points.push_back(feature_coordinates[j]);
       }
     }
-    else // unusual ordering
+    else  // unusual ordering
     {
       for (int j = static_cast<int>(temp_cols) - 1; j >= 0; j--)
       {
         for (int k = static_cast<int>(temp_rows) - 1; k >= 0; k--)
         {
-          observation_points.push_back(feature_coordinates[static_cast<std::size_t>(k) * temp_cols + static_cast<std::size_t>(j)]);
+          observation_points.push_back(
+              feature_coordinates[static_cast<std::size_t>(k) * temp_cols + static_cast<std::size_t>(j)]);
         }
       }
     }
@@ -235,7 +246,8 @@ static std::vector<cv::Point2d> extractKeyPoints(const cv::Mat& image, const std
     ......
     ......
   */
-  else if (end_first_row_avg_rel_size > end_last_row_avg_rel_size && end_first_row_avg_rel_size > start_last_row_avg_rel_size &&
+  else if (end_first_row_avg_rel_size > end_last_row_avg_rel_size &&
+           end_first_row_avg_rel_size > start_last_row_avg_rel_size &&
            end_first_row_avg_rel_size > start_first_row_avg_rel_size)
   {
     large_point.x = static_cast<int>(end_first_row_pt.x);
@@ -247,7 +259,7 @@ static std::vector<cv::Point2d> extractKeyPoints(const cv::Mat& image, const std
         observation_points.push_back(feature_coordinates[static_cast<std::size_t>(j)]);
       }
     }
-    else // unusual ordering
+    else  // unusual ordering
     {
       for (std::size_t j = 0; j < temp_cols; j++)
       {
@@ -266,7 +278,8 @@ static std::vector<cv::Point2d> extractKeyPoints(const cv::Mat& image, const std
     ......
     .....o
   */
-  else if (end_last_row_avg_rel_size > start_last_row_avg_rel_size && end_last_row_avg_rel_size > end_first_row_avg_rel_size &&
+  else if (end_last_row_avg_rel_size > start_last_row_avg_rel_size &&
+           end_last_row_avg_rel_size > end_first_row_avg_rel_size &&
            end_last_row_avg_rel_size > start_first_row_avg_rel_size)
   {
     large_point.x = static_cast<int>(end_last_row_pt.x);
@@ -282,7 +295,7 @@ static std::vector<cv::Point2d> extractKeyPoints(const cv::Mat& image, const std
         }
       }
     }
-    else // unusual ordering
+    else  // unusual ordering
     {
       for (std::size_t j = 0; j < temp_cols; j++)
       {
@@ -301,7 +314,8 @@ static std::vector<cv::Point2d> extractKeyPoints(const cv::Mat& image, const std
     ......
     ......
   */
-  else if (start_first_row_avg_rel_size > end_last_row_avg_rel_size && start_first_row_avg_rel_size > end_first_row_avg_rel_size &&
+  else if (start_first_row_avg_rel_size > end_last_row_avg_rel_size &&
+           start_first_row_avg_rel_size > end_first_row_avg_rel_size &&
            start_first_row_avg_rel_size > start_last_row_avg_rel_size)
   {
     large_point.x = static_cast<int>(start_first_row_pt.x);
@@ -316,13 +330,14 @@ static std::vector<cv::Point2d> extractKeyPoints(const cv::Mat& image, const std
         }
       }
     }
-    else // unusual ordering
+    else  // unusual ordering
     {
       for (int j = static_cast<int>(temp_cols) - 1; j >= 0; j--)
       {
         for (int k = static_cast<int>(temp_rows) - 1; k >= 0; k--)
         {
-          observation_points.push_back(feature_coordinates[static_cast<std::size_t>(k) * temp_cols + static_cast<std::size_t>(j)]);
+          observation_points.push_back(
+              feature_coordinates[static_cast<std::size_t>(k) * temp_cols + static_cast<std::size_t>(j)]);
         }
       }
     }
@@ -354,14 +369,14 @@ static std::vector<cv::Point2d> extractModifiedCircleGrid(const cv::Mat& image,
 
   std::vector<cv::Point2d> centers;
 
-  bool regular_pattern_found = cv::findCirclesGrid(image, pattern_size, centers,
-                                                   cv::CALIB_CB_SYMMETRIC_GRID | cv::CALIB_CB_CLUSTERING, detector_ptr);
+  bool regular_pattern_found = cv::findCirclesGrid(
+      image, pattern_size, centers, cv::CALIB_CB_SYMMETRIC_GRID | cv::CALIB_CB_CLUSTERING, detector_ptr);
   if (regular_pattern_found && (centers.size() == rows * cols))
   {
     // Do nothing, there used to be something in here, may have
     // to re-structure this in the future.
   }
-  else // Try flipped pattern size
+  else  // Try flipped pattern size
   {
     bool flipped_pattern_found = cv::findCirclesGrid(
         image, pattern_size_flipped, centers, cv::CALIB_CB_SYMMETRIC_GRID | cv::CALIB_CB_CLUSTERING, detector_ptr);
@@ -381,9 +396,7 @@ namespace rct_image_tools
 {
 ModifiedCircleGridTargetFinder::ModifiedCircleGridTargetFinder(const ModifiedCircleGridTarget& target,
                                                                const CircleDetectorParams& params)
-  : TargetFinder()
-  , target_(target)
-  , params_(params)
+  : TargetFinder(), target_(target), params_(params)
 {
   assert(target_.cols > 0);
   assert(target_.rows > 0);
@@ -432,4 +445,4 @@ cv::Mat ModifiedCircleGridTargetFinder::drawTargetFeatures(const cv::Mat& image,
   return renderObservations(out_image, cv_obs, target_);
 }
 
-} // namespace rct_image_tools
+}  // namespace rct_image_tools

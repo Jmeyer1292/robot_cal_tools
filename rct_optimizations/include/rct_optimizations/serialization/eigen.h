@@ -5,12 +5,12 @@
 
 namespace YAML
 {
-template<typename FloatT>
+template <typename FloatT>
 struct convert<Eigen::Matrix<FloatT, 2, 1>>
 {
   using T = Eigen::Matrix<FloatT, 2, 1>;
 
-  static Node encode(const T &val)
+  static Node encode(const T& val)
   {
     YAML::Node node;
     node["x"] = val.x();
@@ -18,7 +18,7 @@ struct convert<Eigen::Matrix<FloatT, 2, 1>>
     return node;
   }
 
-  static bool decode(const YAML::Node &node, T &val)
+  static bool decode(const YAML::Node& node, T& val)
   {
     val.x() = node["x"].as<FloatT>();
     val.y() = node["y"].as<FloatT>();
@@ -27,12 +27,12 @@ struct convert<Eigen::Matrix<FloatT, 2, 1>>
   }
 };
 
-template<typename FloatT>
+template <typename FloatT>
 struct convert<Eigen::Matrix<FloatT, 3, 1>>
 {
   using T = Eigen::Matrix<FloatT, 3, 1>;
 
-  static Node encode(const T &val)
+  static Node encode(const T& val)
   {
     YAML::Node node;
     node["x"] = val.x();
@@ -41,7 +41,7 @@ struct convert<Eigen::Matrix<FloatT, 3, 1>>
     return node;
   }
 
-  static bool decode(const YAML::Node &node, T &val)
+  static bool decode(const YAML::Node& node, T& val)
   {
     val.x() = node["x"].as<FloatT>();
     val.y() = node["y"].as<FloatT>();
@@ -51,12 +51,12 @@ struct convert<Eigen::Matrix<FloatT, 3, 1>>
   }
 };
 
-template<typename FloatT>
+template <typename FloatT>
 struct convert<Eigen::Transform<FloatT, 3, Eigen::Isometry>>
 {
   using T = Eigen::Transform<FloatT, 3, Eigen::Isometry>;
 
-  static Node encode(const T &val)
+  static Node encode(const T& val)
   {
     YAML::Node node;
     node["x"] = val.translation().x();
@@ -72,7 +72,7 @@ struct convert<Eigen::Transform<FloatT, 3, Eigen::Isometry>>
     return node;
   }
 
-  static bool decode(const YAML::Node &node, T &val)
+  static bool decode(const YAML::Node& node, T& val)
   {
     Eigen::Matrix<FloatT, 3, 1> trans;
     trans.x() = node["x"].as<FloatT>();
@@ -91,4 +91,4 @@ struct convert<Eigen::Transform<FloatT, 3, Eigen::Isometry>>
   }
 };
 
-} // namespace YAML
+}  // namespace YAML

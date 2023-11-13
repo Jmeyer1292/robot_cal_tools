@@ -90,7 +90,7 @@ TEST(LocalParameterizationTests, SubsetParameterization)
   EXPECT_LE(diff.row(0).abs().sum(), std::numeric_limits<double>::epsilon());
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

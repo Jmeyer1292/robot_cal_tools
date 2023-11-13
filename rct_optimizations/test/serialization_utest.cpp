@@ -35,11 +35,11 @@ struct ProblemCreator
 };
 
 template <>
-ExtrinsicHandEyeProblem2D3D ProblemCreator<ExtrinsicHandEyeProblem2D3D>::createProblem(
-    const Eigen::Isometry3d& true_target,
-    const Eigen::Isometry3d& true_camera,
-    const std::shared_ptr<test::PoseGenerator>& pose_generator,
-    const test::Target& target)
+ExtrinsicHandEyeProblem2D3D
+ProblemCreator<ExtrinsicHandEyeProblem2D3D>::createProblem(const Eigen::Isometry3d& true_target,
+                                                           const Eigen::Isometry3d& true_camera,
+                                                           const std::shared_ptr<test::PoseGenerator>& pose_generator,
+                                                           const test::Target& target)
 {
   test::Camera camera = test::makeKinectCamera();
 
@@ -53,11 +53,11 @@ ExtrinsicHandEyeProblem2D3D ProblemCreator<ExtrinsicHandEyeProblem2D3D>::createP
 }
 
 template <>
-ExtrinsicHandEyeProblem3D3D ProblemCreator<ExtrinsicHandEyeProblem3D3D>::createProblem(
-    const Eigen::Isometry3d& true_target,
-    const Eigen::Isometry3d& true_camera,
-    const std::shared_ptr<test::PoseGenerator>& pose_generator,
-    const test::Target& target)
+ExtrinsicHandEyeProblem3D3D
+ProblemCreator<ExtrinsicHandEyeProblem3D3D>::createProblem(const Eigen::Isometry3d& true_target,
+                                                           const Eigen::Isometry3d& true_camera,
+                                                           const std::shared_ptr<test::PoseGenerator>& pose_generator,
+                                                           const test::Target& target)
 {
   ExtrinsicHandEyeProblem3D3D problem;
   problem.target_mount_to_target_guess = true_target;

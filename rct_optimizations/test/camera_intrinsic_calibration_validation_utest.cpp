@@ -13,25 +13,23 @@ TEST(CameraIntrinsicCalibrationValidation, MeasureVirtualTargetDiff)
 
   // Create a camera pose directly above the target
   Eigen::Isometry3d base_to_target(Eigen::Isometry3d::Identity());
-  Eigen::Isometry3d base_to_camera = base_to_target * Eigen::Translation3d(0.0, 0.0, 1.0)
-                                     * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX());
+  Eigen::Isometry3d base_to_camera =
+      base_to_target * Eigen::Translation3d(0.0, 0.0, 1.0) * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX());
 
   Correspondence2D3D::Set corr_set;
-  ASSERT_NO_THROW(
-    corr_set = test::getCorrespondences(base_to_camera, base_to_target, camera, target, true));
+  ASSERT_NO_THROW(corr_set = test::getCorrespondences(base_to_camera, base_to_target, camera, target, true));
 
   Eigen::Isometry3d camera_to_target = base_to_camera.inverse() * base_to_target;
 
   /* Since `getInternalTargetTransformation` simply splits the correspondences in half,
-     * creating two virtual targets with different features relative to the same origin,
-     * the expected transformation from one virtual target to the other should be identity */
+   * creating two virtual targets with different features relative to the same origin,
+   * the expected transformation from one virtual target to the other should be identity */
   const Eigen::Isometry3d expected(Eigen::Isometry3d::Identity());
 
   // Perfect camera intrinsics, perfect camera to target guess
   {
     VirtualCorrespondenceResult result;
-    EXPECT_NO_THROW(
-      result = measureVirtualTargetDiff(corr_set, camera.intr, camera_to_target));
+    EXPECT_NO_THROW(result = measureVirtualTargetDiff(corr_set, camera.intr, camera_to_target));
 
     // Expect the transform to be almost exactly as expected
     EXPECT_TRUE(result.t1_to_t2.isApprox(expected));
@@ -43,8 +41,7 @@ TEST(CameraIntrinsicCalibrationValidation, MeasureVirtualTargetDiff)
   // Perfect camera intrinsics, imperfect camera to target guess
   {
     VirtualCorrespondenceResult result;
-    EXPECT_NO_THROW(
-      result = measureVirtualTargetDiff(corr_set, camera.intr, camera_to_target_guess));
+    EXPECT_NO_THROW(result = measureVirtualTargetDiff(corr_set, camera.intr, camera_to_target_guess));
 
     // Expect the transform to be very close to its expected value, but with a small error from the PnP
     EXPECT_TRUE(result.t1_to_t2.isApprox(expected, 1.0e-8));
@@ -59,8 +56,7 @@ TEST(CameraIntrinsicCalibrationValidation, MeasureVirtualTargetDiff)
     camera.intr.cy() += 0.01 * camera.intr.cy();
 
     VirtualCorrespondenceResult result;
-    EXPECT_NO_THROW(
-      result = measureVirtualTargetDiff(corr_set, camera.intr, camera_to_target_guess));
+    EXPECT_NO_THROW(result = measureVirtualTargetDiff(corr_set, camera.intr, camera_to_target_guess));
 
     // Expect the transform to not be very close to its expected value
     EXPECT_FALSE(result.t1_to_t2.isApprox(expected, 1.0e-8));
@@ -79,21 +75,14 @@ TEST(CameraIntrinsicCalibrationValidation, MeasureIntrinsicCalibrationAccuracy)
   Eigen::Isometry3d camera_base_to_target_base(Eigen::Isometry3d::Identity());
 
   // Create some observations
-  Observation2D3D::Set observations = test::createObservations(camera,
-                                                               target,
-                                                               {pose_gen},
-                                                               target_mount_to_target,
-                                                               camera_mount_to_camera);
+  Observation2D3D::Set observations =
+      test::createObservations(camera, target, { pose_gen }, target_mount_to_target, camera_mount_to_camera);
 
   // Validate the intrinsic calibration
   // Perfect intrinsic parameters, perfect transform guesses
   {
-    IntrinsicCalibrationAccuracyResult result
-      = measureIntrinsicCalibrationAccuracy(observations,
-                                            camera.intr,
-                                            camera_mount_to_camera,
-                                            target_mount_to_target,
-                                            camera_base_to_target_base);
+    IntrinsicCalibrationAccuracyResult result = measureIntrinsicCalibrationAccuracy(
+        observations, camera.intr, camera_mount_to_camera, target_mount_to_target, camera_base_to_target_base);
 
     // Expect results to be within 2 sigma (~95%) of the threshold
     {
@@ -107,21 +96,16 @@ TEST(CameraIntrinsicCalibrationValidation, MeasureIntrinsicCalibrationAccuracy)
   }
 
   // Perturb the calibration transforms slightly
-  Eigen::Isometry3d camera_mount_to_camera_guess = test::perturbPose(camera_mount_to_camera,
-                                                                     0.01,
-                                                                     0.01);
-  Eigen::Isometry3d target_mount_to_target_guess = test::perturbPose(target_mount_to_target,
-                                                                     0.01,
-                                                                     0.01);
+  Eigen::Isometry3d camera_mount_to_camera_guess = test::perturbPose(camera_mount_to_camera, 0.01, 0.01);
+  Eigen::Isometry3d target_mount_to_target_guess = test::perturbPose(target_mount_to_target, 0.01, 0.01);
 
   // Perfect intrinsic parameters, imperfect transform guesses
   {
-    IntrinsicCalibrationAccuracyResult result
-      = measureIntrinsicCalibrationAccuracy(observations,
-                                            camera.intr,
-                                            camera_mount_to_camera_guess,
-                                            target_mount_to_target_guess,
-                                            camera_base_to_target_base);
+    IntrinsicCalibrationAccuracyResult result = measureIntrinsicCalibrationAccuracy(observations,
+                                                                                    camera.intr,
+                                                                                    camera_mount_to_camera_guess,
+                                                                                    target_mount_to_target_guess,
+                                                                                    camera_base_to_target_base);
 
     // Expect results to be within 2 sigma (~95%) of the threshold
     {
@@ -142,12 +126,11 @@ TEST(CameraIntrinsicCalibrationValidation, MeasureIntrinsicCalibrationAccuracy)
     camera.intr.cx() -= 0.01 * camera.intr.cx();
     camera.intr.cx() += 0.01 * camera.intr.cy();
 
-    IntrinsicCalibrationAccuracyResult result
-      = measureIntrinsicCalibrationAccuracy(observations,
-                                            camera.intr,
-                                            camera_mount_to_camera_guess,
-                                            target_mount_to_target_guess,
-                                            camera_base_to_target_base);
+    IntrinsicCalibrationAccuracyResult result = measureIntrinsicCalibrationAccuracy(observations,
+                                                                                    camera.intr,
+                                                                                    camera_mount_to_camera_guess,
+                                                                                    target_mount_to_target_guess,
+                                                                                    camera_base_to_target_base);
 
     // Expect results not to be within 2 sigma (~95%) of the threshold because we modified the camera intrinsics
     {
@@ -161,7 +144,7 @@ TEST(CameraIntrinsicCalibrationValidation, MeasureIntrinsicCalibrationAccuracy)
   }
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

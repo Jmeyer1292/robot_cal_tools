@@ -9,7 +9,6 @@ using namespace rct_optimizations;
 
 namespace
 {
-
 class ReprojectionCost
 {
 public:
@@ -17,20 +16,18 @@ public:
                    const CameraIntrinsics& intr,
                    const Eigen::Isometry3d& camera_to_base,
                    const Eigen::Vector3d& point_in_target)
-    : obs_(obs),
-      intr_(intr),
-      camera_to_base_pose_(poseEigenToCal(camera_to_base)),
-      target_pt_(point_in_target)
-  {}
+    : obs_(obs), intr_(intr), camera_to_base_pose_(poseEigenToCal(camera_to_base)), target_pt_(point_in_target)
+  {
+  }
 
   template <typename T>
-  bool operator() (const T* const pose_base_to_target, T* residual) const
+  bool operator()(const T* const pose_base_to_target, T* residual) const
   {
     const T* target_angle_axis = pose_base_to_target + 0;
     const T* target_position = pose_base_to_target + 3;
 
-    T world_point[3]; // Point in world coordinates (base of robot)
-    T camera_point[3]; // Point in camera coordinates
+    T world_point[3];   // Point in world coordinates (base of robot)
+    T camera_point[3];  // Point in camera coordinates
 
     // Transform points into camera coordinates
     T target_pt[3];
@@ -58,7 +55,7 @@ private:
   Eigen::Vector3d target_pt_;
 };
 
-} // end anon ns
+}  // namespace
 
 rct_optimizations::MultiCameraPnPResult
 rct_optimizations::optimize(const rct_optimizations::MultiCameraPnPProblem& params)
@@ -67,9 +64,9 @@ rct_optimizations::optimize(const rct_optimizations::MultiCameraPnPProblem& para
 
   ceres::Problem problem;
 
-  for (std::size_t c = 0; c < params.base_to_camera.size(); ++c) // For each camera
+  for (std::size_t c = 0; c < params.base_to_camera.size(); ++c)  // For each camera
   {
-    for (std::size_t i = 0; i < params.image_observations[c].size(); ++i) // For each 3D point seen in the 2D image
+    for (std::size_t i = 0; i < params.image_observations[c].size(); ++i)  // For each 3D point seen in the 2D image
     {
       // Define
       const auto& img_obs = params.image_observations[c][i].in_image;
@@ -85,7 +82,7 @@ rct_optimizations::optimize(const rct_optimizations::MultiCameraPnPProblem& para
 
       problem.AddResidualBlock(cost_block, NULL, internal_base_to_target.values.data());
     }
-  } // end for each camera
+  }  // end for each camera
 
   ceres::Solver::Options options;
   ceres::Solver::Summary summary;

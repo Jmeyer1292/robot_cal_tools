@@ -9,7 +9,6 @@
 
 namespace
 {
-
 template <typename T>
 struct CalibCameraIntrinsics
 {
@@ -28,7 +27,7 @@ struct CalibCameraIntrinsics
   const T& p2() const { return data[7]; }
   const T& k3() const { return data[8]; }
 
-  constexpr static std::size_t size(){ return 9; }
+  constexpr static std::size_t size() { return 9; }
 };
 
 template <typename T>
@@ -49,18 +48,18 @@ struct MutableCalibCameraIntrinsics
   const T& p2() const { return data[7]; }
   const T& k3() const { return data[8]; }
 
-   T& fx()  { return data[0]; }
-   T& fy()  { return data[1]; }
-   T& cx()  { return data[2]; }
-   T& cy()  { return data[3]; }
+  T& fx() { return data[0]; }
+  T& fy() { return data[1]; }
+  T& cx() { return data[2]; }
+  T& cy() { return data[3]; }
 
-   T& k1()  { return data[4]; }
-   T& k2()  { return data[5]; }
-   T& p1()  { return data[6]; }
-   T& p2()  { return data[7]; }
-   T& k3()  { return data[8]; }
+  T& k1() { return data[4]; }
+  T& k2() { return data[5]; }
+  T& p1() { return data[6]; }
+  T& p2() { return data[7]; }
+  T& k3() { return data[8]; }
 
-  constexpr static std::size_t size(){ return 9; }
+  constexpr static std::size_t size() { return 9; }
 };
 
 template <typename T>
@@ -70,12 +69,12 @@ void projectPoints2(const T* const camera_intr, const T* const pt_in_camera, T* 
   T yp1 = pt_in_camera[1];
   T zp1 = pt_in_camera[2];
 
-  CalibCameraIntrinsics<T> intr (camera_intr);
+  CalibCameraIntrinsics<T> intr(camera_intr);
 
   // Scale into the image plane by distance away from camera
   T xp;
   T yp;
-  if (zp1 == T(0)) // Avoid dividing by zero.
+  if (zp1 == T(0))  // Avoid dividing by zero.
   {
     xp = xp1;
     yp = yp1;
@@ -87,26 +86,24 @@ void projectPoints2(const T* const camera_intr, const T* const pt_in_camera, T* 
   }
 
   // Temporary variables for distortion model.
-  T xp2 = xp * xp;    // x^2
-  T yp2 = yp * yp;    // y^2
-  T r2  = xp2 + yp2;  // r^2 radius squared
-  T r4  = r2 * r2;    // r^4
-  T r6  = r2 * r4;    // r^6
+  T xp2 = xp * xp;   // x^2
+  T yp2 = yp * yp;   // y^2
+  T r2 = xp2 + yp2;  // r^2 radius squared
+  T r4 = r2 * r2;    // r^4
+  T r6 = r2 * r4;    // r^6
 
   // Apply the distortion coefficients to refine pixel location
-  T xpp = xp
-    + intr.k1() * r2 * xp    // 2nd order term
-    + intr.k2() * r4 * xp    // 4th order term
-    + intr.k3() * r6 * xp    // 6th order term
-    + intr.p2() * (r2 + T(2.0) * xp2) // tangential
-    + intr.p1() * xp * yp * T(2.0); // other tangential term
+  T xpp = xp + intr.k1() * r2 * xp           // 2nd order term
+          + intr.k2() * r4 * xp              // 4th order term
+          + intr.k3() * r6 * xp              // 6th order term
+          + intr.p2() * (r2 + T(2.0) * xp2)  // tangential
+          + intr.p1() * xp * yp * T(2.0);    // other tangential term
 
-  T ypp = yp
-    + intr.k1() * r2 * yp    // 2nd order term
-    + intr.k2() * r4 * yp    // 4th order term
-    + intr.k3() * r6 * yp    // 6th order term
-    + intr.p1() * (r2 + T(2.0) * yp2) // tangential term
-    + intr.p2() * xp * yp * T(2.0); // other tangential term
+  T ypp = yp + intr.k1() * r2 * yp           // 2nd order term
+          + intr.k2() * r4 * yp              // 4th order term
+          + intr.k3() * r6 * yp              // 6th order term
+          + intr.p1() * (r2 + T(2.0) * yp2)  // tangential term
+          + intr.p2() * xp * yp * T(2.0);    // other tangential term
 
   // Perform projection using focal length and camera center into image plane
   pt_in_image[0] = intr.fx() * xpp + intr.cx();
@@ -126,20 +123,21 @@ static rct_optimizations::Pose6d solvePnP(const rct_optimizations::CameraIntrins
 
   PnPResult result = optimize(problem);
 
-  if (!result.converged) throw std::runtime_error("unable to solve PnP sub-problem");
+  if (!result.converged)
+    throw std::runtime_error("unable to solve PnP sub-problem");
 
   return poseEigenToCal(result.camera_to_target);
 }
-
 
 class IntrinsicCostFunction
 {
 public:
   IntrinsicCostFunction(const Eigen::Vector3d& in_target, const Eigen::Vector2d& in_image)
     : in_target_(in_target), in_image_(in_image)
-  {}
+  {
+  }
 
-  template<typename T>
+  template <typename T>
   bool operator()(const T* const target_pose, const T* const camera_intr, T* const residual) const
   {
     const T* target_angle_axis = target_pose + 0;
@@ -168,7 +166,7 @@ private:
   Eigen::Vector2d in_image_;
 };
 
-}
+}  // namespace
 
 static rct_optimizations::Pose6d guessInitialPose()
 {
@@ -181,9 +179,10 @@ rct_optimizations::optimize(const rct_optimizations::IntrinsicEstimationProblem&
 {
   // Prepare data structure for the camera parameters to optimize
   std::array<double, CalibCameraIntrinsics<double>::size()> internal_intrinsics_data;
-  for (int i = 0; i < 9; ++i) internal_intrinsics_data[i] = 0.0;
+  for (int i = 0; i < 9; ++i)
+    internal_intrinsics_data[i] = 0.0;
 
-  MutableCalibCameraIntrinsics<double> internal_intrinsics (internal_intrinsics_data.data());
+  MutableCalibCameraIntrinsics<double> internal_intrinsics(internal_intrinsics_data.data());
   internal_intrinsics.fx() = params.intrinsics_guess.fx();
   internal_intrinsics.fy() = params.intrinsics_guess.fy();
   internal_intrinsics.cx() = params.intrinsics_guess.cx();
@@ -225,8 +224,7 @@ rct_optimizations::optimize(const rct_optimizations::IntrinsicEstimationProblem&
 
       auto* cost_block = new ceres::AutoDiffCostFunction<IntrinsicCostFunction, 2, 6, 9>(cost_fn);
 
-      problem.AddResidualBlock(cost_block, NULL, internal_poses[i].values.data(),
-                               internal_intrinsics_data.data());
+      problem.AddResidualBlock(cost_block, NULL, internal_poses[i].values.data(), internal_intrinsics_data.data());
     }
   }
 
@@ -234,7 +232,8 @@ rct_optimizations::optimize(const rct_optimizations::IntrinsicEstimationProblem&
   std::map<const double*, std::vector<std::string>> param_labels;
 
   param_blocks.emplace_back(internal_intrinsics_data.data());
-  param_labels[internal_intrinsics_data.data()] = std::vector<std::string>(params.labels_intrinsic_params.begin(), params.labels_intrinsic_params.end());
+  param_labels[internal_intrinsics_data.data()] =
+      std::vector<std::string>(params.labels_intrinsic_params.begin(), params.labels_intrinsic_params.end());
 
   for (std::size_t i = 0; i < internal_poses.size(); i++)
   {

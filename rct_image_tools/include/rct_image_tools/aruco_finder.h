@@ -8,7 +8,6 @@
 
 namespace rct_image_tools
 {
-
 /**
  * @brief This class finds 2D target features from images of a specified ArUco gridboard target.
  * The main advantage of this kind of target is that partial views still provide usable correspondences.
@@ -37,13 +36,10 @@ public:
    */
   virtual cv::Mat drawTargetFeatures(const cv::Mat& image, const TargetFeatures& target_features) const override;
 
-  virtual const Target& target() const override
-  {
-    return target_;
-  }
+  virtual const Target& target() const override { return target_; }
 
 protected:
   const ArucoGridTarget target_;
 };
 
-} // namespace rct_image_tools
+}  // namespace rct_image_tools

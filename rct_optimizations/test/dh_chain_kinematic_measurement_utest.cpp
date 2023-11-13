@@ -79,9 +79,7 @@ public:
                                                                              n_observations));
   }
 
-  virtual void applyMasks()
-  {
-  }
+  virtual void applyMasks() {}
 
   virtual void analyzeResults(const KinematicCalibrationResult& result)
   {
@@ -111,8 +109,7 @@ public:
       Eigen::Isometry3d true_fk = camera_chain_truth.getFK(random_pose) * camera_mount_to_camera_truth;
 
       // Optimized chain
-      Eigen::Isometry3d optimized_fk = optimized_chain.getFK(random_pose)
-                                       * result.camera_mount_to_camera;
+      Eigen::Isometry3d optimized_fk = optimized_chain.getFK(random_pose) * result.camera_mount_to_camera;
 
       // Compare
       Eigen::Isometry3d diff = true_fk.inverse() * optimized_fk;
@@ -276,20 +273,20 @@ TEST_F(DHChainMeasurementTest, TestCostFunction)
   Eigen::Vector3d aa_ccb_to_tcb(rot_ccb_to_tcb.angle() * rot_ccb_to_tcb.axis());
 
   // Create containers for the kinematic chain DH offsets
-  // Ceres will not work with parameter blocks of size zero, so create a dummy set of DH offsets for chains with DoF == 0
+  // Ceres will not work with parameter blocks of size zero, so create a dummy set of DH offsets for chains with DoF ==
+  // 0
   Eigen::MatrixX4d camera_chain_dh_offsets = Eigen::MatrixX4d::Zero(camera_chain_truth.dof(), 4);
   Eigen::MatrixX4d target_chain_dh_offsets = Eigen::MatrixX4d::Zero(target_chain_truth.dof(), 4);
 
   // Create a vector of the pointers to the optimization variables in the order that the cost function expects them
-  std::vector<double *> parameters
-      = DualDHChainCostPose6D::constructParameters(camera_chain_dh_offsets,
-                                                 target_chain_dh_offsets,
-                                                 t_cm_to_c,
-                                                 aa_cm_to_c,
-                                                 t_tm_to_t,
-                                                 aa_tm_to_t,
-                                                 t_ccb_to_tcb,
-                                                 aa_ccb_to_tcb);
+  std::vector<double*> parameters = DualDHChainCostPose6D::constructParameters(camera_chain_dh_offsets,
+                                                                               target_chain_dh_offsets,
+                                                                               t_cm_to_c,
+                                                                               aa_cm_to_c,
+                                                                               t_tm_to_t,
+                                                                               aa_tm_to_t,
+                                                                               t_ccb_to_tcb,
+                                                                               aa_ccb_to_tcb);
 
   // Create observations
   KinematicMeasurement::Set observations = test::createKinematicMeasurements(camera_chain_truth,
@@ -300,7 +297,7 @@ TEST_F(DHChainMeasurementTest, TestCostFunction)
                                                                              n_observations);
 
   // Test the cost function
-  for (const auto &obs : observations)
+  for (const auto& obs : observations)
   {
     DualDHChainCostPose6D cost(obs, camera_chain_truth, target_chain_truth, orientation_weight);
 
@@ -336,7 +333,7 @@ TEST_F(DHChainMeasurementTest_PerturbedDH_PertubedGuess, PerturbedDHPerturbedGue
   analyzeResults(result);
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

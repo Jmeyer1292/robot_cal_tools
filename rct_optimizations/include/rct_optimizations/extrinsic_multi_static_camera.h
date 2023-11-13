@@ -22,7 +22,6 @@
 
 namespace rct_optimizations
 {
-
 struct ExtrinsicMultiStaticCameraMovingTargetProblem
 {
   /** @brief The basic camera intrinsic propeties: fx, fy, cx, cy used to reproject points;
@@ -48,7 +47,7 @@ struct ExtrinsicMultiStaticCameraMovingTargetProblem
   /** @brief Your best guess at the "base frame" to "camera frame" transform; one for each camera */
   std::vector<Eigen::Isometry3d> base_to_camera_guess;
 
-  const std::array<std::string, 6> labels_isometry3d = {{"x", "y", "z", "rx", "ry", "rz"}};
+  const std::array<std::string, 6> labels_isometry3d = { { "x", "y", "z", "rx", "ry", "rz" } };
 
   std::string label_wrist_to_target = "wrist_to_target";
 
@@ -95,6 +94,6 @@ struct ExtrinsicMultiStaticCameraMovingTargetResult
 
 ExtrinsicMultiStaticCameraMovingTargetResult optimize(const ExtrinsicMultiStaticCameraMovingTargetProblem& params);
 
-}
+}  // namespace rct_optimizations
 
-#endif // RCT_EXTRINSIC_MULTI_STATIC_CAMERA_H
+#endif  // RCT_EXTRINSIC_MULTI_STATIC_CAMERA_H

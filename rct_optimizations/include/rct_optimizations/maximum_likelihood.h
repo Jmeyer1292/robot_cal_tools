@@ -6,8 +6,9 @@
 namespace rct_optimizations
 {
 /**
- * @brief Cost function for a parameter block based on the expected means and standard deviations for the values in the block.
- * The inputs are an array of mean values and an array of standard deviations corresponding to the optimization variables in the parameter block
+ * @brief Cost function for a parameter block based on the expected means and standard deviations for the values in the
+ * block. The inputs are an array of mean values and an array of standard deviations corresponding to the optimization
+ * variables in the parameter block
  *
  * Ceres provides an example of a maximum likelihood constraint here:
  * https://ceres-solver.googlesource.com/ceres-solver/+/master/examples/robot_pose_mle.cc#165
@@ -15,17 +16,15 @@ namespace rct_optimizations
  */
 class MaximumLikelihood
 {
-  public:
-  MaximumLikelihood(const Eigen::ArrayXXd &mean_, const Eigen::ArrayXXd &stdev_)
-    : mean(mean_)
-    , stdev(stdev_)
+public:
+  MaximumLikelihood(const Eigen::ArrayXXd& mean_, const Eigen::ArrayXXd& stdev_) : mean(mean_), stdev(stdev_)
   {
     if (mean.size() != stdev.size())
       throw OptimizationException("Mean and standard deviation matrix are not the same size");
   }
 
-  template<typename T>
-  bool operator()(T const *const *parameter, T *residual) const
+  template <typename T>
+  bool operator()(T const* const* parameter, T* residual) const
   {
     using ArrayXX = Eigen::Array<T, Eigen::Dynamic, Eigen::Dynamic>;
     Eigen::Map<const ArrayXX> param_array(parameter[0], mean.rows(), mean.cols());
@@ -40,4 +39,4 @@ class MaximumLikelihood
   Eigen::ArrayXXd stdev;
 };
 
-} // namespace rct_optimizations
+}  // namespace rct_optimizations

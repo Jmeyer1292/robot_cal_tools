@@ -16,9 +16,7 @@ class TransformMonitor
 {
 public:
   TransformMonitor(const std::string& base_frame, const std::string& tool_frame)
-    : base_frame_(base_frame)
-    , tool_frame_(tool_frame)
-    , listener_(buffer_)
+    : base_frame_(base_frame), tool_frame_(tool_frame), listener_(buffer_)
   {
     // Validate that we can look up required transforms
     geometry_msgs::TransformStamped dummy;
@@ -32,14 +30,15 @@ public:
   {
     try
     {
-      geometry_msgs::TransformStamped t = buffer_.lookupTransform(base_frame_, tool_frame_, ros::Time(), ros::Duration(3.0));
+      geometry_msgs::TransformStamped t =
+          buffer_.lookupTransform(base_frame_, tool_frame_, ros::Time(), ros::Duration(3.0));
       out = t;
       return true;
     }
     catch (const tf2::TransformException& ex)
     {
       ROS_WARN_STREAM("Failed to compute transfrom between " << base_frame_ << " and " << tool_frame_ << ": "
-                      << ex.what());
+                                                             << ex.what());
       return false;
     }
   }
@@ -55,10 +54,8 @@ private:
 class ImageMonitor
 {
 public:
-  ImageMonitor(boost::shared_ptr<const rct_image_tools::TargetFinder> finder,
-               const std::string& nominal_image_topic)
-    : finder_(finder)
-    , it_(ros::NodeHandle())
+  ImageMonitor(boost::shared_ptr<const rct_image_tools::TargetFinder> finder, const std::string& nominal_image_topic)
+    : finder_(finder), it_(ros::NodeHandle())
   {
     im_sub_ = it_.subscribe(nominal_image_topic, 1, &ImageMonitor::onNewImage, this);
     im_pub_ = it_.advertise(nominal_image_topic + "_observer", 1);
@@ -70,14 +67,15 @@ public:
     cv_bridge::CvImagePtr cv_ptr;
     try
     {
-      if(msg->encoding == "mono16")
+      if (msg->encoding == "mono16")
       {
         cv_bridge::CvImagePtr temp_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::MONO16);
 
         cv::Mat img_conv;
         cv::cvtColor(temp_ptr->image, img_conv, cv::COLOR_GRAY2BGR);
         img_conv.convertTo(img_conv, CV_8UC1);
-        cv_ptr = cv_bridge::CvImagePtr(new cv_bridge::CvImage(temp_ptr->header, sensor_msgs::image_encodings::BGR8, img_conv));
+        cv_ptr = cv_bridge::CvImagePtr(
+            new cv_bridge::CvImage(temp_ptr->header, sensor_msgs::image_encodings::BGR8, img_conv));
       }
       else
       {
@@ -137,7 +135,6 @@ struct DataCollectionConfig
 
 struct DataCollection
 {
-
   DataCollection(const DataCollectionConfig& config)
     : tf_monitor(config.base_frame, config.tool_frame)
     , image_monitor(config.target_finder, config.image_topic)
@@ -206,7 +203,7 @@ T get(const ros::NodeHandle& nh, const std::string& key)
 {
   T value;
   if (!nh.getParam(key, value))
-      throw std::runtime_error("Must set parameter, " + key + "!");
+    throw std::runtime_error("Must set parameter, " + key + "!");
   ROS_INFO_STREAM("Parameter " << key << " set to: " << value);
   return value;
 }
