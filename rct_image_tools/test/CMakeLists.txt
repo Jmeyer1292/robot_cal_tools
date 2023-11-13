@@ -2,7 +2,7 @@ find_package(GTest REQUIRED)
 
 add_executable(${PROJECT_NAME}_target_finder_test target_finder_utest.cpp)
 target_link_libraries(${PROJECT_NAME}_target_finder_test PRIVATE ${PROJECT_NAME} GTest::GTest GTest::Main)
-rct_gtest_discover_tests(${PROJECT_NAME}_target_finder_test)
+add_gtest_discover_tests(${PROJECT_NAME}_target_finder_test)
 add_dependencies(${PROJECT_NAME}_target_finder_test ${PROJECT_NAME})
 add_dependencies(run_tests ${PROJECT_NAME}_target_finder_test)
 target_compile_definitions(${PROJECT_NAME}_target_finder_test
