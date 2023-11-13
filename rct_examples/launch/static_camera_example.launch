@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <launch>
-  <arg name="camera_file" default="$(find rct_examples)/config/avt_gige_camera_intr_nominal.yaml"/>
-  <arg name="target_file" default="$(find rct_examples)/config/target_10x10.yaml"/>
-  <arg name="guess_file" default="$(find rct_examples)/config/static_camera_guesses.yaml"/>
-  <arg name="data_path"/>
-  <arg name="homography_threshold" default="1.0" doc="Threshold for average reprojection error for an obseravation (in pixels), above which an observation will be excluded from the calibration"/>
+  <arg name="camera_file" default="$(find rct_examples)/data/test_set_charuco/camera_intr_calibrated.yaml"/>
+  <arg name="target_file" default="$(find rct_examples)/data/test_set_charuco/target.yaml"/>
+  <arg name="guess_file" default="$(find rct_examples)/data/test_set_charuco/pose_guesses.yaml"/>
+  <arg name="data_path" default="$(find rct_examples)/data/test_set_charuco/cal_data.yaml"/>
+  <arg name="homography_threshold" default="2.0" doc="Threshold for average reprojection error for an obseravation (in pixels), above which an observation will be excluded from the calibration"/>
 
   <node pkg="rct_examples" type="static_cam_extr_cal_ex" name="static_camera_cal" output="screen">
     <rosparam command="load" file="$(arg camera_file)"/>
