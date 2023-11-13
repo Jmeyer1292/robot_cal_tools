@@ -18,6 +18,7 @@ jobs:
           ROS_DISTRO: ${{ matrix.distro }}
           ROS_REPO: main
           VERBOSE_TESTS: true
+          ADDITIONAL_DEBS: "git"
           TARGET_CMAKE_ARGS: "-DRCT_BUILD_TESTS=ON"
           CTEST_OUTPUT_ON_FAILURE: true
           AFTER_SCRIPT: "cd $target_ws/build/rct_optimizations && ctest -V && cd $target_ws/build/rct_image_tools && ctest -V"
