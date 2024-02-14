@@ -16,7 +16,7 @@ target_compile_definitions(${PROJECT_NAME}_test_support PUBLIC RCT_RANDOM_SEED=0
 # Conversions
 add_executable(${PROJECT_NAME}_conversion_tests conversion_utest.cpp)
 target_link_libraries(${PROJECT_NAME}_conversion_tests PRIVATE ${PROJECT_NAME}_test_support GTest::GTest GTest::Main)
-rct_gtest_discover_tests(${PROJECT_NAME}_conversion_tests)
+add_gtest_discover_tests(${PROJECT_NAME}_conversion_tests)
 add_dependencies(${PROJECT_NAME}_conversion_tests ${PROJECT_NAME})
 add_dependencies(run_tests ${PROJECT_NAME}_conversion_tests)
 
@@ -24,7 +24,7 @@ add_dependencies(run_tests ${PROJECT_NAME}_conversion_tests)
 add_executable(${PROJECT_NAME}_extrinsic_multi_static_camera_tests extrinsic_multi_static_camera_utest.cpp)
 target_link_libraries(${PROJECT_NAME}_extrinsic_multi_static_camera_tests PRIVATE ${PROJECT_NAME}_test_support
                                                                                   GTest::GTest GTest::Main)
-rct_gtest_discover_tests(${PROJECT_NAME}_extrinsic_multi_static_camera_tests)
+add_gtest_discover_tests(${PROJECT_NAME}_extrinsic_multi_static_camera_tests)
 add_dependencies(${PROJECT_NAME}_extrinsic_multi_static_camera_tests ${PROJECT_NAME})
 add_dependencies(run_tests ${PROJECT_NAME}_extrinsic_multi_static_camera_tests)
 
@@ -32,14 +32,14 @@ add_dependencies(run_tests ${PROJECT_NAME}_extrinsic_multi_static_camera_tests)
 add_executable(${PROJECT_NAME}_extrinsic_hand_eye_tests extrinsic_hand_eye_utest.cpp)
 target_link_libraries(${PROJECT_NAME}_extrinsic_hand_eye_tests PRIVATE ${PROJECT_NAME}_test_support GTest::GTest
                                                                        GTest::Main)
-rct_gtest_discover_tests(${PROJECT_NAME}_extrinsic_hand_eye_tests)
+add_gtest_discover_tests(${PROJECT_NAME}_extrinsic_hand_eye_tests)
 add_dependencies(${PROJECT_NAME}_extrinsic_hand_eye_tests ${PROJECT_NAME})
 add_dependencies(run_tests ${PROJECT_NAME}_extrinsic_hand_eye_tests)
 
 # DH Chain
 add_executable(${PROJECT_NAME}_dh_parameter_tests dh_parameter_utest.cpp)
 target_link_libraries(${PROJECT_NAME}_dh_parameter_tests PRIVATE ${PROJECT_NAME}_test_support GTest::GTest GTest::Main)
-rct_gtest_discover_tests(${PROJECT_NAME}_dh_parameter_tests)
+add_gtest_discover_tests(${PROJECT_NAME}_dh_parameter_tests)
 add_dependencies(${PROJECT_NAME}_dh_parameter_tests ${PROJECT_NAME})
 add_dependencies(run_tests ${PROJECT_NAME}_dh_parameter_tests)
 
@@ -47,7 +47,7 @@ add_dependencies(run_tests ${PROJECT_NAME}_dh_parameter_tests)
 add_executable(${PROJECT_NAME}_extrinsic_hand_eye_dh_chain_tests extrinsic_hand_eye_dh_chain_utest.cpp)
 target_link_libraries(${PROJECT_NAME}_extrinsic_hand_eye_dh_chain_tests PRIVATE ${PROJECT_NAME}_test_support
                                                                                 GTest::GTest GTest::Main)
-rct_gtest_discover_tests(${PROJECT_NAME}_extrinsic_hand_eye_dh_chain_tests)
+add_gtest_discover_tests(${PROJECT_NAME}_extrinsic_hand_eye_dh_chain_tests)
 add_dependencies(${PROJECT_NAME}_extrinsic_hand_eye_dh_chain_tests ${PROJECT_NAME})
 add_dependencies(run_tests ${PROJECT_NAME}_extrinsic_hand_eye_dh_chain_tests)
 
@@ -65,14 +65,14 @@ add_dependencies(${PROJECT_NAME}_covariance_tests ${PROJECT_NAME})
 # Homography
 add_executable(${PROJECT_NAME}_homography_tests homography_utest.cpp)
 target_link_libraries(${PROJECT_NAME}_homography_tests PRIVATE ${PROJECT_NAME}_test_support GTest::GTest GTest::Main)
-rct_gtest_discover_tests(${PROJECT_NAME}_homography_tests)
+add_gtest_discover_tests(${PROJECT_NAME}_homography_tests)
 add_dependencies(${PROJECT_NAME}_homography_tests ${PROJECT_NAME})
 add_dependencies(run_tests ${PROJECT_NAME}_homography_tests)
 
 # PnP
 add_executable(${PROJECT_NAME}_pnp_tests pnp_utest.cpp)
 target_link_libraries(${PROJECT_NAME}_pnp_tests PRIVATE ${PROJECT_NAME}_test_support GTest::GTest GTest::Main)
-rct_gtest_discover_tests(${PROJECT_NAME}_pnp_tests)
+add_gtest_discover_tests(${PROJECT_NAME}_pnp_tests)
 add_dependencies(${PROJECT_NAME}_pnp_tests ${PROJECT_NAME})
 add_dependencies(run_tests ${PROJECT_NAME}_pnp_tests)
 
@@ -80,14 +80,14 @@ add_dependencies(run_tests ${PROJECT_NAME}_pnp_tests)
 add_executable(${PROJECT_NAME}_camera_intrinsic_validation_tests camera_intrinsic_calibration_validation_utest.cpp)
 target_link_libraries(${PROJECT_NAME}_camera_intrinsic_validation_tests PRIVATE ${PROJECT_NAME}_test_support
                                                                                 GTest::GTest GTest::Main)
-rct_gtest_discover_tests(${PROJECT_NAME}_camera_intrinsic_validation_tests)
+add_gtest_discover_tests(${PROJECT_NAME}_camera_intrinsic_validation_tests)
 add_dependencies(${PROJECT_NAME}_camera_intrinsic_validation_tests ${PROJECT_NAME})
 add_dependencies(run_tests ${PROJECT_NAME}_camera_intrinsic_validation_tests)
 
 # Noise Qualification
 add_executable(${PROJECT_NAME}_noise_tests noise_qualification_utest.cpp)
 target_link_libraries(${PROJECT_NAME}_noise_tests PRIVATE ${PROJECT_NAME}_test_support GTest::GTest GTest::Main)
-rct_gtest_discover_tests(${PROJECT_NAME}_noise_tests)
+add_gtest_discover_tests(${PROJECT_NAME}_noise_tests)
 add_dependencies(${PROJECT_NAME}_noise_tests ${PROJECT_NAME})
 add_dependencies(run_tests ${PROJECT_NAME}_noise_tests)
 
@@ -95,7 +95,7 @@ add_dependencies(run_tests ${PROJECT_NAME}_noise_tests)
 add_executable(${PROJECT_NAME}_maximum_likelihood_tests maximum_likelihood_utest.cpp)
 target_link_libraries(${PROJECT_NAME}_maximum_likelihood_tests PRIVATE ${PROJECT_NAME}_test_support GTest::GTest
                                                                        GTest::Main)
-rct_gtest_discover_tests(${PROJECT_NAME}_maximum_likelihood_tests)
+add_gtest_discover_tests(${PROJECT_NAME}_maximum_likelihood_tests)
 add_dependencies(${PROJECT_NAME}_maximum_likelihood_tests ${PROJECT_NAME})
 add_dependencies(run_tests ${PROJECT_NAME}_maximum_likelihood_tests)
 
@@ -103,7 +103,7 @@ add_dependencies(run_tests ${PROJECT_NAME}_maximum_likelihood_tests)
 add_executable(${PROJECT_NAME}_dh_chain_kinematic_calibration_tests dh_chain_kinematic_calibration_utest.cpp)
 target_link_libraries(${PROJECT_NAME}_dh_chain_kinematic_calibration_tests PRIVATE ${PROJECT_NAME}_test_support
                                                                                    GTest::GTest GTest::Main)
-rct_gtest_discover_tests(${PROJECT_NAME}_dh_chain_kinematic_calibration_tests)
+add_gtest_discover_tests(${PROJECT_NAME}_dh_chain_kinematic_calibration_tests)
 add_dependencies(${PROJECT_NAME}_dh_chain_kinematic_calibration_tests ${PROJECT_NAME})
 add_dependencies(run_tests ${PROJECT_NAME}_dh_chain_kinematic_calibration_tests)
 
@@ -111,7 +111,7 @@ add_dependencies(run_tests ${PROJECT_NAME}_dh_chain_kinematic_calibration_tests)
 add_executable(${PROJECT_NAME}_local_parameterization_tests local_parameterization_utest.cpp)
 target_link_libraries(${PROJECT_NAME}_local_parameterization_tests PRIVATE ${PROJECT_NAME}_test_support GTest::GTest
                                                                            GTest::Main)
-rct_gtest_discover_tests(${PROJECT_NAME}_local_parameterization_tests)
+add_gtest_discover_tests(${PROJECT_NAME}_local_parameterization_tests)
 add_dependencies(${PROJECT_NAME}_local_parameterization_tests ${PROJECT_NAME})
 add_dependencies(run_tests ${PROJECT_NAME}_local_parameterization_tests)
 
@@ -119,14 +119,14 @@ add_dependencies(run_tests ${PROJECT_NAME}_local_parameterization_tests)
 add_executable(${PROJECT_NAME}_dh_chain_kinematic_measurement_tests dh_chain_kinematic_measurement_utest.cpp)
 target_link_libraries(${PROJECT_NAME}_dh_chain_kinematic_measurement_tests PRIVATE ${PROJECT_NAME}_test_support
                                                                                    GTest::GTest GTest::Main)
-rct_gtest_discover_tests(${PROJECT_NAME}_dh_chain_kinematic_measurement_tests)
+add_gtest_discover_tests(${PROJECT_NAME}_dh_chain_kinematic_measurement_tests)
 add_dependencies(${PROJECT_NAME}_dh_chain_kinematic_measurement_tests ${PROJECT_NAME})
 add_dependencies(run_tests ${PROJECT_NAME}_dh_chain_kinematic_measurement_tests)
 
 # DH Chain Kinematic Measurement Calibration
 add_executable(${PROJECT_NAME}_serialization_tests serialization_utest.cpp)
 target_link_libraries(${PROJECT_NAME}_serialization_tests PRIVATE ${PROJECT_NAME}_test_support GTest::GTest GTest::Main)
-rct_gtest_discover_tests(${PROJECT_NAME}_serialization_tests)
+add_gtest_discover_tests(${PROJECT_NAME}_serialization_tests)
 add_dependencies(${PROJECT_NAME}_serialization_tests ${PROJECT_NAME})
 add_dependencies(run_tests ${PROJECT_NAME}_serialization_tests)
 

@@ -1,10 +1,13 @@
 cmake_minimum_required(VERSION 3.5.0)
-project(rct_image_tools VERSION 0.1.0 LANGUAGES CXX)
 
-find_package(Boost REQUIRED)
+# Extract package name and version from package.xml
+find_package(ros_industrial_cmake_boilerplate REQUIRED)
+extract_package_metadata(pkg)
+project(${pkg_extracted_name} VERSION ${pkg_extracted_version} LANGUAGES CXX)
+
+find_package(Boost REQUIRED COMPONENTS filesystem)
 find_package(OpenCV REQUIRED)
 find_package(yaml-cpp REQUIRED)
-find_package(rct_common REQUIRED)
 find_package(rct_optimizations REQUIRED)
 
 find_package(Eigen3 REQUIRED)
@@ -31,10 +34,10 @@ target_compile_options(${PROJECT_NAME} PUBLIC -std=c++11)
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra)
 target_include_directories(${PROJECT_NAME} PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
                                                   "$<INSTALL_INTERFACE:include>")
-target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${Boost_INCLUDE_DIRS})
 target_link_libraries(
   ${PROJECT_NAME}
-  PUBLIC ${Boost_LIBRARIES}
+  PUBLIC Boost::boost
+         Boost::filesystem
          opencv_core
          opencv_aruco
          opencv_features2d
@@ -54,10 +57,18 @@ target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME} rct::rct_optimization
 
 if(RCT_BUILD_TESTS)
   enable_testing()
-  rct_add_run_tests_target()
+  add_run_tests_target(ENABLE ${RCT_ENABLE_RUN_TESTS})
   add_subdirectory(test)
 endif()
 
-rct_configure_package(${PROJECT_NAME})
+configure_package(
+  NAMESPACE rct
+  TARGETS ${PROJECT_NAME}
+          ${PROJECT_NAME}_test
+          DEPENDENCIES
+          "Boost REQUIRED COMPONENTS filesystem"
+          OpenCV
+          rct_optimizations
+          yaml-cpp)
 
 install(DIRECTORY include/${PROJECT_NAME} DESTINATION include)

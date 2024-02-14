@@ -3,22 +3,25 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  industrial_ci:
+  ci:
     strategy:
       fail-fast: false
       matrix:
-        distro: [melodic, noetic]
+        distro: [noetic]
 
     runs-on: ubuntu-latest
+    name: ${{ matrix.distro }}
     steps:
-      - uses: actions/checkout@v1
-      - uses: 'ros-industrial/industrial_ci@master'
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Build
+        uses: 'ros-industrial/industrial_ci@master'
         env:
           BADGE: ${{ matrix.distro }}
           ROS_DISTRO: ${{ matrix.distro }}
           ROS_REPO: main
+          UPSTREAM_WORKSPACE: dependencies.repos
           VERBOSE_TESTS: true
-          ADDITIONAL_DEBS: "git"
-          TARGET_CMAKE_ARGS: "-DRCT_BUILD_TESTS=ON"
+          TARGET_CMAKE_ARGS: "-DRCT_BUILD_TESTS=ON -DRCT_ENABLE_RUN_TESTS=OFF"
           CTEST_OUTPUT_ON_FAILURE: true
           AFTER_SCRIPT: "cd $target_ws/build/rct_optimizations && ctest -V && cd $target_ws/build/rct_image_tools && ctest -V"

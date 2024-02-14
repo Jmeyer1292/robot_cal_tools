@@ -3,7 +3,7 @@
 
 Platform               | CI Status
 ---------------------- |:---------
-Linux (Focal & Bionic) | [![Build Status](https://github.com/Jmeyer1292/robot_cal_tools/workflows/CI/badge.svg)](https://github.com/Jmeyer1292/robot_cal_tools/actions)
+Ubuntu (Focal)         | [![Build Status](https://github.com/Jmeyer1292/robot_cal_tools/workflows/CI/badge.svg)](https://github.com/Jmeyer1292/robot_cal_tools/actions)
 Lint  (Clang-Format)   | [![Build Status](https://github.com/Jmeyer1292/robot_cal_tools/workflows/Clang-Format/badge.svg)](https://github.com/Jmeyer1292/robot_cal_tools/actions)
 Lint  (CMake-Format)   | [![Build Status](https://github.com/Jmeyer1292/robot_cal_tools/workflows/CMake-Format/badge.svg)](https://github.com/Jmeyer1292/robot_cal_tools/actions)
 
