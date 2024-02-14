@@ -2,12 +2,13 @@
 
 #include <rct_optimizations/pnp.h>
 #include <rct_optimizations/extrinsic_hand_eye.h>
+#include <rct_optimizations/validation/projection.h>
 #include <rct_image_tools/image_utils.h>
 
 #include <boost/accumulators/accumulators.hpp>
 #include <boost/accumulators/statistics.hpp>
+#include <iostream>
 #include <opencv2/highgui.hpp>
-#include <ros/console.h>
 
 using namespace rct_optimizations;
 using namespace rct_image_tools;
@@ -95,9 +96,22 @@ void analyzeResults(const ExtrinsicHandEyeProblem2D3D& problem,
                      .angularDistance(Eigen::Quaterniond(camera_to_target_pnp.linear())));
   }
 
-  ROS_INFO_STREAM("Difference in camera to target transform between extrinsic calibration and PnP optimization");
-  ROS_INFO_STREAM("Position:\n\tMean (m): " << ba::mean(pos_diff_acc)
-                                            << "\n\tStd. Dev. (m): " << std::sqrt(ba::variance(pos_diff_acc)));
-  ROS_INFO_STREAM("Orientation:\n\tMean (deg): " << ba::mean(ori_diff_acc) * 180.0 / M_PI << "\n\tStd. Dev. (deg): "
-                                                 << std::sqrt(ba::variance(ori_diff_acc)) * 180.0 / M_PI);
+  std::cout << "Difference in camera to target transform between extrinsic calibration and PnP optimization"
+            << "\nPosition:"
+            << "\n\tMean (m): " << ba::mean(pos_diff_acc)
+            << "\n\tStd. Dev. (m): " << std::sqrt(ba::variance(pos_diff_acc)) << "\nOrientation:"
+            << "\n\tMean (deg): " << ba::mean(ori_diff_acc) * 180.0 / M_PI
+            << "\n\tStd. Dev. (deg): " << std::sqrt(ba::variance(ori_diff_acc)) * 180.0 / M_PI << std::endl;
+}
+
+void analyze3DProjectionError(const ExtrinsicHandEyeProblem2D3D& problem, const ExtrinsicHandEyeResult& opt_result)
+{
+  Eigen::ArrayXd error = compute3DProjectionError(
+      problem.observations, problem.intr, opt_result.camera_mount_to_camera, opt_result.target_mount_to_target);
+
+  // Compute stats
+  double std_dev = std::sqrt((error - error.mean()).square().sum() / (error.size() - 1));
+  std::cout << "3D reprojection error statistics:"
+            << "\n\tMean +/- Std. Dev. (m): " << error.mean() << " +/- " << std_dev
+            << "\n\tMin (m): " << error.minCoeff() << "\n\tMax (m): " << error.maxCoeff() << std::endl;
 }

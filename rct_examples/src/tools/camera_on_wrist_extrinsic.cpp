@@ -22,7 +22,8 @@ using namespace rct_image_tools;
 using namespace rct_ros_tools;
 using namespace rct_common;
 
-const std::string WINDOW = "window";
+static const std::string WINDOW = "window";
+static const unsigned RANDOM_SEED = 1;
 
 template <typename T>
 T get(const ros::NodeHandle& nh, const std::string& key)
@@ -104,8 +105,8 @@ int main(int argc, char** argv)
 
         //// 3. Check that a homography matrix can accurately reproject the observed points onto the expected target
         /// points within a defined threshold
-        rct_optimizations::RandomCorrespondenceSampler random_sampler(obs.correspondence_set.size(),
-                                                                      obs.correspondence_set.size() / 3);
+        rct_optimizations::RandomCorrespondenceSampler random_sampler(
+            obs.correspondence_set.size(), obs.correspondence_set.size() / 3, RANDOM_SEED);
         Eigen::VectorXd homography_error =
             rct_optimizations::calculateHomographyError(obs.correspondence_set, random_sampler);
         if (homography_error.array().mean() > homography_threshold)
@@ -134,6 +135,11 @@ int main(int argc, char** argv)
 
     // Report results
     printOptResults(opt_result.converged, opt_result.initial_cost_per_obs, opt_result.final_cost_per_obs);
+    printNewLine();
+
+    // Let's analyze the reprojection errors in 3D by projecting the 2D image features onto the calibrated target plane
+    // and measuring their difference from the known 3D target features
+    analyze3DProjectionError(problem, opt_result);
     printNewLine();
 
     Eigen::Isometry3d c = opt_result.camera_mount_to_camera;
