@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5.0)
+cmake_minimum_required(VERSION 3.16.0)
 project(rct_image_tools VERSION 0.1.0 LANGUAGES CXX)
 
 find_package(Boost REQUIRED)
@@ -27,7 +27,7 @@ add_library(${PROJECT_NAME} SHARED
   src/${PROJECT_NAME}/charuco_grid_target.cpp
   src/${PROJECT_NAME}/charuco_finder.cpp
 )
-target_compile_options(${PROJECT_NAME} PUBLIC -std=c++11)
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra)
 target_include_directories(${PROJECT_NAME} PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
@@ -52,7 +52,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 add_executable(${PROJECT_NAME}_test
   src/target_finder_tests.cpp
 )
-target_compile_options(${PROJECT_NAME}_test PUBLIC -std=c++11)
+target_compile_features(${PROJECT_NAME}_test PRIVATE cxx_std_11)
 target_compile_options(${PROJECT_NAME}_test PRIVATE -Wall -Wextra)
 target_include_directories(${PROJECT_NAME}_test PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5.0)
+cmake_minimum_required(VERSION 3.16.0)
 project(rct_optimizations VERSION 0.1.0 LANGUAGES CXX)
 
 find_package(rct_common REQUIRED)
@@ -34,7 +34,7 @@ add_library(${PROJECT_NAME} SHARED
   src/${PROJECT_NAME}/dh_chain.cpp
   src/${PROJECT_NAME}/dh_chain_kinematic_calibration.cpp
 )
-target_compile_options(${PROJECT_NAME} PUBLIC -std=c++11)
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra)
 target_include_directories(${PROJECT_NAME} PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"

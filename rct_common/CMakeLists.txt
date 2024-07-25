@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5.0)
+cmake_minimum_required(VERSION 3.16.0)
 project(rct_common VERSION 0.1.0)
 
 include(cmake/rct_macros.cmake)
@@ -56,7 +56,7 @@ if(RCT_BUILD_TESTS)
 endif()
 
 add_library(${PROJECT_NAME} INTERFACE)
-target_compile_options(${PROJECT_NAME} INTERFACE -std=c++11)
+target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_11)
 target_include_directories(${PROJECT_NAME} INTERFACE
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
   "$<INSTALL_INTERFACE:include>")

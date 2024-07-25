@@ -1,7 +1,7 @@
-cmake_minimum_required(VERSION 3.5.0)
+cmake_minimum_required(VERSION 3.16.0)
 project(rct_ros_tools)
 
-add_compile_options(-std=c++11 -Wall -Wextra)
+add_compile_options(-Wall -Wextra)
 
 find_package(rct_common REQUIRED)
 find_package(rct_optimizations REQUIRED)
@@ -81,6 +81,7 @@ target_link_libraries(${PROJECT_NAME}
  rct::rct_image_tools
  rct::rct_common
 )
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
 
 add_library(${PROJECT_NAME}_target_loader_plugins
   src/target_loader_plugins.cpp
@@ -90,6 +91,7 @@ target_link_libraries(${PROJECT_NAME}_target_loader_plugins
   yaml-cpp
   rct::rct_image_tools
 )
+target_compile_features(${PROJECT_NAME}_target_loader_plugins PUBLIC cxx_std_11)
 
 # Executable for collecting data sets via subscribers and triggered with services
 # See readme (TODO: Write a readme)
@@ -101,6 +103,7 @@ target_link_libraries(${PROJECT_NAME}_cmd
  ${PROJECT_NAME}
  rct::rct_image_tools
 )
+target_compile_features(${PROJECT_NAME}_cmd PRIVATE cxx_std_11)
 
 #############
 ## Testing ##
