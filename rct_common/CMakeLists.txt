@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5.0)
+cmake_minimum_required(VERSION 3.16.0)
 
 # Extract package name and version from package.xml
 find_package(ros_industrial_cmake_boilerplate REQUIRED)
@@ -19,7 +19,7 @@ endif()
 find_gtest()
 
 add_library(${PROJECT_NAME} INTERFACE)
-target_compile_options(${PROJECT_NAME} INTERFACE -std=c++11)
+target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_11)
 target_include_directories(${PROJECT_NAME} INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
                                                      "$<INSTALL_INTERFACE:include>")
 target_link_libraries(${PROJECT_NAME} INTERFACE Eigen3::Eigen)
