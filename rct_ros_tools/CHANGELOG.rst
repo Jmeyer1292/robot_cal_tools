@@ -2,8 +2,8 @@
 Changelog for package rct_ros_tools
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.0 (2024-07-25)
+------------------
 * fix cxx target version
 * Linters (`#108 <https://github.com/Jmeyer1292/robot_cal_tools/issues/108>`_)
   * Add clang format linter and CI build

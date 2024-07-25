@@ -2,8 +2,8 @@
 Changelog for package rct_image_tools
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.0 (2024-07-25)
+------------------
 * fix cxx target version
 * Update to use RICB (`#109 <https://github.com/Jmeyer1292/robot_cal_tools/issues/109>`_)
   * Updated to use RICB

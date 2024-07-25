@@ -2,8 +2,8 @@
 Changelog for package rct_examples
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.0 (2024-07-25)
+------------------
 * fix cxx target version
 * 3D reprojection analysis (`#107 <https://github.com/Jmeyer1292/robot_cal_tools/issues/107>`_)
   * Added functions for projecting 2D image features onto 3D plane
