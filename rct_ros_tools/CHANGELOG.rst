@@ -2,6 +2,23 @@
 Changelog for package rct_ros_tools
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix cxx target version
+* Linters (`#108 <https://github.com/Jmeyer1292/robot_cal_tools/issues/108>`_)
+  * Add clang format linter and CI build
+  * Add cmake format linter and CI build
+  * Add CI badges to the readme
+  * Replace symlinks with symlink to CI directory
+  * Updated workflows
+  * Change clang format version
+  * Ran clang format
+  * Ran CMake format
+  * Added git to ADDITIONAL_DEBS field
+  ---------
+  Co-authored-by: Levi Armstrong <levi.armstrong@gmail.com>
+* Contributors: Levi Armstrong, Michael Ripperger
+
 0.1.1 (2022-05-17)
 ------------------
 * remove changelogs
