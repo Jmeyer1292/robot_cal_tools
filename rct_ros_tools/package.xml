@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>rct_ros_tools</name>
-  <version>0.2.0</version>
+  <version>0.2.1</version>
   <description>The rct_ros_tools package</description>
 
   <author email="jmeyer1292@gmail.com">Jon Meyer</author>

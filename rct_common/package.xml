@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>rct_common</name>
-  <version>0.2.0</version>
+  <version>0.2.1</version>
   <description>The rct_common package. Contains macros and external libraries for the robot_cal_tools project.</description>
   <maintainer email="joseph.schornak@swri.org">Joseph Schornak</maintainer>
   <author email="joseph.schornak@swri.org">Joseph Schornak</author>

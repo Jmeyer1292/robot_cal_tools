@@ -2,8 +2,8 @@
 Changelog for package rct_optimizations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.1 (2024-08-13)
+------------------
 * Add missing build depend ros_industrial_cmake_boilerplate
 * Contributors: Levi Armstrong
 
