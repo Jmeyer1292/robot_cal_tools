@@ -2,6 +2,11 @@
 Changelog for package rct_examples
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add missing build depend ros_industrial_cmake_boilerplate
+* Contributors: Levi Armstrong
+
 0.2.0 (2024-07-25)
 ------------------
 * fix cxx target version

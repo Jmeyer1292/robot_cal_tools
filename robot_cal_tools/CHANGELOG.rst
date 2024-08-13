@@ -2,6 +2,9 @@
 Changelog for package robot_cal_tools
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.2.0 (2024-07-25)
 ------------------
 * fix cxx target version
