@@ -16,6 +16,7 @@
 
   <license>Apache 2.0</license>
 
+  <build_depend>ros_industrial_cmake_boilerplate</build_depend>
   <depend>boost</depend>
   <depend>libceres-dev</depend>
   <depend>rct_common</depend>

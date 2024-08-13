@@ -6,6 +6,7 @@
   <maintainer email="joseph.schornak@swri.org">Joseph Schornak</maintainer>
   <author email="joseph.schornak@swri.org">Joseph Schornak</author>
   <license>Apache 2.0</license>
+  <build_depend>ros_industrial_cmake_boilerplate</build_depend>
   <depend>eigen</depend>
   <export>
     <build_type>cmake</build_type>
