@@ -40,7 +40,7 @@ TEST(LocalParameterizationTests, SubsetParameterization)
     EXPECT_NO_THROW(addSubsetParameterization(problem, mask));
 
     // Expect there to be no parameterization, but the entire block should be constant
-    EXPECT_EQ(problem.GetParameterization(params.data()), nullptr);
+    EXPECT_EQ(problem.GetManifold(params.data()), nullptr);
     EXPECT_TRUE(problem.IsParameterBlockConstant(params.data()));
   }
 
@@ -51,7 +51,7 @@ TEST(LocalParameterizationTests, SubsetParameterization)
     int bad_idx = params.size() * 2;
     mask[params.data()].insert(mask[params.data()].begin(), { bad_idx, 0, 1, 2 });
     EXPECT_THROW(addSubsetParameterization(problem, mask), OptimizationException);
-    EXPECT_EQ(problem.GetParameterization(params.data()), nullptr);
+    EXPECT_EQ(problem.GetManifold(params.data()), nullptr);
   }
 
   // Empty mask
@@ -59,7 +59,7 @@ TEST(LocalParameterizationTests, SubsetParameterization)
     std::map<const double*, std::vector<int>> mask;
     EXPECT_NO_THROW(addSubsetParameterization(problem, mask));
     // An empty mask should not have added any local parameterization
-    EXPECT_EQ(problem.GetParameterization(params.data()), nullptr);
+    EXPECT_EQ(problem.GetManifold(params.data()), nullptr);
   }
 
   // Hold the zero-th row constant
@@ -73,7 +73,7 @@ TEST(LocalParameterizationTests, SubsetParameterization)
       mask[params.data()].push_back(i * params.rows());
     }
     EXPECT_NO_THROW(addSubsetParameterization(problem, mask));
-    EXPECT_NE(problem.GetParameterization(params.data()), nullptr);
+    EXPECT_NE(problem.GetManifold(params.data()), nullptr);
   }
 
   // Solve the optimization

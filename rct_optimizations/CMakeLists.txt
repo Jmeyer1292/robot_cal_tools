@@ -40,7 +40,7 @@ add_library(
   # DH Chain Kinematic Calibration
   src/${PROJECT_NAME}/dh_chain.cpp
   src/${PROJECT_NAME}/dh_chain_kinematic_calibration.cpp)
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra)
 target_include_directories(${PROJECT_NAME} PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
                                                   "$<INSTALL_INTERFACE:include>")

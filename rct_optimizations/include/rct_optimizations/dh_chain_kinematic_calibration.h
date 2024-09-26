@@ -400,7 +400,7 @@ public:
     T rot_diff = Eigen::Quaternion<T>(camera_to_target_measured_.cast<T>().linear())
                      .angularDistance(Eigen::Quaternion<T>(camera_to_target.linear()));
 
-    residual[3] = ceres::IsNaN(rot_diff) ? T(0.0) : T(orientation_weight_) * rot_diff;
+    residual[3] = ceres::isnan(rot_diff) ? T(0.0) : T(orientation_weight_) * rot_diff;
 
     return true;
   }

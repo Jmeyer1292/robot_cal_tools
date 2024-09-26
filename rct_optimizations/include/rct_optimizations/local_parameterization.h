@@ -2,7 +2,7 @@
 
 #include <Eigen/Core>
 #include <ceres/problem.h>
-#include <ceres/local_parameterization.h>
+#include <ceres/manifold.h>
 #include <rct_optimizations/types.h>
 
 // Ceres Solver - A fast non-linear least squares minimizer
@@ -126,8 +126,8 @@ void addSubsetParameterization(ceres::Problem& problem, const std::map<const dou
         }
         else
         {
-          ceres::LocalParameterization* lp = new ceres::SubsetParameterization(block_size, mask);
-          problem.SetParameterization(p, lp);
+          ceres::Manifold* lp = new ceres::SubsetManifold(block_size, mask);
+          problem.SetManifold(p, lp);
         }
       }
     }
